@@ -4,11 +4,12 @@ project(pdfs)
 
 include(ExternalProject)
 
-# if (${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
-#     set(LIBEXT "dylib")
+set(MAC_LIBS "")
+if (${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
+    set(MAC_LIBS "iconv")
 # elseif (${CMAKE_SYSTEM_NAME} MATCHES "Linux")
 #     set(LIBEXT "so")
-# endif()
+endif()
 set(LIBEXT "a")
 
 ExternalProject_Add(poppler
@@ -23,18 +24,20 @@ ExternalProject_Add(poppler
         -DENABLE_QT5=OFF
         -DENABLE_QT6=OFF
         -DBUILD_SHARED_LIBS=OFF
-    BUILD_BYPRODUCTS ${CMAKE_CURRENT_BINARY_DIR}/poppler-prefix/src/poppler-build/libpoppler.${LIBEXT}
-    BUILD_BYPRODUCTS ${CMAKE_CURRENT_BINARY_DIR}/poppler-prefix/src/poppler-build/cpp/libpoppler-cpp.${LIBEXT}
+    BUILD_BYPRODUCTS ${CMAKE_BINARY_DIR}/poppler-prefix/src/poppler-build/libpoppler.${LIBEXT}
+    BUILD_BYPRODUCTS ${CMAKE_BINARY_DIR}/poppler-prefix/src/poppler-build/cpp/libpoppler-cpp.${LIBEXT}
     INSTALL_COMMAND cmake -E echo "Skipping install step."
 )
 
 add_library(libpoppler SHARED IMPORTED)
 set_target_properties(libpoppler PROPERTIES
-    IMPORTED_LOCATION ${CMAKE_CURRENT_BINARY_DIR}/poppler-prefix/src/poppler-build/libpoppler.${LIBEXT})
+    IMPORTED_LOCATION ${CMAKE_BINARY_DIR}/poppler-prefix/src/poppler-build/libpoppler.${LIBEXT}
+)
 
 add_library(libpoppler-cpp SHARED IMPORTED)
 set_target_properties(libpoppler-cpp PROPERTIES
-    IMPORTED_LOCATION ${CMAKE_CURRENT_BINARY_DIR}/poppler-prefix/src/poppler-build/cpp/libpoppler-cpp.${LIBEXT})
+    IMPORTED_LOCATION ${CMAKE_BINARY_DIR}/poppler-prefix/src/poppler-build/cpp/libpoppler-cpp.${LIBEXT}
+)
 
 set(PDFS_SOURCES
     src/cmd_page.cc
@@ -55,10 +58,10 @@ add_executable(${PROJECT_NAME}
 )
 
 target_include_directories(${PROJECT_NAME} PRIVATE
-    ${CMAKE_CURRENT_BINARY_DIR}/poppler-prefix/src/poppler/poppler/
-    ${CMAKE_CURRENT_BINARY_DIR}/poppler-prefix/src/poppler/
-    ${CMAKE_CURRENT_BINARY_DIR}/poppler-prefix/src/poppler/goo
-    ${CMAKE_CURRENT_BINARY_DIR}/poppler-prefix/src/poppler-build/poppler/
+    ${CMAKE_BINARY_DIR}/poppler-prefix/src/poppler/poppler/
+    ${CMAKE_BINARY_DIR}/poppler-prefix/src/poppler/
+    ${CMAKE_BINARY_DIR}/poppler-prefix/src/poppler/goo
+    ${CMAKE_BINARY_DIR}/poppler-prefix/src/poppler-build/poppler/
 )
 
 target_link_directories(${PROJECT_NAME} PRIVATE
@@ -66,13 +69,15 @@ target_link_directories(${PROJECT_NAME} PRIVATE
 )
 
 target_link_libraries(${PROJECT_NAME} PRIVATE
-    libpoppler
+    # on linux, must link libpoppler-cpp before libpoppler because otherwise, `ld`
+    # immediately discard "unneeded" symbols from libpoppler causing undefined
+    # reference when linking libpoppler-cpp
     libpoppler-cpp
+    libpoppler
     png
     jpeg
     openjp2
     tiff
-    iconv
     lcms2
     nss3
     nssutil3
@@ -81,6 +86,7 @@ target_link_libraries(${PROJECT_NAME} PRIVATE
     nspr4
     freetype
     fontconfig
+    ${MAC_LIBS}
 )
 
 add_dependencies(${PROJECT_NAME}
