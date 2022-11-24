@@ -16,7 +16,7 @@ void print_usage() {
     printf("document multi-tool (docmt)\n");
     printf("usage: docmt -i <file> \n");
     printf("             [-p <page_desc>] [-o <base>]\n");
-    printf("             [-P <image_ppi>] [-F jpg/png] [-M normal/narrow] [-A]\n");
+    printf("             [-P <image_ppi>] [-F jpg/png] [-M normal/narrow] [-A] [-T]\n");
     printf("             <command>\n");
 }
 
@@ -66,9 +66,10 @@ int main(int argc, char *argv[]) {
     vector<int> pages;
     int image_ppi = 72;
     bool anti_aliased = true;
+    bool text_only = false;
 
     int opt;
-    while ((opt = getopt(argc, argv,"i:c:p:o:P:F:M:A")) != -1) {
+    while ((opt = getopt(argc, argv,"i:c:p:o:P:F:M:A:T")) != -1) {
         switch (opt) {
             case 'i':
                 input_file_name = optarg;
@@ -95,6 +96,9 @@ int main(int argc, char *argv[]) {
             case 'A':
                 anti_aliased = false;
                 break;
+            case 'T':
+                text_only = true;
+                break;
             default:
                 print_usage(); 
                 exit(EXIT_FAILURE);
@@ -116,7 +120,7 @@ int main(int argc, char *argv[]) {
     document doc(input_file_name, pages);
     doc.print_essentials();
     for (size_t i = 0; i < commands.size(); i++) {
-        doc.run_command(commands[i], output_base_name, image_ppi, render_format, anti_aliased, margin);
+        doc.run_command(commands[i], output_base_name, image_ppi, render_format, anti_aliased, margin, text_only);
     }
 
     exit(EXIT_SUCCESS);

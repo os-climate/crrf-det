@@ -4,13 +4,14 @@
 #include "cpp/poppler-document.h"
 #undef private
 #include "cpp/poppler-page.h"
-#include "cpp/poppler-page-renderer.h"
+//#include "cpp/poppler-page-renderer.h"
 #include "cmd_render.h"
+#include "cpage_renderer.h"
 
 using namespace poppler;
 
 
-void command_render(poppler::document* doc, std::vector<int>& pages, std::string& output_base_name, int ppi, std::string render_format, bool anti_aliased) {
+void command_render(poppler::document* doc, std::vector<int>& pages, std::string& output_base_name, int ppi, std::string render_format, bool anti_aliased, bool text_only) {
 
     if (render_format != "jpg" &&
         render_format != "png") {
@@ -19,13 +20,13 @@ void command_render(poppler::document* doc, std::vector<int>& pages, std::string
     }
 
     printf("[render]\n");
-    page_renderer renderer;
+    cpage_renderer renderer;
     if (anti_aliased)
         renderer.set_render_hints(page_renderer::text_antialiasing | page_renderer::text_hinting | page_renderer::antialiasing);
     char filename[512];
     for (size_t page_idx = 0; page_idx < pages.size(); page_idx++) {
         page* page_ = doc->create_page(pages[page_idx] - 1);
-        image img = renderer.render_page(page_, ppi, ppi);
+        image img = renderer.render_page(page_, text_only, ppi, ppi);
         snprintf(filename, 512, "%s.%d.%s", output_base_name.c_str(), pages[page_idx], render_format.c_str());
         bool success = false;
         FILE* fp_test = fopen(filename, "w");

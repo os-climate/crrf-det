@@ -11,7 +11,7 @@ public:
     ~document();
 
     void print_essentials();
-    void run_command(std::string command, std::string output_base_name, int image_ppi, std::string render_format, bool anti_aliased, std::string margin);
+    void run_command(std::string command, std::string output_base_name, int image_ppi, std::string render_format, bool anti_aliased, std::string margin, bool text_only);
 
 private:
     poppler::document* pdf_;

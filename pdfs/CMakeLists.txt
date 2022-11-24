@@ -46,6 +46,8 @@ set(PDFS_SOURCES
     src/image_info_dev.cc
     src/main.cc
     src/text_output_dev.cc
+    src/cpage_renderer.cc
+    src/csplash_output_dev.cc
 )
 
 add_executable(${PROJECT_NAME}
@@ -55,6 +57,7 @@ add_executable(${PROJECT_NAME}
 target_include_directories(${PROJECT_NAME} PRIVATE
     ${CMAKE_CURRENT_BINARY_DIR}/poppler-prefix/src/poppler/poppler/
     ${CMAKE_CURRENT_BINARY_DIR}/poppler-prefix/src/poppler/
+    ${CMAKE_CURRENT_BINARY_DIR}/poppler-prefix/src/poppler/goo
     ${CMAKE_CURRENT_BINARY_DIR}/poppler-prefix/src/poppler-build/poppler/
 )
 
