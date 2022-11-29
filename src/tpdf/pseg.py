@@ -166,3 +166,90 @@ def columns_from_image(im_bin_clear):
     # eliminate narrow spacings
     spacings = [[spl, spr] for (spl, spr) in spacings if (spr - spl) >= MIN_COLUMN_SPACING]
     return (columns, spacings)
+
+
+def clear_column_spacing(spacings, im_bin_clear, im_bin_blurred):
+    """
+    `clear_column_spacing` is a utility function to improve segmentation
+    quality by clearing out known (from column detection) empty spacings
+    from the image, so that blurring will not bleed past the edges of
+    the columns.
+
+    """
+    # clear `blurred` and `im_bin_blurred` to avoid blurring bleeding edges to
+    # interfere with column based processing
+    for [spacing_left, spacing_right] in spacings:
+        im_bin_blurred[:, spacing_left:spacing_right] = 255
+        im_bin_clear[:, spacing_left:spacing_right] = 255
+
+
+def row_groups_from_columns(columns, im_bin_clear):
+    """
+    `row_groups_from_columns` searches a column line by line (in pixels),
+    for empty spacings between rows of contents. It also groups those
+    rows based on vertical spacings. Spacings within `MAX_ROW_VSPACING`
+    belong to the same "row group".
+
+    parameters:
+    columns:        Parsed columns returned by `columns_from_image`
+    im_bin_clear:   Binarized result image (clear version),
+                    format: numpy.array(nrows, ncols), 1-channel ubyte (0-255)
+
+    returns:
+    (column_row_groups, column_row_vspacings)
+    column_row_groups:  A dict where the key is `column_index`, and the
+                        value is `row_groups`. `row_groups` is a list of list
+                        where the first dimension is the `group`, and the
+                        second dimension is the `rows`. Each `row` is a
+                        2-element list where 0 is row begin, 1 is row end,
+                        both in pixels from the top of the column (0).
+    column_row_vspacings:   A dict where the key is `column_index` and the
+                            value is `row_vspacings`, which is a numpy
+                            array in the length of column pixel height,
+                            with array content 0=text, 1=spacing.
+
+    """
+    MAX_ROW_VSPACING = 25
+    column_row_groups = {}
+    column_row_vspacings = {}
+    for col_idx, column in enumerate(columns):
+        col_crop = im_bin_clear[0:im_bin_clear.shape[0], column[0]:column[1]]
+        col_sum = col_crop.shape[1] * 255
+        # vertical spacings between rows, in pixels: 0=text, 1=spacing
+        row_vspacings = numpy.zeros(col_crop.shape[0], dtype=int)
+        for i in range(0, col_crop.shape[0]):
+            if numpy.sum(col_crop[i, :]) == col_sum:
+                row_vspacings[i] = 1
+        column_row_vspacings[col_idx] = row_vspacings
+        # group rows that have tight spacing, a bet to separate multiple tables
+        # in the same column
+        row_groups = []
+        rows = []
+        cur_row = []    # 2-element list: [0:row begin, 1:row end]
+        last_row_end = 0
+        for i in range(0, col_crop.shape[0]):
+            # encounter a row marker
+            if row_vspacings[i] == 1:
+                if len(cur_row) == 2:
+                    last_row_end = i
+                    rows.append(cur_row)
+                cur_row = []
+            # encounter a text row of pixels
+            elif i > 0:
+                if len(cur_row) == 0:
+                    # begin of a new row
+                    if (i - last_row_end >= MAX_ROW_VSPACING and
+                        rows):
+                        row_groups.append(rows)
+                        rows = []
+                    cur_row.append(i)
+                elif len(cur_row) == 1:
+                    cur_row.append(i)
+                elif len(cur_row) == 2:
+                    cur_row[1] = i
+        if rows:
+            row_groups.append(rows)
+        column_row_groups[col_idx] = row_groups
+    return column_row_groups, column_row_vspacings
+
+

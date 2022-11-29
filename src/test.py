@@ -59,52 +59,6 @@ class color_cycle:
         return tuple(int(s_[i:i + 2], 16) for i in (0, 2, 4))
 
 
-def row_groups_from_columns(columns, im_bin_clear):
-    MAX_ROW_VSPACING = 25
-    row_marker = numpy.array(color_cycle.get_vvrgb(7))
-    column_row_groups = {}
-    column_row_vspacings = {}
-    for col_idx, column in enumerate(columns):
-        col_crop = im_bin_clear[0:im_bin_clear.shape[0], column[0]:column[1]]
-        col_sum = col_crop.shape[1] * 255
-        # vertical spacings between rows, in pixels: 0=text, 1=spacing
-        row_vspacings = numpy.zeros(col_crop.shape[0], dtype=int)
-        for i in range(0, col_crop.shape[0]):
-            if numpy.sum(col_crop[i, :]) == col_sum:
-                row_vspacings[i] = 1
-        column_row_vspacings[col_idx] = row_vspacings
-        # group rows that have tight spacing, a bet to separate multiple tables
-        # in the same column
-        row_groups = []
-        rows = []
-        cur_row = []    # list: 0=row begin, 1=row end
-        last_row_end = 0
-        for i in range(0, col_crop.shape[0]):
-            # encounter a row marker
-            #if numpy.array_equal(cd_image[i, column[0]], row_marker):
-            if row_vspacings[i] == 1:
-                if len(cur_row) == 2:
-                    last_row_end = i
-                    rows.append(cur_row)
-                cur_row = []
-            # encounter a text row of pixels
-            elif i > 0:
-                if len(cur_row) == 0:
-                    # begin of a new row
-                    if i - last_row_end >= MAX_ROW_VSPACING:
-                        row_groups.append(rows)
-                        rows = []
-                    cur_row.append(i)
-                elif len(cur_row) == 1:
-                    cur_row.append(i)
-                elif len(cur_row) == 2:
-                    cur_row[1] = i
-        if rows:
-            row_groups.append(rows)
-        column_row_groups[col_idx] = row_groups
-    return column_row_groups, column_row_vspacings
-
-
 def row_hspacings_from_row_groups(columns, column_row_groups, im_bin_clear):
     MIN_SPACING_SPAN = 5
     column_row_grp_row_spacings = {}
@@ -329,13 +283,11 @@ for filename in ['tmp/test.2.jpg', 'tmp/test.14.jpg', 'tmp/test.36.jpg', 'tmp/te
 
     # clear `blurred` and `im_bin_blurred` to avoid blurring bleeding edges to
     # interfere with column based processing
-    for [spacing_left, spacing_right] in spacings:
-        im_bin_blurred[:, spacing_left:spacing_right] = 255
-        im_bin_clear[:, spacing_left:spacing_right] = 255
+    pseg.clear_column_spacing(spacings, im_bin_clear, im_bin_blurred)
 
     # for each column, detect inter-paragraph, inter-table vertical spacing
     # between rows
-    column_row_groups, column_row_vspacings = row_groups_from_columns(columns, im_bin_clear)
+    column_row_groups, column_row_vspacings = pseg.row_groups_from_columns(columns, im_bin_clear)
     # debug: paint row spacing for each column
     for col_idx, column in enumerate(columns):
         row_vspacings = column_row_vspacings[col_idx]
