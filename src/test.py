@@ -59,26 +59,6 @@ class color_cycle:
         return tuple(int(s_[i:i + 2], 16) for i in (0, 2, 4))
 
 
-def group_adjacent_lines(lines):
-    # group adjacent lines in the same height, into rectangles
-    rects = []
-    rect = lines[0]
-    for i in range(1, len(lines)):
-        line = lines[i]
-        # same height, adjacent
-        if (line[1][1] == rect[1][1] and
-            line[0][1] == rect[0][1] and
-            (rect[0][0] - line[0][0] == 1 or
-            line[0][0] - rect[1][0]) == 1):
-            # expand rect
-            rect = ((min(line[0][0], rect[0][0]), rect[0][1]), (max(line[0][0], rect[1][0]), rect[1][1]))
-        else:
-            rects.append(rect)
-            rect = line
-    rects.append(rect)
-    return rects
-
-
 def remove_smaller_adjacent_rectangles(rects):
     # build a lookup table of adjacent, smaller rectangles
     adjacent_rects = {}
@@ -265,7 +245,7 @@ for filename in ['tmp/test.2.jpg', 'tmp/test.14.jpg', 'tmp/test.36.jpg', 'tmp/te
                 continue
 
             # group adjacent lines in the same height, into rectangles
-            rects = group_adjacent_lines(lines)
+            rects = pseg.tablevspan.group_adjacent_lines(lines)
 
             # build a lookup table of adjacent, smaller rectangles
             # remove all adjacent smaller rectangles, keeping only the largest one

@@ -363,3 +363,36 @@ def vertical_lines_from_hspacings(row_hspacings):
         lines = sorted(lines, key=lambda lines:(lines[0][1] - lines[1][1]) * lines[0][1])
     return lines
 
+
+class tablevspan:
+    """
+    `tablevspan` is a namespace container for all the table column detection
+    routines. Column detection is based on the `lines` from
+    `vertical_lines_from_hspacings`, where a vertical line that crosses
+    through an entire group of rows is very likely to be a line from a
+    table. The procedure starts from converting a group of adjacent lines
+    to rectangles, and then filter those rectangles to form final results.
+
+    """
+    @staticmethod
+    def group_adjacent_lines(lines):
+        # group adjacent lines in the same height, into rectangles
+        rects = []
+        if not lines:
+            return rects
+        rect = lines[0]
+        for i in range(1, len(lines)):
+            line = lines[i]
+            # same height, adjacent
+            if (line[1][1] == rect[1][1] and
+                line[0][1] == rect[0][1] and
+                (rect[0][0] - line[0][0] == 1 or
+                line[0][0] - rect[1][0]) == 1):
+                # expand rect
+                rect = ((min(line[0][0], rect[0][0]), rect[0][1]), (max(line[0][0], rect[1][0]), rect[1][1]))
+            else:
+                rects.append(rect)
+                rect = line
+        rects.append(rect)
+        return rects
+
