@@ -396,3 +396,31 @@ class tablevspan:
         rects.append(rect)
         return rects
 
+    @staticmethod
+    def remove_smaller_adjacent_rectangles(rects):
+        # build a lookup table of adjacent, smaller rectangles
+        adjacent_rects = {}
+        for rect in rects:
+            # key is the pivot rect
+            key = rect
+            touched_rects = []
+            for rect in rects:
+                if rect == key:
+                    continue
+                if ((key[1][0] + 1 == rect[0][0] or     # `key` rightside touching `rect` leftside
+                    key[0][0] == rect[1][0] + 1) and    # `key` leftside touching `rect` rightside
+                    # vertically intersect (touched)
+                    min(key[1][1], rect[1][1]) - max(key[0][1], rect[0][1]) > 0 and
+                    # smaller or equal
+                    rect[1][1] - rect[0][1] <= key[1][1] - key[0][1]):
+                    touched_rects.append(rect)
+            adjacent_rects[key] = touched_rects
+        # remove all adjacent smaller rectangles, keeping only the largest one
+        for key, touched_rects in adjacent_rects.items():
+            for rect in touched_rects:
+                try:
+                    rects.remove(rect)
+                except ValueError:
+                    # ok if not found (already removed)
+                    pass
+        return rects
