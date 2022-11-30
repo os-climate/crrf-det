@@ -25,6 +25,10 @@ class TestPSeg(unittest.TestCase):
     def tearDownClass(cls):
         pass
 
+    def _get_image(self, fn):
+        (target_scale, im_bin_clear, im_bin_blurred, test_img) = self.image_cache[fn]
+        return (target_scale, im_bin_clear, im_bin_blurred, numpy.array(test_img)) 
+
     def test_01_columns_from_image(self):
         t_columns_from_image = {
             'tsla2021.2.jpg': ([[24, 143], [180, 407], [433, 660]], [[0, 24], [143, 180], [407, 433], [660, 710]]),
@@ -37,8 +41,7 @@ class TestPSeg(unittest.TestCase):
         }
         self.result_cache['columns_from_image'] = {}
         for fn, (r_columns, r_spacings) in t_columns_from_image.items():
-            (target_scale, im_bin_clear, im_bin_blurred, test_img) = self.image_cache[fn]
-            test_img = numpy.array(test_img)
+            (target_scale, im_bin_clear, im_bin_blurred, test_img) = self._get_image(fn)
             (columns, spacings) = pseg.columns_from_image(im_bin_clear)
             for column in columns:
                 rr, cc = skimage.draw.rectangle((0, column[0]), (im_bin_clear.shape[0], column[1]))
@@ -53,6 +56,7 @@ class TestPSeg(unittest.TestCase):
             ref_fn = os.path.join(self.basepath, 'ref_imgs', fn[:-4] + '_columns_from_image.png')
             ref_img = skimage.io.imread(ref_fn)
             self.assertTrue(numpy.alltrue(test_img == ref_img), msg="mismatched image {}".format(ref_fn))
+            os.remove(ofn)
             self.result_cache['columns_from_image'][fn] = (columns, spacings)
 
     def test_02_row_groups_from_columns(self):
@@ -89,8 +93,7 @@ class TestPSeg(unittest.TestCase):
         }
         self.result_cache['row_groups_from_columns'] = {}
         for fn, r_column_row_groups in t_row_groups_from_columns.items():
-            (target_scale, im_bin_clear, im_bin_blurred, test_img) = self.image_cache[fn]
-            test_img = numpy.array(test_img)
+            (target_scale, im_bin_clear, im_bin_blurred, test_img) = self._get_image(fn)
             (columns, spacings) = self.result_cache['columns_from_image'][fn]
             column_row_groups, column_row_vspacings = pseg.row_groups_from_columns(columns, im_bin_clear)
             ofn = os.path.join(self.basepath, 'ref_imgs', fn[:-4] + '_row_groups_from_columns.test.png')
@@ -109,3 +112,41 @@ class TestPSeg(unittest.TestCase):
             ref_fn = os.path.join(self.basepath, 'ref_imgs', fn[:-4] + '_row_groups_from_columns.png')
             ref_img = skimage.io.imread(ref_fn)
             self.assertTrue(numpy.alltrue(test_img == ref_img), msg="mismatched image: {}".format(ref_fn))
+            os.remove(ofn)
+            self.result_cache['row_groups_from_columns'][fn] = (column_row_groups, column_row_vspacings)
+
+    def test_03_row_hspacings_from_row_groups(self):
+        # image based test, no values
+        t_row_hspacings_from_row_groups = {
+            'tsla2021.2.jpg': {},
+            'tsla2021.14.jpg': {},
+            'tsla2021.36.jpg': {},
+            'tsla2021.123.jpg': {},
+            'de2021.63.jpg': {},
+            'x2021.27.jpg': {},
+            'x2021.87.jpg': {},
+        }
+        self.result_cache['row_hspacings_from_row_groups'] = {}
+        for fn in t_row_hspacings_from_row_groups:
+            (target_scale, im_bin_clear, im_bin_blurred, test_img) = self._get_image(fn)
+            (columns, spacings) = self.result_cache['columns_from_image'][fn]
+            (column_row_groups, column_row_vspacings) = self.result_cache['row_groups_from_columns'][fn]
+            column_row_grp_row_spacings = pseg.row_hspacings_from_row_groups(columns, column_row_groups, im_bin_clear)
+            ofn = os.path.join(self.basepath, 'ref_imgs', fn[:-4] + '_row_hspacings_from_row_groups.test.png')
+            ref_fn = os.path.join(self.basepath, 'ref_imgs', fn[:-4] + '_row_hspacings_from_row_groups.png')
+            for col_idx, row_groups in column_row_groups.items():
+                column = columns[col_idx]
+                for row_grp_idx, row_group in enumerate(row_groups):
+                    for row_idx, row in enumerate(row_group):
+                        row_hspacing = column_row_grp_row_spacings[col_idx][row_grp_idx][row_idx]
+                        for i in range(0, row_hspacing.shape[0]):
+                            if row_hspacing[i] == 0:
+                                continue
+                            rr, cc = skimage.draw.line(row[0], column[0] + i, row[1], column[0] + i)
+                            skimage.draw.set_color(test_img, (rr, cc), (0, 255, 0), 0.5)
+                skimage.io.imsave(ofn, test_img)
+            ref_img = skimage.io.imread(ref_fn)
+            self.assertTrue(numpy.alltrue(test_img == ref_img), msg="mismatched image: {}".format(ref_fn))
+            os.remove(ofn)
+            self.result_cache['row_hspacings_from_row_groups'][fn] = column_row_grp_row_spacings
+

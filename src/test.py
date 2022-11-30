@@ -59,40 +59,6 @@ class color_cycle:
         return tuple(int(s_[i:i + 2], 16) for i in (0, 2, 4))
 
 
-def row_hspacings_from_row_groups(columns, column_row_groups, im_bin_clear):
-    MIN_SPACING_SPAN = 5
-    column_row_grp_row_spacings = {}
-    for col_idx, column in enumerate(columns):
-        col_crop = im_bin_clear[0:im_bin_clear.shape[0], column[0]:column[1]]
-        column_row_grp_row_spacings[col_idx] = {}
-        for row_grp_idx, rows in enumerate(column_row_groups[col_idx]):
-            # find horizontal spacing (between characters, words, or table cells)
-            # in each row
-            row_hspacings = []  # all spacings for all rows within this column
-                                # can be used to identify tabular structure through
-                                # overlapping
-            for row in rows:
-                row_crop = col_crop[row[0]:row[1], :]
-                row_sum = row_crop.shape[0] * 255
-                row_spacing = numpy.zeros(row_crop.shape[1])   # 0=text, 1=spacing
-                for i in range(0, row_crop.shape[1]):
-                    if numpy.sum(row_crop[:, i]) == row_sum:    # all white
-                        row_spacing[i] = 1
-                # eliminate narrow spacing
-                for spacing_span in range(1, MIN_SPACING_SPAN):
-                    for i in range(spacing_span, row_crop.shape[1] - spacing_span):
-                        if (numpy.sum(row_spacing[i - spacing_span:i + spacing_span + 1]) <= spacing_span and
-                            row_spacing[i - spacing_span] == 0 and
-                            row_spacing[i + spacing_span] == 0):
-                            row_spacing[i - spacing_span:i + spacing_span + 1] = 0
-                row_hspacings.append(row_spacing)
-            # `row_hspacings` 1=spacing, 0=content
-            if row_hspacings:
-                row_hspacings = numpy.array(row_hspacings)
-                column_row_grp_row_spacings[col_idx][row_grp_idx] = row_hspacings
-    return column_row_grp_row_spacings
-
-
 def vertical_lines_from_hspacings(row_hspacings):
     # find vertical cross-throughs (vertical table lines)
     # `row_hspacings` 1=spacing, 0=content
@@ -302,7 +268,7 @@ for filename in ['tmp/test.2.jpg', 'tmp/test.14.jpg', 'tmp/test.36.jpg', 'tmp/te
                 skimage.draw.set_color(cd_image, (rr, cc), color_cycle.get_vvrgb(7), 1)
 
 
-    column_row_grp_row_spacings = row_hspacings_from_row_groups(columns, column_row_groups, im_bin_clear)
+    column_row_grp_row_spacings = pseg.row_hspacings_from_row_groups(columns, column_row_groups, im_bin_clear)
 
     for col_idx in sorted(column_row_grp_row_spacings):
         column = columns[col_idx]

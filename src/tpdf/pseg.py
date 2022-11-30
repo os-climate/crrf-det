@@ -191,7 +191,7 @@ def row_groups_from_columns(columns, im_bin_clear):
     belong to the same "row group".
 
     parameters:
-    columns:        Parsed columns returned by `columns_from_image`
+    columns:        Parsed columns returned from `columns_from_image`
     im_bin_clear:   Binarized result image (clear version),
                     format: numpy.array(nrows, ncols), 1-channel ubyte (0-255)
 
@@ -216,7 +216,7 @@ def row_groups_from_columns(columns, im_bin_clear):
         col_crop = im_bin_clear[0:im_bin_clear.shape[0], column[0]:column[1]]
         col_sum = col_crop.shape[1] * 255
         # vertical spacings between rows, in pixels: 0=text, 1=spacing
-        row_vspacings = numpy.zeros(col_crop.shape[0], dtype=int)
+        row_vspacings = numpy.zeros(col_crop.shape[0], dtype=numpy.uint8)
         for i in range(0, col_crop.shape[0]):
             if numpy.sum(col_crop[i, :]) == col_sum:
                 row_vspacings[i] = 1
@@ -252,4 +252,66 @@ def row_groups_from_columns(columns, im_bin_clear):
         column_row_groups[col_idx] = row_groups
     return column_row_groups, column_row_vspacings
 
+
+def row_hspacings_from_row_groups(columns, column_row_groups, im_bin_clear):
+    """
+    `row_hspacings_from_row_groups` searches a "row" (content row, as returned
+    from `row_groups_from_columns`, containing multiple pixel rows) for
+    spacings, much like the column detection routine `columns_from_image`.
+    "Spacing" is defined as a blank space for the entire column pixel inside
+    the content row. The purpose is to find table cell spacings while account
+    for inter-character and inter-word spacings. `MIN_SPACING_SPAN` is the
+    smallest allowed amount of spacing in pixels. Anything below this number
+    is considered a part of content.
+
+    parameters:
+    columns:            Parsed columns returned from `columns_from_image`
+    column_row_groups:  Parsed row_groups returned from
+                        `row_groups_from_columns`
+    im_bin_clear:   Binarized result image (clear version),
+                    format: numpy.array(nrows, ncols), 1-channel ubyte (0-255)
+
+    returns:
+    column_row_grp_row_spacings
+    column_row_grp_row_spacings:    A dict of dict, where the first-level key
+                    is `column index`, and the second-level key is `row group
+                    index`, like `row_groups_from_columns`. At the second-
+                    level dict, the values are `row_hspacings`, which is a
+                    list of `row_hspacing` corresponding to each `row` for
+                    each `row group`. `row_hspacing` is a numpy array in the
+                    length of row pixel width, with array content 0=text,
+                    1=spacing.
+    """
+    MIN_SPACING_SPAN = 5
+    column_row_grp_row_spacings = {}
+    for col_idx, column in enumerate(columns):
+        col_crop = im_bin_clear[0:im_bin_clear.shape[0], column[0]:column[1]]
+        column_row_grp_row_spacings[col_idx] = {}
+        for row_grp_idx, rows in enumerate(column_row_groups[col_idx]):
+            # find horizontal spacing (between characters, words, or table cells)
+            # in each row
+            row_hspacings = []  # all spacings for all rows within this column
+                                # can be used to identify tabular structure through
+                                # overlapping
+            for row in rows:
+                row_crop = col_crop[row[0]:row[1], :]
+                row_sum = row_crop.shape[0] * 255
+                # 0=text, 1=spacing
+                row_spacing = numpy.zeros(row_crop.shape[1], dtype=numpy.uint8)
+                for i in range(0, row_crop.shape[1]):
+                    if numpy.sum(row_crop[:, i]) == row_sum:    # all white
+                        row_spacing[i] = 1
+                # eliminate narrow spacing
+                for spacing_span in range(1, MIN_SPACING_SPAN):
+                    for i in range(spacing_span, row_crop.shape[1] - spacing_span):
+                        if (numpy.sum(row_spacing[i - spacing_span:i + spacing_span + 1]) <= spacing_span and
+                            row_spacing[i - spacing_span] == 0 and
+                            row_spacing[i + spacing_span] == 0):
+                            row_spacing[i - spacing_span:i + spacing_span + 1] = 0
+                row_hspacings.append(row_spacing)
+            # `row_hspacings` 1=spacing, 0=content
+            if row_hspacings:
+                row_hspacings = numpy.array(row_hspacings)
+                column_row_grp_row_spacings[col_idx][row_grp_idx] = row_hspacings
+    return column_row_grp_row_spacings
 
