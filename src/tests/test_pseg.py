@@ -144,9 +144,44 @@ class TestPSeg(unittest.TestCase):
                                 continue
                             rr, cc = skimage.draw.line(row[0], column[0] + i, row[1], column[0] + i)
                             skimage.draw.set_color(test_img, (rr, cc), (0, 255, 0), 0.5)
-                skimage.io.imsave(ofn, test_img)
+            skimage.io.imsave(ofn, test_img)
             ref_img = skimage.io.imread(ref_fn)
             self.assertTrue(numpy.alltrue(test_img == ref_img), msg="mismatched image: {}".format(ref_fn))
             os.remove(ofn)
             self.result_cache['row_hspacings_from_row_groups'][fn] = column_row_grp_row_spacings
 
+    def test_04_vertical_lines_from_hspacings(self):
+        # image based test, no values
+        t_vertical_lines_from_hspacings = {
+            'tsla2021.2.jpg': {},
+            'tsla2021.14.jpg': {},
+            'tsla2021.36.jpg': {},
+            'tsla2021.123.jpg': {},
+            'de2021.63.jpg': {},
+            'x2021.27.jpg': {},
+            'x2021.87.jpg': {},
+        }
+        self.result_cache['vertical_lines_from_hspacings'] = {}
+        for fn in t_vertical_lines_from_hspacings:
+            (target_scale, im_bin_clear, im_bin_blurred, test_img) = self._get_image(fn)
+            (columns, spacings) = self.result_cache['columns_from_image'][fn]
+            (column_row_groups, column_row_vspacings) = self.result_cache['row_groups_from_columns'][fn]
+            column_row_grp_row_spacings = self.result_cache['row_hspacings_from_row_groups'][fn]
+            ofn = os.path.join(self.basepath, 'ref_imgs', fn[:-4] + '_vertical_lines_from_hspacings.test.png')
+            ref_fn = os.path.join(self.basepath, 'ref_imgs', fn[:-4] + '_vertical_lines_from_hspacings.png')
+            for col_idx in sorted(column_row_grp_row_spacings):
+                self.result_cache['vertical_lines_from_hspacings'][col_idx] = {}
+                column = columns[col_idx]
+                col_crop = im_bin_clear[0:im_bin_clear.shape[0], column[0]:column[1]]
+                for row_grp_idx in sorted(column_row_grp_row_spacings[col_idx]):
+                    rows = column_row_groups[col_idx][row_grp_idx]
+                    row_hspacings = column_row_grp_row_spacings[col_idx][row_grp_idx]
+                    lines = pseg.vertical_lines_from_hspacings(row_hspacings)
+                    for line_idx, ((x0, y0), (x1, y1)) in enumerate(lines):
+                        rr, cc = skimage.draw.line(rows[y0][0], x0 + column[0], rows[y1][1], x1 + column[0])
+                        skimage.draw.set_color(test_img, (rr, cc), (255, 0, 0), 0.5)
+                    self.result_cache['vertical_lines_from_hspacings'][col_idx][row_grp_idx] = lines
+            skimage.io.imsave(ofn, test_img)
+            ref_img = skimage.io.imread(ref_fn)
+            self.assertTrue(numpy.alltrue(test_img == ref_img), msg="mismatched image: {}".format(ref_fn))
+            os.remove(ofn)

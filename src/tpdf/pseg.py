@@ -315,3 +315,51 @@ def row_hspacings_from_row_groups(columns, column_row_groups, im_bin_clear):
                 column_row_grp_row_spacings[col_idx][row_grp_idx] = row_hspacings
     return column_row_grp_row_spacings
 
+
+def vertical_lines_from_hspacings(row_hspacings):
+    """
+    `vertical_lines_from_hspacings` finds "vertical lines", that is, a line
+    that cross through a group of rows from top to bottom, in spacing, to
+    later form a line in a table.
+
+    parameters:
+    row_hspacings:  The value of the second-level dict returned from
+                    `row_hspacings_from_row_groups`
+
+    returns:
+    lines:  A list of lines, each is a tuple of tuple ((x0, y0), (x1, y1)),
+            compatible with skimage. Zero is the beginning of the row
+            group, and column respectively.
+
+    """
+    lines = []
+    # `row_hspacings` 2d numpy array, 1st dimension a group of rows, 2nd
+    # dimension is `row_hspacing`: 1=spacing, 0=content
+    for x in range(0, row_hspacings.shape[1]):
+        y_top = None
+        y_bottom = None
+        y_cur = 0
+        while True:
+            if (y_cur >= row_hspacings.shape[0]):
+                break
+            if row_hspacings[y_cur, x] == 0:     # saw content, continue search
+                if (y_bottom is not None and    # add previous segment if established
+                    y_top is not None and
+                    y_bottom - y_top >= 1):
+                    lines.append(((x, y_top), (x, y_bottom)))
+                y_top = None
+                y_bottom = None
+            else:                               # saw spacing
+                if y_top is None:
+                    y_top = y_cur
+                y_bottom = y_cur
+            y_cur += 1
+        if (y_bottom is not None and
+            y_top is not None and
+            y_bottom - y_top >= 1):
+            lines.append(((x, y_top), (x, y_bottom)))
+    # sort lines by height, tall to short, prepare to optimize towards line clusters
+    if lines:
+        lines = sorted(lines, key=lambda lines:(lines[0][1] - lines[1][1]) * lines[0][1])
+    return lines
+
