@@ -1,14 +1,32 @@
+"""
+'pseg' or 'page segmentation' module holds routines to parse and identify
+floating text boxes, paragraphs, and tables from an input image of a PDF
+image.
+
+"""
+
+
 import numpy
 import skimage
+import scipy.spatial
 import sklearn.cluster
 
 from . import helper
 
 
-# page segmentation
-
-
 def kmean_binarize(n_clusters, image):
+    """
+    `kmean_binarize` is used by `prepare_images_for_segmentation` to binarize
+    primarily blurred images for contour finding, among other tasks. The
+    implementation uses `sklearn.cluster.KMeans` to find the "dominant color"
+    of a grayscale image, then add/subtract slightly to make sure the "dominant
+    color" is on one side and everything else is on another side of a binary
+    image. It will work on both white-text-on-black-background, and black-text-
+    on-white-background scenarios. A typical value for `n_clusters` would be 3,
+    since it will account for the transition pixels going from text to
+    background, keeping legibility of the text.
+
+    """
     image_rs = image.reshape((image.shape[0] * image.shape[1], 1))
     km = sklearn.cluster.KMeans(n_clusters=n_clusters, random_state=0).fit(image_rs)
 
@@ -297,19 +315,29 @@ def row_hspacings_from_row_groups(columns, column_row_groups, im_bin_clear):
                                 # overlapping
             for row in rows:
                 row_crop = col_crop[row[0]:row[1], :]
-                row_sum = row_crop.shape[0] * 255
+                row_sum_all_white = row_crop.shape[0] * 255
                 # 0=text, 1=spacing
                 row_spacing = numpy.zeros(row_crop.shape[1], dtype=numpy.uint8)
-                for i in range(0, row_crop.shape[1]):
-                    if numpy.sum(row_crop[:, i]) == row_sum:    # all white
-                        row_spacing[i] = 1
-                # eliminate narrow spacing
-                for spacing_span in range(1, MIN_SPACING_SPAN):
-                    for i in range(spacing_span, row_crop.shape[1] - spacing_span):
-                        if (numpy.sum(row_spacing[i - spacing_span:i + spacing_span + 1]) <= spacing_span and
-                            row_spacing[i - spacing_span] == 0 and
-                            row_spacing[i + spacing_span] == 0):
-                            row_spacing[i - spacing_span:i + spacing_span + 1] = 0
+                # calculate the column pixel sum values to identify columns of
+                # complete white, and later turn those columns in `row_spacing`
+                # to 1.
+                row_sums = numpy.sum(row_crop, axis=0)
+                row_spacing[row_sums == row_sum_all_white] = 1
+                # eliminate narrow spacing (vectorized version, see original
+                # implementation below in comment)
+                row_spacing_diff = numpy.insert(numpy.diff(row_spacing), 0, 0)
+                text_to_white = numpy.where(row_spacing_diff == 1)[0]
+                white_to_text = numpy.where(row_spacing_diff == 255)[0]
+                for span_idx, span in enumerate(white_to_text[1:] - text_to_white[:len(white_to_text) - 1]):
+                    if span < MIN_SPACING_SPAN:
+                        row_spacing[text_to_white[span_idx]:text_to_white[span_idx] + span] = 0
+                # eliminate narrow spacing (original version)
+                # for spacing_span in range(1, MIN_SPACING_SPAN):
+                #     for i in range(spacing_span, row_crop.shape[1] - spacing_span):
+                #         if (numpy.sum(row_spacing[i - spacing_span:i + spacing_span + 1]) <= spacing_span and
+                #             row_spacing[i - spacing_span] == 0 and
+                #             row_spacing[i + spacing_span] == 0):
+                #             row_spacing[i - spacing_span:i + spacing_span + 1] = 0
                 row_hspacings.append(row_spacing)
             # `row_hspacings` 1=spacing, 0=content
             if row_hspacings:
