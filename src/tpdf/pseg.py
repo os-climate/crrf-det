@@ -14,6 +14,113 @@ import sklearn.cluster
 from . import helper
 
 
+def parse(input_image):
+    (target_scale, im_bin_clear, im_bin_blurred) = prepare_images_for_segmentation(input_image)
+    # page-level column detection
+    (columns, spacings) = columns_from_image(im_bin_clear)
+    # clear `blurred` and `im_bin_blurred` to avoid blurring bleeding edges to
+    # interfere with column based processing
+    clear_column_spacing(spacings, im_bin_clear, im_bin_blurred)
+    # for each column, detect inter-paragraph, inter-table vertical spacing
+    # between rows
+    column_row_groups, column_row_vspacings = row_groups_from_columns(columns, im_bin_clear)
+    column_row_grp_row_spacings = row_hspacings_from_row_groups(columns, column_row_groups, im_bin_clear)
+
+    column_row_grp_table_rows = {}
+    column_row_grp_table_cols = {}
+
+    for col_idx in sorted(column_row_grp_row_spacings):
+        column = columns[col_idx]
+        col_crop = im_bin_clear[0:im_bin_clear.shape[0], column[0]:column[1]]
+        column_row_grp_table_rows[col_idx] = {}
+        column_row_grp_table_cols[col_idx] = {}
+        for row_grp_idx in sorted(column_row_grp_row_spacings[col_idx]):
+            rows = column_row_groups[col_idx][row_grp_idx]
+            row_hspacings = column_row_grp_row_spacings[col_idx][row_grp_idx]
+
+            # find vertical cross-throughs (vertical table lines)
+            lines = vertical_lines_from_hspacings(row_hspacings)
+            if not lines:
+                continue
+
+            # group adjacent lines in the same height, into rectangles
+            rects = tablevspan.group_adjacent_lines(lines)
+            # build a lookup table of adjacent, smaller rectangles
+            # remove all adjacent smaller rectangles, keeping only the largest one
+            rects = tablevspan.remove_smaller_adjacent_rectangles(rects)
+            rects = tablevspan.remove_edge_rectangles(rects, row_hspacings)
+            # heuristics: to count as a table, the first column must be filled
+            # to 75%, otherwise disregard everything.
+            if not tablevspan.is_first_rectangle_column_filled(rects, row_hspacings):
+                rects = []
+
+            # find "busyness" of rect neighboring columns, if too busy, the
+            # rect is likely a misinterpretation because table texts are likely
+            # to be scattered.
+            rects = tablevspan.remove_busy_column_rectangles(rects, row_hspacings)
+
+            # enumerate all rects for covered row spacings, use them to clear out
+            # the blurred version so that table cell texts are no longer sticked
+            # together
+            table_rows = set()
+            for ((x0, y0), (x1, y1)) in rects:
+                for i in range(y0, y1):
+                    row_x = (rows[i][1] + rows[i + 1][0]) / 2
+                    row = (row_x, column[0], row_x, column[1])
+                    table_rows.add(row)
+                    # clear out the lines to split blurred parts for table cell text
+                    rr, cc = skimage.draw.line(*[int(x) for x in row])
+                    im_bin_blurred[rr, cc] = 255
+            column_row_grp_table_rows[col_idx][row_grp_idx] = table_rows
+
+            table_cols = set()
+            for ((x0, y0), (x1, y1)) in rects:
+                col_y_start = rows[y0][0]
+                col_y_end = rows[y1][1] + 1
+                col_x = column[0] + x0 + (x1 - x0) / 2
+                col = (col_y_start, col_x, col_y_end, col_x)
+                table_cols.add(col)
+                # clear out the lines to split blurred parts for table cell text
+                rr, cc = skimage.draw.line(*[int(x) for x in col])
+                im_bin_blurred[rr, cc] = 255
+
+            column_row_grp_table_rows[col_idx][row_grp_idx] = table_rows
+            column_row_grp_table_cols[col_idx][row_grp_idx] = table_cols
+
+    text_vertices = []
+    contours = skimage.measure.find_contours(im_bin_blurred)
+    for contour in contours:
+        # optimization: filter absolutely too small contours
+        xmin = numpy.amin(contour[:, 1])
+        xmax = numpy.amax(contour[:, 1])
+        ymin = numpy.amin(contour[:, 0])
+        ymax = numpy.amax(contour[:, 0])
+        if (ymax - ymin <= 3 and
+            xmax - xmin <= 3):
+            continue
+        # optimization: still small, but draw a polygon to find out whether
+        # the area is completely white
+        if xmax - xmin < 50:
+            # test the contour against the "bin_clear" image, if the covered
+            # region is all white, we can safely ignore it
+            rr, cc = skimage.draw.polygon(contour[:, 0], contour[:, 1])
+            if numpy.all(im_bin_clear[rr, cc] == 255):
+                continue
+        hull = scipy.spatial.ConvexHull(contour)
+        vertices = contour[hull.vertices,:]
+        vertices *= target_scale
+        text_vertices.append(vertices)
+
+    return {
+        'target_scale':         target_scale,
+        'text_vertices':        text_vertices,
+        'columns':              columns,
+        'column_row_groups':    column_row_groups,
+        'column_row_grp_table_rows':    column_row_grp_table_rows,
+        'column_row_grp_table_cols':    column_row_grp_table_cols,
+    }
+
+
 def kmean_binarize(n_clusters, image):
     """
     `kmean_binarize` is used by `prepare_images_for_segmentation` to binarize
