@@ -1,0 +1,73 @@
+#!/usr/bin/env python3
+
+import os
+import numpy
+import skimage
+import argparse
+
+from tpdf import pseg, docmt, helper
+
+
+def main(args):
+    r = docmt.get_info(args.input)
+    if args.page:
+        if ',' in args.page:
+            pages = [int(x) for x in args.page.split(',')]
+        else:
+            pages = [int(args.page)]
+        for page in pages:
+            print('processing page {}'.format(page))
+            image = docmt.load_page_image(args.input, page)
+            results = pseg.parse(image)
+            # print(results)
+            if args.debug:
+                debug_img = skimage.color.gray2rgb(results['im_bin_clear'])
+                # row_hspacings_from_row_groups
+                test_img = numpy.array(debug_img)
+                columns = results['columns']
+                column_row_groups = results['column_row_groups']
+                column_row_grp_row_spacings = results['column_row_grp_row_spacings']
+                pseg.debug_painter.row_hspacings_from_row_groups(test_img, (columns, column_row_groups, column_row_grp_row_spacings))
+                ofn = os.path.join(args.debug, '{}.{}.debug.03_row_hspacings_from_row_groups.png'.format(os.path.basename(args.input), page))
+                skimage.io.imsave(ofn, test_img)
+                # vertical_lines_from_hspacings
+                test_img = numpy.array(debug_img)
+                column_row_grp_vlines = results['column_row_grp_vlines']
+                pseg.debug_painter.vertical_lines_from_hspacings(test_img, (columns, column_row_groups, column_row_grp_row_spacings, column_row_grp_vlines))
+                ofn = os.path.join(args.debug, '{}.{}.debug.04_vertical_lines_from_hspacings.png'.format(os.path.basename(args.input), page))
+                skimage.io.imsave(ofn, test_img)
+                # tablevspan series
+                for key, fresult in results['column_row_grp_tablevspan'].items():
+                    helper.reset_color_cycle()
+                    test_img = numpy.array(debug_img)
+                    pseg.debug_painter.tablevspan_common(test_img, (columns, column_row_groups, column_row_grp_row_spacings, fresult))
+                    ofn = os.path.join(args.debug, '{}.{}.debug.05_tablevspan{}.png'.format(os.path.basename(args.input), page, key))
+                    skimage.io.imsave(ofn, test_img)
+                # final result
+                for vertices in results.get('text_vertices', []):
+                    color = helper.get_color_cycle_rgb()
+                    rr, cc = skimage.draw.polygon(vertices[:, 0], vertices[:, 1])
+                    skimage.draw.set_color(image, (rr, cc), color, 0.3)
+                for col_idx, row_grp_table_rows in results.get('column_row_grp_table_rows', {}).items():
+                    for row_grp_idx, table_rows in row_grp_table_rows.items():
+                        for row in table_rows:
+                            row = [int(x * results.get('target_scale', 1)) for x in row]
+                            rr, cc = skimage.draw.line(*row)
+                            skimage.draw.set_color(image, (rr, cc), (255, 192, 0), 1)
+                for col_idx, row_grp_table_cols in results.get('column_row_grp_table_cols', {}).items():
+                    for row_grp_idx, table_cols in row_grp_table_cols.items():
+                        for col in table_cols:
+                            col = [int(x * results.get('target_scale', 1)) for x in col]
+                            rr, cc = skimage.draw.line(*col)
+                            skimage.draw.set_color(image, (rr, cc), (255, 0, 0), 1)
+                ofn = os.path.join(args.debug, '{}.{}.debug.parse.jpg'.format(os.path.basename(args.input), page))
+                skimage.io.imsave(ofn, image)
+
+
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description='t-pdf utility translates a pdf file into a program-friendly structure')
+    parser.add_argument('-i', '--input', type=str, required=True, help='input pdf path file name')
+    parser.add_argument('-p', '--page', type=str, help='process a particular page')
+    parser.add_argument('-d', '--debug', type=str, help='specify output directory for debug image output')
+    args = parser.parse_args()
+    main(args)

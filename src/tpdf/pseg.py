@@ -26,14 +26,28 @@ def parse(input_image):
     column_row_groups, column_row_vspacings = row_groups_from_columns(columns, im_bin_clear)
     column_row_grp_row_spacings = row_hspacings_from_row_groups(columns, column_row_groups, im_bin_clear)
 
+    column_row_grp_vlines = {}
     column_row_grp_table_rows = {}
     column_row_grp_table_cols = {}
+    column_row_grp_tablevspan = {
+        '01_group_adjacent_lines':                  {},
+        '02_remove_smaller_adjacent_rectangles':    {},
+        '03_remove_edge_rectangles':                {},
+        '04_is_first_rectangle_column_filled':      {},
+        '05_remove_busy_column_rectangles':         {},
+    }
 
     for col_idx in sorted(column_row_grp_row_spacings):
         column = columns[col_idx]
         col_crop = im_bin_clear[0:im_bin_clear.shape[0], column[0]:column[1]]
+        column_row_grp_vlines[col_idx] = {}
         column_row_grp_table_rows[col_idx] = {}
         column_row_grp_table_cols[col_idx] = {}
+        column_row_grp_tablevspan['01_group_adjacent_lines'][col_idx] = {}
+        column_row_grp_tablevspan['02_remove_smaller_adjacent_rectangles'][col_idx] = {}
+        column_row_grp_tablevspan['03_remove_edge_rectangles'][col_idx] = {}
+        column_row_grp_tablevspan['04_is_first_rectangle_column_filled'][col_idx] = {}
+        column_row_grp_tablevspan['05_remove_busy_column_rectangles'][col_idx] = {}
         for row_grp_idx in sorted(column_row_grp_row_spacings[col_idx]):
             rows = column_row_groups[col_idx][row_grp_idx]
             row_hspacings = column_row_grp_row_spacings[col_idx][row_grp_idx]
@@ -42,22 +56,28 @@ def parse(input_image):
             lines = vertical_lines_from_hspacings(row_hspacings)
             if not lines:
                 continue
+            column_row_grp_vlines[col_idx][row_grp_idx] = lines
 
             # group adjacent lines in the same height, into rectangles
             rects = tablevspan.group_adjacent_lines(lines)
+            column_row_grp_tablevspan['01_group_adjacent_lines'][col_idx][row_grp_idx] = rects.copy()
             # build a lookup table of adjacent, smaller rectangles
             # remove all adjacent smaller rectangles, keeping only the largest one
             rects = tablevspan.remove_smaller_adjacent_rectangles(rects)
+            column_row_grp_tablevspan['02_remove_smaller_adjacent_rectangles'][col_idx][row_grp_idx] = rects.copy()
             rects = tablevspan.remove_edge_rectangles(rects, row_hspacings)
+            column_row_grp_tablevspan['03_remove_edge_rectangles'][col_idx][row_grp_idx] = rects.copy()
             # heuristics: to count as a table, the first column must be filled
             # to 75%, otherwise disregard everything.
             if not tablevspan.is_first_rectangle_column_filled(rects, row_hspacings):
                 rects = []
+            column_row_grp_tablevspan['04_is_first_rectangle_column_filled'][col_idx][row_grp_idx] = rects.copy()
 
             # find "busyness" of rect neighboring columns, if too busy, the
             # rect is likely a misinterpretation because table texts are likely
             # to be scattered.
             rects = tablevspan.remove_busy_column_rectangles(rects, row_hspacings)
+            column_row_grp_tablevspan['05_remove_busy_column_rectangles'][col_idx][row_grp_idx] = rects.copy()
 
             # enumerate all rects for covered row spacings, use them to clear out
             # the blurred version so that table cell texts are no longer sticked
@@ -114,10 +134,14 @@ def parse(input_image):
     return {
         'target_scale':         target_scale,
         'text_vertices':        text_vertices,
+        'im_bin_clear':         im_bin_clear,
         'columns':              columns,
         'column_row_groups':    column_row_groups,
+        'column_row_grp_vlines':        column_row_grp_vlines,
+        'column_row_grp_row_spacings':  column_row_grp_row_spacings,
         'column_row_grp_table_rows':    column_row_grp_table_rows,
         'column_row_grp_table_cols':    column_row_grp_table_cols,
+        'column_row_grp_tablevspan':    column_row_grp_tablevspan,
     }
 
 
