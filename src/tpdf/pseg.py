@@ -2,6 +2,8 @@ import numpy
 import skimage
 import sklearn.cluster
 
+from . import helper
+
 
 # page segmentation
 
@@ -511,3 +513,72 @@ class tablevspan:
             rects.remove(rect)
         return rects
 
+
+class debug_painter:
+    """
+    `debug_painter` is a namespace container for painting debug images
+    using the results from routines in the `pseg` module.
+
+    """
+
+    @staticmethod
+    def columns_from_image(test_img, results):
+        (columns, spacings) = results
+        for column in columns:
+            rr, cc = skimage.draw.rectangle((0, column[0]), (test_img.shape[0], column[1]))
+            skimage.draw.set_color(test_img, (rr, cc), (255, 255, 0), 0.5)
+        for spacing in spacings:
+            rr, cc = skimage.draw.rectangle((0, spacing[0]), (test_img.shape[0], spacing[1]))
+            skimage.draw.set_color(test_img, (rr, cc), (0, 255, 0), 0.5)
+
+    @staticmethod
+    def row_groups_from_columns(test_img, results):
+        (columns, column_row_groups, column_row_vspacings) = results
+        for col_idx, row_groups in column_row_groups.items():
+            column = columns[col_idx]
+            for row_group in row_groups:
+                row_group_top = row_group[0][0]
+                row_group_bottom = row_group[-1][1]
+                rr, cc = skimage.draw.rectangle((row_group_top, column[0]), (row_group_bottom, column[1]))
+                skimage.draw.set_color(test_img, (rr, cc), (255, 255, 0), 0.5)
+                for row in row_group:
+                    rr, cc = skimage.draw.rectangle((row[0], column[0]), (row[1], column[1]))
+                    skimage.draw.set_color(test_img, (rr, cc), (0, 255, 0), 0.5)
+
+    @staticmethod
+    def row_hspacings_from_row_groups(test_img, results):
+        (columns, column_row_groups, column_row_grp_row_spacings) = results
+        for col_idx, row_groups in column_row_groups.items():
+            column = columns[col_idx]
+            for row_grp_idx, row_group in enumerate(row_groups):
+                for row_idx, row in enumerate(row_group):
+                    row_hspacing = column_row_grp_row_spacings[col_idx][row_grp_idx][row_idx]
+                    for i in range(0, row_hspacing.shape[0]):
+                        if row_hspacing[i] == 0:
+                            continue
+                        rr, cc = skimage.draw.line(row[0], column[0] + i, row[1], column[0] + i)
+                        skimage.draw.set_color(test_img, (rr, cc), (0, 255, 0), 0.5)
+
+    @staticmethod
+    def vertical_lines_from_hspacings(test_img, results):
+        (columns, column_row_groups, column_row_grp_row_spacings, fresult) = results
+        for col_idx in sorted(column_row_grp_row_spacings):
+            column = columns[col_idx]
+            for row_grp_idx in sorted(column_row_grp_row_spacings[col_idx]):
+                rows = column_row_groups[col_idx][row_grp_idx]
+                lines = fresult[col_idx][row_grp_idx]
+                for ((x0, y0), (x1, y1)) in lines:
+                    rr, cc = skimage.draw.line(rows[y0][0], x0 + column[0], rows[y1][1], x1 + column[0])
+                    skimage.draw.set_color(test_img, (rr, cc), (255, 0, 0), 0.5)
+
+    @staticmethod
+    def tablevspan_common(test_img, results):
+        (columns, column_row_groups, column_row_grp_row_spacings, fresult) = results
+        for col_idx in sorted(column_row_grp_row_spacings):
+            column = columns[col_idx]
+            for row_grp_idx in sorted(column_row_grp_row_spacings[col_idx]):
+                rows = column_row_groups[col_idx][row_grp_idx]
+                rects = fresult[col_idx][row_grp_idx]
+                for ((x0, y0), (x1, y1)) in rects:
+                    rr, cc = skimage.draw.rectangle((rows[y0][0], x0 + column[0]), (rows[y1][1], x1 + column[0]))
+                    skimage.draw.set_color(test_img, (rr, cc), helper.get_color_cycle_rgb(), 0.5)
