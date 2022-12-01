@@ -424,3 +424,38 @@ class tablevspan:
                     # ok if not found (already removed)
                     pass
         return rects
+
+    @staticmethod
+    def remove_edge_rectangles(rects, row_hspacings):
+        # filter rects having empty left or right side
+        filtered_rects = []
+        for rect in rects:
+            if (rect[0][0] == 0 or
+                rect[1][0] == row_hspacings.shape[1] - 1):
+                # skip grouped lines touching left / right of the column,
+                # as they provide no useful information
+                filtered_rects.append(rect)
+            # in already grouped lines, remove rectangles that are only 1 pixel wide
+            if rect[1][0] - rect[0][0] <= 1:
+                filtered_rects.append(rect)
+        for rect in filtered_rects:
+            try:
+                rects.remove(rect)
+            except ValueError:
+                # ok if not found (already removed)
+                pass
+        # resort rects from left to right, prepare to clear rects having empty
+        # left or right side
+        rects = sorted(rects, key=lambda rects:rects[0][0])
+        filtered_rects = []
+        for ((x0, y0), (x1, y1)) in rects:
+            left_side = row_hspacings[y0:(y1 + 1), 0:(x0 + 1)]
+            right_side = row_hspacings[y0:(y1 + 1), x1:(row_hspacings.shape[1] + 1)]
+            if numpy.all(left_side == 1):
+                filtered_rects.append(((x0, y0), (x1, y1)))
+            if numpy.all(right_side == 1):
+                filtered_rects.append(((x0, y0), (x1, y1)))
+        for rect in filtered_rects:
+            rects.remove(rect)
+        return rects
+

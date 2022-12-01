@@ -59,40 +59,6 @@ class color_cycle:
         return tuple(int(s_[i:i + 2], 16) for i in (0, 2, 4))
 
 
-def remove_edge_rectangles(rects):
-    # filtering
-    filtered_rects = []
-    for rect in rects:
-        if (rect[0][0] == 0 or
-            rect[1][0] == col_crop.shape[1] - 1):
-            # skip grouped lines touching left / right of the column,
-            # as they provide no useful information
-            filtered_rects.append(rect)
-        # in already grouped lines, remove rectangles that are only 1 pixel wide
-        if rect[1][0] - rect[0][0] <= 1:
-            filtered_rects.append(rect)
-    for rect in filtered_rects:
-        try:
-            rects.remove(rect)
-        except ValueError:
-            # ok if not found (already removed)
-            pass
-    # resort rects from left to right, prepare to clear rects having empty
-    # left or right side
-    rects = sorted(rects, key=lambda rects:rects[0][0])
-    filtered_rects = []
-    for ((x0, y0), (x1, y1)) in rects:
-        left_side = row_hspacings[y0:(y1 + 1), 0:(x0 + 1)]
-        right_side = row_hspacings[y0:(y1 + 1), x1:(row_hspacings.shape[1] + 1)]
-        if numpy.all(left_side == 1):
-            filtered_rects.append(((x0, y0), (x1, y1)))
-        if numpy.all(right_side == 1):
-            filtered_rects.append(((x0, y0), (x1, y1)))
-    for rect in filtered_rects:
-        rects.remove(rect)
-    return rects
-
-
 def is_first_rectangle_column_filled(rects):
     # heuristics: to count as a table, the first column must be filled
     # to 75%, otherwise disregard everything.
@@ -222,7 +188,7 @@ for filename in ['tmp/test.2.jpg', 'tmp/test.14.jpg', 'tmp/test.36.jpg', 'tmp/te
             # remove all adjacent smaller rectangles, keeping only the largest one
             rects = pseg.tablevspan.remove_smaller_adjacent_rectangles(rects)
 
-            rects = remove_edge_rectangles(rects)
+            rects = pseg.tablevspan.remove_edge_rectangles(rects, row_hspacings)
 
             # heuristics: to count as a table, the first column must be filled
             # to 75%, otherwise disregard everything.
