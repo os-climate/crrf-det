@@ -490,3 +490,24 @@ class tablevspan:
             return False
         return True
 
+    @staticmethod
+    def remove_busy_column_rectangles(rects, row_hspacings):
+        # find "busyness" of rect neighboring columns, if too busy, the
+        # rect is likely a misinterpretation because table texts are likely
+        # to be scattered.
+        filtered_rects = []
+        for ((x0, y0), (x1, y1)) in rects:
+            # 0=text, 1=white, for `text_value` and `row_total` below, a
+            # high value indicates white, and a low value indicates text,
+            # calculated on a row-total basis.
+            text_value = numpy.sum(row_hspacings[y0:(y1 + 1), :])
+            row_total = row_hspacings.shape[1] * (y1 - y0)
+            # a very low `text_value`, defined as "< 0.1 * row_total"
+            # indicates that the row looks awful lot like just text, since
+            # table cells should have plenty of spacing
+            if text_value < 0.1 * row_total:
+                filtered_rects.append(((x0, y0), (x1, y1)))
+        for rect in filtered_rects:
+            rects.remove(rect)
+        return rects
+

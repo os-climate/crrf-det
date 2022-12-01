@@ -59,27 +59,6 @@ class color_cycle:
         return tuple(int(s_[i:i + 2], 16) for i in (0, 2, 4))
 
 
-def remove_busy_column_rectangles(rects, row_hspacings):
-    # find "busyness" of rect neighboring columns, if too busy, the
-    # rect is likely a misinterpretation because table texts are likely
-    # to be scattered.
-    filtered_rects = []
-    for ((x0, y0), (x1, y1)) in rects:
-        # 0=text, 1=white, for `text_value` and `row_total` below, a
-        # high value indicates white, and a low value indicates text,
-        # calculated on a row-total basis.
-        text_value = numpy.sum(row_hspacings[y0:(y1 + 1), :])
-        row_total = row_hspacings.shape[1] * (y1 - y0)
-        # a very low `text_value`, defined as "< 0.1 * row_total"
-        # indicates that the row looks awful lot like just text, since
-        # table cells should have plenty of spacing
-        if text_value < 0.1 * row_total:
-            filtered_rects.append(((x0, y0), (x1, y1)))
-    for rect in filtered_rects:
-        rects.remove(rect)
-    return rects
-
-
 for filename in ['tmp/test.2.jpg', 'tmp/test.14.jpg', 'tmp/test.36.jpg', 'tmp/test.68.jpg', 'tmp/test.123.jpg', 'tmp/testde.63.jpg', 'tmp/testde.64.jpg', 'tmp/testus.3.jpg', 'tmp/testus.4.jpg', 'tmp/testus.27.jpg', 'tmp/testus.87.jpg', 'tmp/testus.101.jpg']:
 # for filename in ['tmp/test.36.jpg']:
 
@@ -167,7 +146,7 @@ for filename in ['tmp/test.2.jpg', 'tmp/test.14.jpg', 'tmp/test.36.jpg', 'tmp/te
             # find "busyness" of rect neighboring columns, if too busy, the
             # rect is likely a misinterpretation because table texts are likely
             # to be scattered.
-            rects = remove_busy_column_rectangles(rects, row_hspacings)
+            rects = pseg.tablevspan.remove_busy_column_rectangles(rects, row_hspacings)
 
             row_hspacings_img = skimage.color.gray2rgb(skimage.util.img_as_ubyte(row_hspacings))
             # enumerate all rects for covered row spacings, use them to clear out
