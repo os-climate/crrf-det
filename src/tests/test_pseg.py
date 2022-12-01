@@ -199,6 +199,7 @@ class TestPSeg(unittest.TestCase):
         }
         self.result_cache['tablevspan_group_adjacent_lines'] = {}
         for fn in t_vertical_lines_from_hspacings:
+            helper.reset_color_cycle()
             (target_scale, im_bin_clear, im_bin_blurred, test_img) = self._get_image(fn)
             (columns, spacings) = self.result_cache['columns_from_image'][fn]
             (column_row_groups, column_row_vspacings) = self.result_cache['row_groups_from_columns'][fn]
@@ -235,6 +236,7 @@ class TestPSeg(unittest.TestCase):
         }
         self.result_cache['tablevspan_remove_smaller_adjacent_rectangles'] = {}
         for fn in t_vertical_lines_from_hspacings:
+            helper.reset_color_cycle()
             (target_scale, im_bin_clear, im_bin_blurred, test_img) = self._get_image(fn)
             (columns, spacings) = self.result_cache['columns_from_image'][fn]
             (column_row_groups, column_row_vspacings) = self.result_cache['row_groups_from_columns'][fn]
@@ -271,6 +273,7 @@ class TestPSeg(unittest.TestCase):
         }
         self.result_cache['tablevspan_remove_edge_rectangles'] = {}
         for fn in t_vertical_lines_from_hspacings:
+            helper.reset_color_cycle()
             (target_scale, im_bin_clear, im_bin_blurred, test_img) = self._get_image(fn)
             (columns, spacings) = self.result_cache['columns_from_image'][fn]
             (column_row_groups, column_row_vspacings) = self.result_cache['row_groups_from_columns'][fn]
@@ -281,14 +284,52 @@ class TestPSeg(unittest.TestCase):
             for col_idx in sorted(column_row_grp_row_spacings):
                 self.result_cache['tablevspan_remove_edge_rectangles'][fn][col_idx] = {}
                 column = columns[col_idx]
-                for row_grp_idx, row_spacings in sorted(column_row_grp_row_spacings[col_idx].items()):
+                for row_grp_idx, row_hspacings in sorted(column_row_grp_row_spacings[col_idx].items()):
                     rows = column_row_groups[col_idx][row_grp_idx]
                     rects = self.result_cache['tablevspan_remove_smaller_adjacent_rectangles'][fn][col_idx][row_grp_idx]
-                    rects = pseg.tablevspan.remove_edge_rectangles(rects, row_spacings)
+                    rects = pseg.tablevspan.remove_edge_rectangles(rects, row_hspacings)
                     for ((x0, y0), (x1, y1)) in rects:
                         rr, cc = skimage.draw.rectangle((rows[y0][0], x0 + column[0]), (rows[y1][1], x1 + column[0]))
                         skimage.draw.set_color(test_img, (rr, cc), helper.get_color_cycle_rgb(), 0.5)
                     self.result_cache['tablevspan_remove_edge_rectangles'][fn][col_idx][row_grp_idx] = rects
+            skimage.io.imsave(ofn, test_img)
+            ref_img = skimage.io.imread(ref_fn)
+            self.assertTrue(numpy.alltrue(test_img == ref_img), msg="mismatched image: {}".format(ref_fn))
+            os.remove(ofn)
+
+    def test_05_tablevspan04_is_first_rectangle_column_filled(self):
+        # image based test, no values
+        t_vertical_lines_from_hspacings = {
+            'tsla2021.2.jpg': {},
+            'tsla2021.14.jpg': {},
+            'tsla2021.36.jpg': {},
+            'tsla2021.123.jpg': {},
+            'de2021.63.jpg': {},
+            'x2021.27.jpg': {},
+            'x2021.87.jpg': {},
+        }
+        self.result_cache['tablevspan_is_first_rectangle_column_filled'] = {}
+        for fn in t_vertical_lines_from_hspacings:
+            helper.reset_color_cycle()
+            (target_scale, im_bin_clear, im_bin_blurred, test_img) = self._get_image(fn)
+            (columns, spacings) = self.result_cache['columns_from_image'][fn]
+            (column_row_groups, column_row_vspacings) = self.result_cache['row_groups_from_columns'][fn]
+            column_row_grp_row_spacings = self.result_cache['row_hspacings_from_row_groups'][fn]
+            ofn = os.path.join(self.basepath, 'ref_imgs', fn[:-4] + '_05_tablevspan04_is_first_rectangle_column_filled.test.png')
+            ref_fn = os.path.join(self.basepath, 'ref_imgs', fn[:-4] + '_05_tablevspan04_is_first_rectangle_column_filled.png')
+            self.result_cache['tablevspan_is_first_rectangle_column_filled'][fn] = {}
+            for col_idx in sorted(column_row_grp_row_spacings):
+                self.result_cache['tablevspan_is_first_rectangle_column_filled'][fn][col_idx] = {}
+                column = columns[col_idx]
+                for row_grp_idx, row_hspacings in sorted(column_row_grp_row_spacings[col_idx].items()):
+                    rows = column_row_groups[col_idx][row_grp_idx]
+                    rects = self.result_cache['tablevspan_remove_edge_rectangles'][fn][col_idx][row_grp_idx]
+                    if not pseg.tablevspan.is_first_rectangle_column_filled(rects, row_hspacings):
+                        rects = []
+                    for ((x0, y0), (x1, y1)) in rects:
+                        rr, cc = skimage.draw.rectangle((rows[y0][0], x0 + column[0]), (rows[y1][1], x1 + column[0]))
+                        skimage.draw.set_color(test_img, (rr, cc), helper.get_color_cycle_rgb(), 0.5)
+                    self.result_cache['tablevspan_is_first_rectangle_column_filled'][fn][col_idx][row_grp_idx] = rects
             skimage.io.imsave(ofn, test_img)
             ref_img = skimage.io.imread(ref_fn)
             self.assertTrue(numpy.alltrue(test_img == ref_img), msg="mismatched image: {}".format(ref_fn))
