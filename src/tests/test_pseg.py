@@ -13,7 +13,7 @@ class TestPSeg(unittest.TestCase):
         cls.image_cache = {}
         cls.result_cache = {}
         cls.basepath = os.path.dirname(__file__)
-        all_images = ['tsla2021.2.jpg', 'tsla2021.14.jpg', 'tsla2021.36.jpg', 'tsla2021.123.jpg', 'de2021.63.jpg', 'x2021.27.jpg', 'x2021.87.jpg']
+        all_images = ['tsla2021.2.jpg', 'tsla2021.14.jpg', 'tsla2021.36.jpg', 'tsla2021.123.jpg', 'de2021.63.jpg', 'x2021.27.jpg', 'x2021.87.jpg', 'cargill2022.15.jpg', 'cargill2022.73.jpg', 'cargill2022.83.jpg', 'cargill2022.97.jpg']
         for fn in all_images:
             fnp = os.path.join(cls.basepath, 'src_imgs', fn)
             img = skimage.io.imread(fnp)
@@ -37,7 +37,11 @@ class TestPSeg(unittest.TestCase):
             'tsla2021.123.jpg': ([[24, 687]], [[0, 24], [687, 710]]),
             'de2021.63.jpg': ([[39, 346], [388, 396]], [[0, 39], [346, 388]]),
             'x2021.27.jpg': ([[250, 299], [362, 517], [536, 550], [580, 689]], [[0, 250], [299, 362], [517, 536], [550, 580], [689, 710]]),
-            'x2021.87.jpg': ([[22, 229], [268, 689]], [[0, 22], [229, 268], [689, 710]])
+            'x2021.87.jpg': ([[22, 229], [268, 689]], [[0, 22], [229, 268], [689, 710]]),
+            'cargill2022.15.jpg': ([[20, 494]], [[0, 20], [494, 516]]),
+            'cargill2022.73.jpg': ([[22, 487]], [[0, 22], [487, 516]]),
+            'cargill2022.83.jpg': ([[22, 499]], [[0, 22], [499, 516]]),
+            'cargill2022.97.jpg': ([[22, 492]], [[0, 22], [492, 516]]),
         }
         self.result_cache['columns_from_image'] = {}
         for fn, (r_columns, r_spacings) in t_columns_from_image.items():
@@ -46,8 +50,8 @@ class TestPSeg(unittest.TestCase):
             pseg.debug_painter.columns_from_image(test_img, (columns, spacings))
             ofn = os.path.join(self.basepath, 'ref_imgs', fn[:-4] + '_01_columns_from_image.test.png')
             skimage.io.imsave(ofn, test_img)
-            self.assertEqual(r_columns, columns)
-            self.assertEqual(r_spacings, spacings)
+            self.assertEqual(r_columns, columns, msg="mismatched columns for file: {}".format(fn))
+            self.assertEqual(r_spacings, spacings, msg="mismatched spacings for file: {}".format(fn))
             ref_fn = os.path.join(self.basepath, 'ref_imgs', fn[:-4] + '_01_columns_from_image.png')
             ref_img = skimage.io.imread(ref_fn)
             self.assertTrue(numpy.alltrue(test_img == ref_img), msg="mismatched image {}".format(ref_fn))
@@ -84,7 +88,19 @@ class TestPSeg(unittest.TestCase):
             'x2021.87.jpg': {
                 0: [[[40, 44], [50, 60]], [[102, 106], [118, 123]]],
                 1: [[[102, 106], [118, 123], [127, 132], [135, 141], [144, 149], [163, 168], [177, 183], [190, 194], [202, 207], [214, 220], [227, 232], [239, 244], [251, 256], [264, 269], [276, 281], [288, 294], [300, 304], [312, 317]], [[379, 383]]]
-            }
+            },
+            'cargill2022.15.jpg': {
+                0: [[[43, 65], [68, 90], [93, 97], [116, 123], [141, 147], [157, 163], [172, 192], [197, 203], [206, 211], [214, 219], [231, 237], [239, 250], [255, 261], [264, 269], [272, 278], [289, 295], [298, 312], [314, 319], [323, 328], [349, 353], [355, 359], [362, 366], [368, 372]]]
+            },
+            'cargill2022.73.jpg': {
+                0: [[[43, 63], [81, 91], [99, 104], [107, 112], [116, 153], [170, 176], [186, 194], [198, 206], [208, 216], [222, 237], [244, 249], [256, 260], [263, 271], [278, 297], [301, 306], [318, 325], [327, 335], [342, 356]]]
+            },
+            'cargill2022.83.jpg': {
+                0: [[[43, 97], [99, 170], [173, 221], [235, 243], [248, 256], [258, 273], [277, 284], [289, 294], [300, 305], [311, 317], [323, 328], [330, 336], [341, 349], [351, 357], [360, 378]]]
+            },
+            'cargill2022.97.jpg': {
+                0: [[[39, 52], [60, 65], [68, 74], [85, 106], [117, 123], [126, 140], [142, 148], [158, 165], [167, 173], [175, 180], [192, 197], [200, 214], [224, 230], [233, 239], [241, 246], [249, 255], [257, 263], [274, 280], [282, 288], [291, 296], [307, 312], [315, 321]], [[348, 354], [361, 370], [372, 377]]]
+            },
         }
         self.result_cache['row_groups_from_columns'] = {}
         for fn, r_column_row_groups in t_row_groups_from_columns.items():
@@ -93,9 +109,9 @@ class TestPSeg(unittest.TestCase):
             column_row_groups, column_row_vspacings = pseg.row_groups_from_columns(columns, im_bin_clear)
             ofn = os.path.join(self.basepath, 'ref_imgs', fn[:-4] + '_02_row_groups_from_columns.test.png')
             pseg.debug_painter.row_groups_from_columns(test_img, (columns, column_row_groups, column_row_vspacings))
+            skimage.io.imsave(ofn, test_img)
             for col_idx, row_groups in column_row_groups.items():
                 self.assertEqual(row_groups, r_column_row_groups[col_idx], msg="mismatched row_groups for column: {}, file: {}".format(col_idx, fn))
-            skimage.io.imsave(ofn, test_img)
             ref_fn = os.path.join(self.basepath, 'ref_imgs', fn[:-4] + '_02_row_groups_from_columns.png')
             ref_img = skimage.io.imread(ref_fn)
             self.assertTrue(numpy.alltrue(test_img == ref_img), msg="mismatched image: {}".format(ref_fn))
@@ -112,6 +128,10 @@ class TestPSeg(unittest.TestCase):
             'de2021.63.jpg': {},
             'x2021.27.jpg': {},
             'x2021.87.jpg': {},
+            'cargill2022.15.jpg': {},
+            'cargill2022.73.jpg': {},
+            'cargill2022.83.jpg': {},
+            'cargill2022.97.jpg': {},
         }
         self.result_cache['row_hspacings_from_row_groups'] = {}
         for fn in t_row_hspacings_from_row_groups:
@@ -138,6 +158,10 @@ class TestPSeg(unittest.TestCase):
             'de2021.63.jpg': {},
             'x2021.27.jpg': {},
             'x2021.87.jpg': {},
+            'cargill2022.15.jpg': {},
+            'cargill2022.73.jpg': {},
+            'cargill2022.83.jpg': {},
+            'cargill2022.97.jpg': {},
         }
         self.result_cache['vertical_lines_from_hspacings'] = {}
         for fn in t_vertical_lines_from_hspacings:
@@ -173,6 +197,10 @@ class TestPSeg(unittest.TestCase):
             'de2021.63.jpg': {},
             'x2021.27.jpg': {},
             'x2021.87.jpg': {},
+            'cargill2022.15.jpg': {},
+            'cargill2022.73.jpg': {},
+            'cargill2022.83.jpg': {},
+            'cargill2022.97.jpg': {},
         }
         self.result_cache['tablevspan_group_adjacent_lines'] = {}
         for fn in t_vertical_lines_from_hspacings:
@@ -209,6 +237,10 @@ class TestPSeg(unittest.TestCase):
             'de2021.63.jpg': {},
             'x2021.27.jpg': {},
             'x2021.87.jpg': {},
+            'cargill2022.15.jpg': {},
+            'cargill2022.73.jpg': {},
+            'cargill2022.83.jpg': {},
+            'cargill2022.97.jpg': {},
         }
         self.result_cache['tablevspan_remove_smaller_adjacent_rectangles'] = {}
         for fn in t_vertical_lines_from_hspacings:
@@ -245,6 +277,10 @@ class TestPSeg(unittest.TestCase):
             'de2021.63.jpg': {},
             'x2021.27.jpg': {},
             'x2021.87.jpg': {},
+            'cargill2022.15.jpg': {},
+            'cargill2022.73.jpg': {},
+            'cargill2022.83.jpg': {},
+            'cargill2022.97.jpg': {},
         }
         self.result_cache['tablevspan_remove_edge_rectangles'] = {}
         for fn in t_vertical_lines_from_hspacings:
@@ -271,7 +307,7 @@ class TestPSeg(unittest.TestCase):
             self.assertTrue(numpy.alltrue(test_img == ref_img), msg="mismatched image: {}".format(ref_fn))
             os.remove(ofn)
 
-    def test_05_tablevspan04_is_first_rectangle_column_filled(self):
+    def test_05_tablevspan04_is_first_rectangle_column_valid(self):
         # image based test, no values
         t_vertical_lines_from_hspacings = {
             'tsla2021.2.jpg': {},
@@ -281,16 +317,20 @@ class TestPSeg(unittest.TestCase):
             'de2021.63.jpg': {},
             'x2021.27.jpg': {},
             'x2021.87.jpg': {},
+            'cargill2022.15.jpg': {},
+            'cargill2022.73.jpg': {},
+            'cargill2022.83.jpg': {},
+            'cargill2022.97.jpg': {},
         }
-        self.result_cache['tablevspan_is_first_rectangle_column_filled'] = {}
+        self.result_cache['tablevspan_is_first_rectangle_column_valid'] = {}
         for fn in t_vertical_lines_from_hspacings:
             helper.reset_color_cycle()
             (target_scale, im_bin_clear, im_bin_blurred, test_img) = self._get_image(fn)
             (columns, spacings) = self.result_cache['columns_from_image'][fn]
             (column_row_groups, column_row_vspacings) = self.result_cache['row_groups_from_columns'][fn]
             column_row_grp_row_spacings = self.result_cache['row_hspacings_from_row_groups'][fn]
-            ofn = os.path.join(self.basepath, 'ref_imgs', fn[:-4] + '_05_tablevspan04_is_first_rectangle_column_filled.test.png')
-            ref_fn = os.path.join(self.basepath, 'ref_imgs', fn[:-4] + '_05_tablevspan04_is_first_rectangle_column_filled.png')
+            ofn = os.path.join(self.basepath, 'ref_imgs', fn[:-4] + '_05_tablevspan04_is_first_rectangle_column_valid.test.png')
+            ref_fn = os.path.join(self.basepath, 'ref_imgs', fn[:-4] + '_05_tablevspan04_is_first_rectangle_column_valid.png')
             fresult = {}
             for col_idx in sorted(column_row_grp_row_spacings):
                 fresult[col_idx] = {}
@@ -298,11 +338,11 @@ class TestPSeg(unittest.TestCase):
                 for row_grp_idx, row_hspacings in sorted(column_row_grp_row_spacings[col_idx].items()):
                     rows = column_row_groups[col_idx][row_grp_idx]
                     rects = self.result_cache['tablevspan_remove_edge_rectangles'][fn][col_idx][row_grp_idx]
-                    if not pseg.tablevspan.is_first_rectangle_column_filled(rects, row_hspacings):
+                    if not pseg.tablevspan.is_first_rectangle_column_valid(rects, row_hspacings):
                         rects = []
                     fresult[col_idx][row_grp_idx] = rects
             pseg.debug_painter.tablevspan_common(test_img, (columns, column_row_groups, column_row_grp_row_spacings, fresult))
-            self.result_cache['tablevspan_is_first_rectangle_column_filled'][fn] = fresult
+            self.result_cache['tablevspan_is_first_rectangle_column_valid'][fn] = fresult
             skimage.io.imsave(ofn, test_img)
             ref_img = skimage.io.imread(ref_fn)
             self.assertTrue(numpy.alltrue(test_img == ref_img), msg="mismatched image: {}".format(ref_fn))
@@ -318,6 +358,10 @@ class TestPSeg(unittest.TestCase):
             'de2021.63.jpg': {},
             'x2021.27.jpg': {},
             'x2021.87.jpg': {},
+            'cargill2022.15.jpg': {},
+            'cargill2022.73.jpg': {},
+            'cargill2022.83.jpg': {},
+            'cargill2022.97.jpg': {},
         }
         self.result_cache['tablevspan_remove_busy_column_rectangles'] = {}
         for fn in t_vertical_lines_from_hspacings:
@@ -334,7 +378,7 @@ class TestPSeg(unittest.TestCase):
                 column = columns[col_idx]
                 for row_grp_idx, row_hspacings in sorted(column_row_grp_row_spacings[col_idx].items()):
                     rows = column_row_groups[col_idx][row_grp_idx]
-                    rects = self.result_cache['tablevspan_is_first_rectangle_column_filled'][fn][col_idx][row_grp_idx]
+                    rects = self.result_cache['tablevspan_is_first_rectangle_column_valid'][fn][col_idx][row_grp_idx]
                     rects = pseg.tablevspan.remove_busy_column_rectangles(rects, row_hspacings)
                     fresult[col_idx][row_grp_idx] = rects
             pseg.debug_painter.tablevspan_common(test_img, (columns, column_row_groups, column_row_grp_row_spacings, fresult))

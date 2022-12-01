@@ -33,7 +33,7 @@ def parse(input_image):
         '01_group_adjacent_lines':                  {},
         '02_remove_smaller_adjacent_rectangles':    {},
         '03_remove_edge_rectangles':                {},
-        '04_is_first_rectangle_column_filled':      {},
+        '04_is_first_rectangle_column_valid':      {},
         '05_remove_busy_column_rectangles':         {},
     }
 
@@ -46,7 +46,7 @@ def parse(input_image):
         column_row_grp_tablevspan['01_group_adjacent_lines'][col_idx] = {}
         column_row_grp_tablevspan['02_remove_smaller_adjacent_rectangles'][col_idx] = {}
         column_row_grp_tablevspan['03_remove_edge_rectangles'][col_idx] = {}
-        column_row_grp_tablevspan['04_is_first_rectangle_column_filled'][col_idx] = {}
+        column_row_grp_tablevspan['04_is_first_rectangle_column_valid'][col_idx] = {}
         column_row_grp_tablevspan['05_remove_busy_column_rectangles'][col_idx] = {}
         for row_grp_idx in sorted(column_row_grp_row_spacings[col_idx]):
             rows = column_row_groups[col_idx][row_grp_idx]
@@ -69,9 +69,9 @@ def parse(input_image):
             column_row_grp_tablevspan['03_remove_edge_rectangles'][col_idx][row_grp_idx] = rects.copy()
             # heuristics: to count as a table, the first column must be filled
             # to 75%, otherwise disregard everything.
-            if not tablevspan.is_first_rectangle_column_filled(rects, row_hspacings):
+            if not tablevspan.is_first_rectangle_column_valid(rects, row_hspacings):
                 rects = []
-            column_row_grp_tablevspan['04_is_first_rectangle_column_filled'][col_idx][row_grp_idx] = rects.copy()
+            column_row_grp_tablevspan['04_is_first_rectangle_column_valid'][col_idx][row_grp_idx] = rects.copy()
 
             # find "busyness" of rect neighboring columns, if too busy, the
             # rect is likely a misinterpretation because table texts are likely
@@ -621,14 +621,14 @@ class tablevspan:
         return rects
 
     @staticmethod
-    def is_first_rectangle_column_filled(rects, row_hspacings):
+    def is_first_rectangle_column_valid(rects, row_hspacings):
         # heuristics: to count as a table, the first column must be filled
-        # to 75%, otherwise disregard everything.
+        # to 60%, otherwise disregard everything.
         if not rects:
             return False
         filled_count = 0
         ((x0, y0), (x1, y1)) = rects[0]
-        height = 0.75 * (y1 - y0 + 1)
+        height = 0.6 * (y1 - y0 + 1)
         white_sum = x0
         for i in range(y0, y1 + 1):
             is_filled = numpy.sum(row_hspacings[i, 0:x0]) < white_sum
@@ -640,7 +640,7 @@ class tablevspan:
         height2 = height
         if len(rects) > 1:
             ((x0, y0), (x1, y1)) = rects[1]
-            height2 = 0.75 * (y1 - y0 + 1)
+            height2 = 0.6 * (y1 - y0 + 1)
             white_sum = x0
             for i in range(y0, y1 + 1):
                 is_filled = numpy.sum(row_hspacings[i, 0:x0]) < white_sum
@@ -666,7 +666,7 @@ class tablevspan:
             # a very low `text_value`, defined as "< 0.1 * row_total"
             # indicates that the row looks awful lot like just text, since
             # table cells should have plenty of spacing
-            if text_value < 0.1 * row_total:
+            if text_value < 0.15 * row_total:
                 filtered_rects.append(((x0, y0), (x1, y1)))
         for rect in filtered_rects:
             rects.remove(rect)
