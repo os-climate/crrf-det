@@ -13,7 +13,7 @@ class TestPSeg(unittest.TestCase):
         cls.image_cache = {}
         cls.result_cache = {}
         cls.basepath = os.path.dirname(__file__)
-        all_images = ['tsla2021.2.jpg', 'tsla2021.14.jpg', 'tsla2021.36.jpg', 'tsla2021.123.jpg', 'de2021.63.jpg', 'x2021.27.jpg', 'x2021.87.jpg', 'cargill2022.15.jpg', 'cargill2022.73.jpg', 'cargill2022.83.jpg', 'cargill2022.97.jpg']
+        all_images = ['tsla2021.2.jpg', 'tsla2021.14.jpg', 'tsla2021.36.jpg', 'tsla2021.123.jpg', 'de2021.63.jpg', 'x2021.27.jpg', 'x2021.87.jpg', 'cargill2022.15.jpg', 'cargill2022.73.jpg', 'cargill2022.83.jpg', 'cargill2022.97.jpg', 'eog2021.9.jpg']
         for fn in all_images:
             fnp = os.path.join(cls.basepath, 'src_imgs', fn)
             img = skimage.io.imread(fnp)
@@ -42,6 +42,7 @@ class TestPSeg(unittest.TestCase):
             'cargill2022.73.jpg': ([[22, 487]], [[0, 22], [487, 516]]),
             'cargill2022.83.jpg': ([[22, 499]], [[0, 22], [499, 516]]),
             'cargill2022.97.jpg': ([[22, 492]], [[0, 22], [492, 516]]),
+            'eog2021.9.jpg': ([[30, 292], [316, 574], [622, 628]], [[0, 30], [292, 316], [574, 622]]),
         }
         self.result_cache['columns_from_image'] = {}
         for fn, (r_columns, r_spacings) in t_columns_from_image.items():

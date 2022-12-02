@@ -136,6 +136,7 @@ def parse(input_image):
         'text_vertices':        text_vertices,
         'im_bin_clear':         im_bin_clear,
         'columns':              columns,
+        'spacings':             spacings,
         'column_row_groups':    column_row_groups,
         'column_row_grp_vlines':        column_row_grp_vlines,
         'column_row_grp_row_spacings':  column_row_grp_row_spacings,
@@ -316,6 +317,61 @@ def columns_from_image(im_bin_clear):
             break
     # eliminate narrow spacings
     spacings = [[spl, spr] for (spl, spr) in spacings if (spr - spl) >= MIN_COLUMN_SPACING]
+
+    if len(columns) > 3:
+        # Four or more columns might be too many for a page. We are likely
+        # in a situation where there are tables on the page, and some of
+        # the column spacings are too wide.
+        #
+        # Heuristic #1, determine whether it is actually a two-column
+        # layout by finding a spacing that covers the middle.
+        middle_idx = -1
+        # Two trials to find the middle spacing, first try full page
+        # middle (width / 2). If fails, run on max spacing middle
+        # (spacings[-1][1] / 2) to account for side binding shift.
+        for middle in [width / 2, spacings[-1][1] / 2]:
+            for spc_idx, spacing in enumerate(spacings):
+                if (spacing[1] >= middle and
+                    spacing[0] <= middle):
+                    middle_idx = spc_idx
+                    break
+            if middle_idx != -1:
+                break
+        if middle_idx != -1:
+            # So we have a middle spacing, this could be a two column
+            # layout. This could be determined by spacing length.
+            # For more columns to live inside the two column layout,
+            # these columns must be narrower.
+            mid_spc_width = spacings[middle_idx][1] - spacings[middle_idx][0]
+            # Loop through all spacings except for the first and last
+            rogue_spacings = []
+            for i in range(1, len(spacings) - 1):
+                if i == middle_idx:
+                    continue
+                spacing = spacings[i]
+                if spacing[1] - spacing[0] > mid_spc_width:
+                    rogue_spacings.append(spacing)
+            if rogue_spacings:
+                new_columns = []
+                removed_columns = []
+                for spacing in rogue_spacings:
+                    new_column = [-1, -1]
+                    for column in columns:
+                        if column[1] == spacing[0]:
+                            new_column[0] = column[0]
+                            removed_columns.append(column)
+                        elif column[0] == spacing[1]:
+                            new_column[1] = column[1]
+                            removed_columns.append(column)
+                        if (new_column[0] != -1 and
+                            new_column[1] != -1):
+                            break
+                    new_columns.append(new_column)
+                    spacings.remove(spacing)
+                for column in removed_columns:
+                    columns.remove(column)
+                columns += new_columns
+                columns = sorted(columns, key=lambda columns:columns[0])
     return (columns, spacings)
 
 
@@ -668,6 +724,10 @@ class tablevspan:
             # table cells should have plenty of spacing
             if text_value < 0.15 * row_total:
                 filtered_rects.append(((x0, y0), (x1, y1)))
+            # todo: once a busy column is discovered, not only the table
+            # column dividing rectangle should be removed, for the entire
+            # row group, any other rectangles touching the same row should
+            # be broken apart
         for rect in filtered_rects:
             rects.remove(rect)
         return rects
@@ -724,6 +784,8 @@ class debug_painter:
         for col_idx in sorted(column_row_grp_row_spacings):
             column = columns[col_idx]
             for row_grp_idx in sorted(column_row_grp_row_spacings[col_idx]):
+                if row_grp_idx not in fresult[col_idx]:
+                    continue
                 rows = column_row_groups[col_idx][row_grp_idx]
                 lines = fresult[col_idx][row_grp_idx]
                 for ((x0, y0), (x1, y1)) in lines:
@@ -736,6 +798,8 @@ class debug_painter:
         for col_idx in sorted(column_row_grp_row_spacings):
             column = columns[col_idx]
             for row_grp_idx in sorted(column_row_grp_row_spacings[col_idx]):
+                if row_grp_idx not in fresult[col_idx]:
+                    continue
                 rows = column_row_groups[col_idx][row_grp_idx]
                 rects = fresult[col_idx][row_grp_idx]
                 for ((x0, y0), (x1, y1)) in rects:
