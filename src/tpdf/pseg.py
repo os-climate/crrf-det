@@ -95,8 +95,14 @@ def parse(input_image):
 
             table_cols = set()
             for ((x0, y0), (x1, y1)) in rects:
-                col_y_start = rows[y0][0]
-                col_y_end = rows[y1][1] + 1
+                if y0 > 0:
+                    col_y_start = (rows[y0][0] + rows[y0 - 1][1]) / 2
+                else:
+                    col_y_start = rows[y0][0]
+                if y1 < len(rows) - 1:
+                    col_y_end = (rows[y1][1] + rows[y1 + 1][0]) / 2
+                else:
+                    col_y_end = rows[y1][1]
                 col_x = column[0] + x0 + (x1 - x0) / 2
                 col = (col_y_start, col_x, col_y_end, col_x)
                 table_cols.add(col)
@@ -372,6 +378,16 @@ def columns_from_image(im_bin_clear):
                     columns.remove(column)
                 columns += new_columns
                 columns = sorted(columns, key=lambda columns:columns[0])
+        else:
+            # Heuristic #2, it is not a two column layout. But it is risky
+            # to proceed with so many columns. It is still very likely a
+            # big table with plenty of white spacings, consider it a
+            # single column.
+            if len(spacings) >= 2:
+                spacing_left = spacings[0]
+                spacing_right = spacings[-1]
+                columns = [[spacing_left[1], spacing_right[0]]]
+                spacings = [spacing_left, spacing_right]
     return (columns, spacings)
 
 
