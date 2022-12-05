@@ -339,8 +339,13 @@ class TestPSeg(unittest.TestCase):
                 for row_grp_idx, row_hspacings in sorted(column_row_grp_row_spacings[col_idx].items()):
                     rows = column_row_groups[col_idx][row_grp_idx]
                     rects = self.result_cache['tablevspan_remove_edge_rectangles'][fn][col_idx][row_grp_idx]
-                    if not pseg.tablevspan.is_first_rectangle_column_valid(rects, row_hspacings):
-                        rects = []
+                    while True:
+                        if not rects:
+                            break
+                        if not pseg.tablevspan.is_first_rectangle_column_valid(rects, row_hspacings):
+                            rects = rects[1:]
+                            continue
+                        break
                     fresult[col_idx][row_grp_idx] = rects
             pseg.debug_painter.tablevspan_common(test_img, (columns, column_row_groups, column_row_grp_row_spacings, fresult))
             self.result_cache['tablevspan_is_first_rectangle_column_valid'][fn] = fresult

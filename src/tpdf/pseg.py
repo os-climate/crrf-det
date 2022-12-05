@@ -36,6 +36,7 @@ def parse(input_image):
         '04_is_first_rectangle_column_valid':      {},
         '05_remove_busy_column_rectangles':         {},
     }
+    column_row_grp_table_scopes = {}
 
     for col_idx in sorted(column_row_grp_row_spacings):
         column = columns[col_idx]
@@ -48,6 +49,7 @@ def parse(input_image):
         column_row_grp_tablevspan['03_remove_edge_rectangles'][col_idx] = {}
         column_row_grp_tablevspan['04_is_first_rectangle_column_valid'][col_idx] = {}
         column_row_grp_tablevspan['05_remove_busy_column_rectangles'][col_idx] = {}
+        column_row_grp_table_scopes[col_idx] = {}
         for row_grp_idx in sorted(column_row_grp_row_spacings[col_idx]):
             rows = column_row_groups[col_idx][row_grp_idx]
             row_hspacings = column_row_grp_row_spacings[col_idx][row_grp_idx]
@@ -69,8 +71,12 @@ def parse(input_image):
             column_row_grp_tablevspan['03_remove_edge_rectangles'][col_idx][row_grp_idx] = rects.copy()
             # heuristics: to count as a table, the first column must be filled
             # to 75%, otherwise disregard everything.
-            if not tablevspan.is_first_rectangle_column_valid(rects, row_hspacings):
-                rects = []
+            while True:
+                if not rects:
+                    break
+                if not tablevspan.is_first_rectangle_column_valid(rects, row_hspacings):
+                    rects = rects[1:]
+                break
             column_row_grp_tablevspan['04_is_first_rectangle_column_valid'][col_idx][row_grp_idx] = rects.copy()
 
             # find "busyness" of rect neighboring columns, if too busy, the
@@ -149,6 +155,7 @@ def parse(input_image):
         'column_row_grp_table_rows':    column_row_grp_table_rows,
         'column_row_grp_table_cols':    column_row_grp_table_cols,
         'column_row_grp_tablevspan':    column_row_grp_tablevspan,
+        'column_row_grp_table_scopes':  column_row_grp_table_scopes
     }
 
 
@@ -694,7 +701,7 @@ class tablevspan:
 
     @staticmethod
     def is_first_rectangle_column_valid(rects, row_hspacings):
-        # heuristics: to count as a table, the first column must be filled
+        # heuristics 1: to count as a table, the first column must be filled
         # to 60%, otherwise disregard everything.
         if not rects:
             return False
@@ -721,6 +728,14 @@ class tablevspan:
         if (filled_count < height and
             filled_count2 < height2):
             return False
+        # heuristics 2: first column should relatively be tall, and it
+        # should not be the shortest column of the entire table.
+        if len(rects) > 1:
+            ((x0, y0), (x1, y1)) = rects[0]
+            col_heights = [y1 - y0 for ((x0, y0), (x1, y1)) in rects[1:]]
+            col_height_thrs = numpy.median(col_heights)
+            if y1 - y0 < col_height_thrs:
+                return False
         return True
 
     @staticmethod
