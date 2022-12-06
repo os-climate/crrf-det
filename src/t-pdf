@@ -1,34 +1,54 @@
 #!/usr/bin/env python3
 
 import os
+import sys
 import numpy
 import skimage
 import argparse
 
-from tpdf import pseg, docmt, helper
+from texttable import Texttable
+from tpdf import pseg, docmt, helper, aggr
 
 
-def _run_image(debug_dir, image, page):
+def _run_page(debug_dir, image, content, page):
     results = pseg.parse(image)
+    target_scale = results['target_scale']
+    columns = results['columns']
+    spacings = results['spacings']
+    column_row_groups = results['column_row_groups']
+    column_row_vspacings = results['column_row_vspacings']
+    column_row_grp_row_spacings = results['column_row_grp_row_spacings']
+    column_row_grp_vlines = results['column_row_grp_vlines']
+    column_row_grp_build_table = results.get('column_row_grp_build_table', {})
+    column_row_grp_cells = results.get('column_row_grp_cells', {})
+
+    tables = aggr.collect_tables(results, content)
+    for table in tables:
+        table_ = Texttable(max_width=os.get_terminal_size()[0])
+        table_.set_deco(Texttable.HEADER | Texttable.BORDER)
+        table_.add_rows(table['content'])
+        print(table_.draw())
+        print("")
+
     if debug_dir:
         debug_img = skimage.color.gray2rgb(results['im_bin_clear'])
         # columns_from_image
         test_img = numpy.array(debug_img)
-        columns = results['columns']
-        spacings = results['spacings']
         pseg.debug_painter.columns_from_image(test_img, (columns, spacings))
         ofn = os.path.join(debug_dir, '{}.{}.debug.01_columns_from_image.png'.format(os.path.basename(args.input), page))
         skimage.io.imsave(ofn, test_img)
+        # row_groups_from_columns
+        test_img = numpy.array(debug_img)
+        pseg.debug_painter.row_groups_from_columns(test_img, (columns, column_row_groups, column_row_vspacings))
+        ofn = os.path.join(debug_dir, '{}.{}.debug.02_row_groups_from_columns.png'.format(os.path.basename(args.input), page))
+        skimage.io.imsave(ofn, test_img)
         # row_hspacings_from_row_groups
         test_img = numpy.array(debug_img)
-        column_row_groups = results['column_row_groups']
-        column_row_grp_row_spacings = results['column_row_grp_row_spacings']
         pseg.debug_painter.row_hspacings_from_row_groups(test_img, (columns, column_row_groups, column_row_grp_row_spacings))
         ofn = os.path.join(debug_dir, '{}.{}.debug.03_row_hspacings_from_row_groups.png'.format(os.path.basename(args.input), page))
         skimage.io.imsave(ofn, test_img)
         # vertical_lines_from_hspacings
         test_img = numpy.array(debug_img)
-        column_row_grp_vlines = results['column_row_grp_vlines']
         pseg.debug_painter.vertical_lines_from_hspacings(test_img, (columns, column_row_groups, column_row_grp_row_spacings, column_row_grp_vlines))
         ofn = os.path.join(debug_dir, '{}.{}.debug.04_vertical_lines_from_hspacings.png'.format(os.path.basename(args.input), page))
         skimage.io.imsave(ofn, test_img)
@@ -39,23 +59,24 @@ def _run_image(debug_dir, image, page):
             pseg.debug_painter.tablevspan_common(test_img, (columns, column_row_groups, column_row_grp_row_spacings, fresult))
             ofn = os.path.join(debug_dir, '{}.{}.debug.05_tablevspan{}.png'.format(os.path.basename(args.input), page, key))
             skimage.io.imsave(ofn, test_img)
+        # build table
+        test_img = numpy.array(debug_img)
+        pseg.debug_painter.tablevspan_build_table(test_img, (columns, column_row_groups, column_row_grp_row_spacings, column_row_grp_build_table))
+        ofn = os.path.join(debug_dir, '{}.{}.debug.05_tablevspan06_build_table.png'.format(os.path.basename(args.input), page))
+        skimage.io.imsave(ofn, test_img)
+        # cells
+        test_img = numpy.array(debug_img)
+        pseg.debug_painter.tablevspan_find_intersections_find_cells(test_img, (columns, column_row_groups, column_row_grp_row_spacings, column_row_grp_cells))
+        ofn = os.path.join(debug_dir, '{}.{}.debug.05_tablevspan07_find_intersections_find_cells.png'.format(os.path.basename(args.input), page))
+        skimage.io.imsave(ofn, test_img)
         # final result
-        for vertices in results.get('text_vertices', []):
-            color = helper.get_color_cycle_rgb()
-            rr, cc = skimage.draw.polygon(vertices[:, 0], vertices[:, 1])
-            skimage.draw.set_color(image, (rr, cc), color, 0.3)
-        for col_idx, row_grp_table_rows in results.get('column_row_grp_table_rows', {}).items():
-            for row_grp_idx, table_rows in row_grp_table_rows.items():
-                for row in table_rows:
-                    row = [int(x * results.get('target_scale', 1)) for x in row]
-                    rr, cc = skimage.draw.line(*row)
-                    skimage.draw.set_color(image, (rr, cc), (255, 192, 0), 1)
-        for col_idx, row_grp_table_cols in results.get('column_row_grp_table_cols', {}).items():
-            for row_grp_idx, table_cols in row_grp_table_cols.items():
-                for col in table_cols:
-                    col = [int(x * results.get('target_scale', 1)) for x in col]
-                    rr, cc = skimage.draw.line(*col)
-                    skimage.draw.set_color(image, (rr, cc), (255, 0, 0), 1)
+        for (ymin, xmin, ymax, xmax) in results.get('text_boxes', []):
+            ymin *= target_scale
+            xmin *= target_scale
+            ymax *= target_scale
+            xmax *= target_scale
+            rr, cc = skimage.draw.rectangle((int(ymin), int(xmin)), (int(ymax), int(xmax)))
+            skimage.draw.set_color(image, (rr, cc), helper.get_color_cycle_rgb(), 0.3)
         ofn = os.path.join(debug_dir, '{}.{}.debug.parse.jpg'.format(os.path.basename(args.input), page))
         skimage.io.imsave(ofn, image)
 
@@ -72,11 +93,12 @@ def main(args):
             for page in pages:
                 print('processing page {}'.format(page))
                 image = docmt.load_page_image(args.input, page)
-                _run_image(args.debug, image, page)
+                content = docmt.load_page_content(args.input, page)
+                _run_page(args.debug, image, content, page)
     else:
         print('processing image {}'.format(args.input))
         image = skimage.io.imread(args.input)
-        _run_image(args.debug, image, '_')
+        _run_page(args.debug, image, {}, '_')
 
 
 if __name__ == "__main__":
