@@ -474,6 +474,6 @@ class TestPSeg(unittest.TestCase):
             pseg.debug_painter.tablevspan_find_intersections_find_cells(test_img, (columns, column_row_groups, column_row_grp_row_spacings, fresult))
             self.result_cache['tablevspan_find_intersections_find_cells'][fn] = fresult
             skimage.io.imsave(ofn, test_img)
-            # ref_img = skimage.io.imread(ref_fn)
-            # self.assertTrue(numpy.alltrue(test_img == ref_img), msg="mismatched image: {}".format(ref_fn))
-            # os.remove(ofn)
+            ref_img = skimage.io.imread(ref_fn)
+            self.assertTrue(numpy.alltrue(test_img == ref_img), msg="mismatched image: {}".format(ref_fn))
+            os.remove(ofn)

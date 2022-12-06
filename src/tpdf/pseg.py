@@ -8,7 +8,7 @@ image.
 
 import numpy
 import skimage
-import scipy.spatial
+# import scipy.spatial
 import sklearn.cluster
 
 from . import helper
@@ -35,6 +35,7 @@ def parse(input_image):
         '05_remove_busy_column_rectangles':         {},
     }
     column_row_grp_build_table = {}
+    column_row_grp_cells = {}
 
     for col_idx in sorted(column_row_grp_row_spacings):
         column = columns[col_idx]
@@ -46,6 +47,7 @@ def parse(input_image):
         column_row_grp_tablevspan['04_is_first_rectangle_column_valid'][col_idx] = {}
         column_row_grp_tablevspan['05_remove_busy_column_rectangles'][col_idx] = {}
         column_row_grp_build_table[col_idx] = {}
+        column_row_grp_cells[col_idx] = {}
         for row_grp_idx in sorted(column_row_grp_row_spacings[col_idx]):
             rows = column_row_groups[col_idx][row_grp_idx]
             row_hspacings = column_row_grp_row_spacings[col_idx][row_grp_idx]
@@ -85,33 +87,16 @@ def parse(input_image):
             (table_scope, table_rows, table_cols) = tablevspan.build_table(column, rows, row_hspacings, rects, im_bin_blurred)
             column_row_grp_build_table[col_idx][row_grp_idx] = (table_scope, table_rows, table_cols)
 
-    text_vertices = []
-    contours = skimage.measure.find_contours(im_bin_blurred)
-    for contour in contours:
-        # optimization: filter absolutely too small contours
-        xmin = numpy.amin(contour[:, 1])
-        xmax = numpy.amax(contour[:, 1])
-        ymin = numpy.amin(contour[:, 0])
-        ymax = numpy.amax(contour[:, 0])
-        if (ymax - ymin <= 3 and
-            xmax - xmin <= 3):
-            continue
-        # optimization: still small, but draw a polygon to find out whether
-        # the area is completely white
-        if xmax - xmin < 50:
-            # test the contour against the "bin_clear" image, if the covered
-            # region is all white, we can safely ignore it
-            rr, cc = skimage.draw.polygon(contour[:, 0], contour[:, 1])
-            if numpy.all(im_bin_clear[rr, cc] == 255):
-                continue
-        hull = scipy.spatial.ConvexHull(contour)
-        vertices = contour[hull.vertices,:]
-        vertices *= target_scale
-        text_vertices.append(vertices)
+            # cells
+            (intersections, intersections_upward, intersections_downward) = tablevspan.find_intersections(column, rows, table_cols, table_rows)
+            cells = tablevspan.find_cells(intersections, intersections_upward, intersections_downward)
+            column_row_grp_cells[col_idx][row_grp_idx] = (intersections, intersections_upward, intersections_downward, cells)
+
+    text_boxes = text_boxes_from_image(im_bin_clear, im_bin_blurred)
 
     return {
         'target_scale':         target_scale,
-        'text_vertices':        text_vertices,
+        'text_boxes':           text_boxes,
         'im_bin_clear':         im_bin_clear,
         'columns':              columns,
         'spacings':             spacings,
@@ -121,6 +106,7 @@ def parse(input_image):
         'column_row_grp_row_spacings':  column_row_grp_row_spacings,
         'column_row_grp_tablevspan':    column_row_grp_tablevspan,
         'column_row_grp_build_table':   column_row_grp_build_table,
+        'column_row_grp_cells':         column_row_grp_cells,
     }
 
 
@@ -573,6 +559,36 @@ def vertical_lines_from_hspacings(row_hspacings):
     if lines:
         lines = sorted(lines, key=lambda lines:(lines[0][1] - lines[1][1]) * lines[0][1])
     return lines
+
+
+def text_boxes_from_image(im_bin_clear, im_bin_blurred):
+    # text_vertices = []
+    text_boxes = []
+    contours = skimage.measure.find_contours(im_bin_blurred)
+    for contour in contours:
+        xmin = numpy.amin(contour[:, 1])
+        xmax = numpy.amax(contour[:, 1])
+        ymin = numpy.amin(contour[:, 0])
+        ymax = numpy.amax(contour[:, 0])
+        # optimization: filter absolutely too small contours
+        if (ymax - ymin <= 3 and
+            xmax - xmin <= 3):
+            continue
+        # optimization: still small, but draw a polygon to find out whether
+        # the area is completely white
+        if xmax - xmin < 50:
+            # test the contour against the "bin_clear" image, if the covered
+            # region is all white, we can safely ignore it
+            rr, cc = skimage.draw.polygon(contour[:, 0], contour[:, 1])
+            if numpy.all(im_bin_clear[rr, cc] == 255):
+                continue
+        text_boxes.append((ymin, xmin, ymax, xmax))
+        # debug purpose polygons
+        # hull = scipy.spatial.ConvexHull(contour)
+        # vertices = contour[hull.vertices,:]
+        # vertices *= target_scale
+        # text_vertices.append(vertices)
+    return text_boxes
 
 
 class tablevspan:
