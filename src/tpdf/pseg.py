@@ -937,8 +937,22 @@ class tablevspan:
             w = inters_img[inters_img.shape[0] - 1, col - 1:col + 2]
             if numpy.array_equal(w, cross_tb_p):
                 intersections.append((inters_img.shape[0] - 1, col))
-        for row in range(1, inters_img.shape[0] - 1):
-            for col in range(1, inters_img.shape[1] - 1):
+        # for row in range(1, inters_img.shape[0] - 1):
+        #     for col in range(1, inters_img.shape[1] - 1):
+        #         w = inters_img[row - 1:row + 2, col - 1:col + 2]
+        #         if (numpy.array_equal(w, cross_p) or
+        #             numpy.array_equal(w, cross_dw_p) or
+        #             numpy.array_equal(w, cross_uw_p)):
+        #             intersections.append((row, col))
+        #             if numpy.array_equal(w, cross_dw_p):
+        #                 intersections_downward.add((row, col))
+        #             elif numpy.array_equal(w, cross_uw_p):
+        #                 intersections_upward.add((row, col))
+        # optimized version of intersection lookup
+        for row in table_rows:
+            row = int(row[0] - inters_img_row_shift)
+            for col in table_cols:
+                col = int(col[1] - inters_img_col_shift)
                 w = inters_img[row - 1:row + 2, col - 1:col + 2]
                 if (numpy.array_equal(w, cross_p) or
                     numpy.array_equal(w, cross_dw_p) or
