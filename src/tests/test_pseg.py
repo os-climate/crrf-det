@@ -440,3 +440,40 @@ class TestPSeg(unittest.TestCase):
             ref_img = skimage.io.imread(ref_fn)
             self.assertTrue(numpy.alltrue(test_img == ref_img), msg="mismatched image: {}".format(ref_fn))
             os.remove(ofn)
+
+    def test_05_tablevspan07_find_intersections_find_cells(self):
+        # image based test, no values
+        test_list = {
+            'tsla2021.14.jpg': {},
+            'tsla2021.36.jpg': {},
+            'tsla2021.123.jpg': {},
+            'de2021.64.jpg': {},
+            'x2021.87.jpg': {},
+            'cargill2022.73.jpg': {},
+            'cargill2022.83.jpg': {},
+        }
+        self.result_cache['tablevspan_find_intersections_find_cells'] = {}
+        for fn in test_list:
+            helper.reset_color_cycle()
+            (target_scale, im_bin_clear, im_bin_blurred, test_img) = self._get_image(fn)
+            (columns, spacings) = self.result_cache['columns_from_image'][fn]
+            (column_row_groups, column_row_vspacings) = self.result_cache['row_groups_from_columns'][fn]
+            column_row_grp_row_spacings = self.result_cache['row_hspacings_from_row_groups'][fn]
+            ofn = os.path.join(self.basepath, 'ref_imgs', fn[:-4] + '_05_tablevspan07_find_intersections_find_cells.test.png')
+            ref_fn = os.path.join(self.basepath, 'ref_imgs', fn[:-4] + '_05_tablevspan07_find_intersections_find_cells.png')
+            fresult = {}
+            for col_idx in sorted(column_row_grp_row_spacings):
+                fresult[col_idx] = {}
+                column = columns[col_idx]
+                for row_grp_idx, row_hspacings in sorted(column_row_grp_row_spacings[col_idx].items()):
+                    rows = column_row_groups[col_idx][row_grp_idx]
+                    (table_scope, table_rows, table_cols) = self.result_cache['tablevspan_build_table'][fn][col_idx][row_grp_idx]
+                    (intersections, intersections_upward, intersections_downward) = pseg.tablevspan.find_intersections(column, rows, table_cols, table_rows)
+                    cells = pseg.tablevspan.find_cells(intersections, intersections_upward, intersections_downward)
+                    fresult[col_idx][row_grp_idx] = (intersections, intersections_upward, intersections_downward, cells)
+            pseg.debug_painter.tablevspan_find_intersections_find_cells(test_img, (columns, column_row_groups, column_row_grp_row_spacings, fresult))
+            self.result_cache['tablevspan_find_intersections_find_cells'][fn] = fresult
+            skimage.io.imsave(ofn, test_img)
+            # ref_img = skimage.io.imread(ref_fn)
+            # self.assertTrue(numpy.alltrue(test_img == ref_img), msg="mismatched image: {}".format(ref_fn))
+            # os.remove(ofn)

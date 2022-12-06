@@ -871,6 +871,88 @@ class tablevspan:
 
         return (table_scope, table_rows, table_cols)
 
+    @staticmethod
+    def find_intersections(column, rows, table_cols, table_rows):
+        """
+        `find_intersections` take the column, and the rows inside the row
+        group, together with `table_cols` `table_rows` returned from
+        `build_table`, to generate a list of intersections between table
+        rows and columns, useful for identifying the cells.
+
+        """
+        inters_img_width = column[1] - column[0]
+        inters_img_height = rows[-1][1] - rows[0][0]
+        inters_img_col_shift = int(column[0])
+        inters_img_row_shift = int(rows[0][0])
+        inters_img = numpy.ones(shape=(inters_img_height + 1, inters_img_width + 1), dtype=numpy.uint8)
+        for row in table_rows:
+            inters_img[int(row[0]) - inters_img_row_shift, int(row[1]) - inters_img_col_shift:int(row[3]) - inters_img_col_shift + 1] = 0
+        for col in table_cols:
+            inters_img[int(col[0]) - inters_img_row_shift:int(col[2]) - inters_img_row_shift + 1, int(col[1]) - inters_img_col_shift] = 0
+        cross_p = numpy.array([[1, 0, 1], [0, 0, 0], [1, 0, 1]], dtype=numpy.uint8)
+        cross_dw_p = numpy.array([[1, 1, 1], [0, 0, 0], [1, 0, 1]], dtype=numpy.uint8)
+        cross_uw_p = numpy.array([[1, 0, 1], [0, 0, 0], [1, 1, 1]], dtype=numpy.uint8)
+        cross_lr_p = numpy.array([1, 0, 1], dtype=numpy.uint8)
+        cross_tb_p = numpy.array([1, 0, 1], dtype=numpy.uint8)
+        intersections = [
+            (0, 0),
+            (0, inters_img.shape[1] - 1),
+            (inters_img.shape[0] - 1, 0),
+            (inters_img.shape[0] - 1, inters_img.shape[1] - 1)
+        ]
+        intersections_upward = set()
+        intersections_downward = set()
+        for row in range(1, inters_img.shape[0] - 1):
+            w = inters_img[row - 1:row + 2, 0]
+            if numpy.array_equal(w, cross_lr_p):
+                intersections.append((row, 0))
+            w = inters_img[row - 1:row + 2, inters_img.shape[1] - 1]
+            if numpy.array_equal(w, cross_lr_p):
+                intersections.append((row, inters_img.shape[1] - 1))
+        for col in range(1, inters_img.shape[1] - 1):
+            w = inters_img[0, col - 1:col + 2]
+            if numpy.array_equal(w, cross_tb_p):
+                intersections.append((0, col))
+            w = inters_img[inters_img.shape[0] - 1, col - 1:col + 2]
+            if numpy.array_equal(w, cross_tb_p):
+                intersections.append((inters_img.shape[0] - 1, col))
+        for row in range(1, inters_img.shape[0] - 1):
+            for col in range(1, inters_img.shape[1] - 1):
+                w = inters_img[row - 1:row + 2, col - 1:col + 2]
+                if (numpy.array_equal(w, cross_p) or
+                    numpy.array_equal(w, cross_dw_p) or
+                    numpy.array_equal(w, cross_uw_p)):
+                    intersections.append((row, col))
+                    if numpy.array_equal(w, cross_dw_p):
+                        intersections_downward.add((row, col))
+                    elif numpy.array_equal(w, cross_uw_p):
+                        intersections_upward.add((row, col))
+        if len(intersections) == 4:
+            intersections = []
+        # sort by row-first, column-second, number 10000 should be
+        # larger than longest possible row width, which guarantees
+        # higher sorting priority for the rows
+        intersections = sorted(intersections, key=lambda intersections:intersections[0] * 10000 + intersections[1])
+        return (intersections, intersections_upward, intersections_downward)
+
+    @staticmethod
+    def find_cells(intersections, intersections_upward, intersections_downward):
+        intersections_set = set(intersections)
+        cells = []
+        for inters_idx, (row, col) in enumerate(intersections):
+            if (row, col) in intersections_upward:
+                continue
+            if inters_idx >= len(intersections) - 1:
+                continue
+            next_col = intersections[inters_idx + 1][1]
+            next_row = None
+            for i in range(inters_idx + 1, len(intersections)):
+                if intersections[i][1] == col:
+                    next_row = intersections[i][0]
+                    break
+            if next_row is not None:
+                cells.append((row, col, next_row, next_col))
+        return cells
 
 
 class debug_painter:
@@ -977,3 +1059,24 @@ class debug_painter:
                         table_row_bottom = (rows[row_bottom_idx][1] + rows[row_bottom_idx + 1][0]) / 2
                     rr, cc = skimage.draw.rectangle((int(table_row_top), column[0] - 5), (int(table_row_bottom), column[0]))
                     skimage.draw.set_color(test_img, (rr, cc), helper.get_color_cycle_rgb(), 1)
+
+    @staticmethod
+    def tablevspan_find_intersections_find_cells(test_img, results):
+        (columns, column_row_groups, column_row_grp_row_spacings, fresult) = results
+        for col_idx in sorted(column_row_grp_row_spacings):
+            column = columns[col_idx]
+            for row_grp_idx in sorted(column_row_grp_row_spacings[col_idx]):
+                if row_grp_idx not in fresult[col_idx]:
+                    continue
+                rows = column_row_groups[col_idx][row_grp_idx]
+                (intersections, intersections_upward, intersections_downward, cells) = fresult[col_idx][row_grp_idx]
+                inters_img_col_shift = int(column[0])
+                inters_img_row_shift = int(rows[0][0])
+                for (row, col) in intersections:
+                    rr, cc = skimage.draw.disk((row + inters_img_row_shift, col + inters_img_col_shift), 3)
+                    skimage.draw.set_color(test_img, (rr, cc), (255, 0, 0), 1)
+                cells = [(y0 + inters_img_row_shift, x0 + inters_img_col_shift, y1 + inters_img_row_shift, x1 + inters_img_col_shift) for (y0, x0, y1, x1) in cells]
+                for (y0, x0, y1, x1) in cells:
+                    rr, cc = skimage.draw.rectangle((y0, x0), (y1, x1))
+                    skimage.draw.set_color(test_img, (rr, cc), helper.get_color_cycle_rgb(), 0.5)
+
