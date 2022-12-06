@@ -396,7 +396,8 @@ def row_groups_from_columns(columns, im_bin_clear):
                             with array content 0=text, 1=spacing.
 
     """
-    MAX_ROW_VSPACING = 25
+    MAX_ROW_VSPACING = 15
+    MIN_ROW_HEIGHT = 50
     column_row_groups = {}
     column_row_vspacings = {}
     for col_idx, column in enumerate(columns):
@@ -426,7 +427,11 @@ def row_groups_from_columns(columns, im_bin_clear):
                 if len(cur_row) == 0:
                     # begin of a new row
                     if (i - last_row_end >= MAX_ROW_VSPACING and
-                        rows):
+                        rows and
+                        # at least MIN_ROW_HEIGHT tall a group of rows
+                        (rows[-1][1] - rows[0][0] >= MIN_ROW_HEIGHT or
+                        # or at least MIN_ROW_HEIGHT tall vspacing
+                        i - last_row_end >= MIN_ROW_HEIGHT)):
                         row_groups.append(rows)
                         rows = []
                     cur_row.append(i)
