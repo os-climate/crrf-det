@@ -15,11 +15,33 @@ def collect_tables(pseg_results, page_content):
     table rows.
 
     """
+    if not page_content:
+        return []
+
     columns = pseg_results['columns']
     spacings = pseg_results['spacings']
     column_row_groups = pseg_results['column_row_groups']
     column_row_grp_build_table = pseg_results.get('column_row_grp_build_table', {})
     column_row_grp_cells = pseg_results.get('column_row_grp_cells', {})
+
+    # recalculate per-word coordinates so that it matches
+    # cells coordinate "narrow side 400px" proportions
+    target_scale = pseg.calc_target_scale(page_content['page']['width'], page_content['page']['height'])
+    words = []
+    for w in page_content['words']:
+        for key in w:
+            if key == 'text':
+                continue
+            w[key] /= target_scale
+        # precalculate half a word area/size as the "coverage
+        # threshold" for cell inclusion requirement, in other
+        # words, half the word must be in the cell
+        w['coverage_threshold'] = 0.5 * (w['xmax'] - w['xmin']) * (w['ymax'] - w['ymin'])
+        words.append(w)
+
+    # used_word_indices is a mechanism to prevent a single word
+    # to be used more than one time, due to duplicate cells
+    used_word_indices = set()
 
     tables = []
 
@@ -43,21 +65,6 @@ def collect_tables(pseg_results, page_content):
             # recalculate cells relative to whole image top-left
             (intersections, ntsuw, ntsdw, cells) = column_row_grp_cells[col_idx][row_grp_idx]
             cells = [(y0 + inters_img_row_shift, x0 + inters_img_col_shift, y1 + inters_img_row_shift, x1 + inters_img_col_shift) for (y0, x0, y1, x1) in cells]
-
-            # recalculate per-word coordinates so that it matches
-            # cells coordinate "narrow side 400px" proportions
-            target_scale = pseg.calc_target_scale(page_content['page']['width'], page_content['page']['height'])
-            words = []
-            for w in page_content['words']:
-                for key in w:
-                    if key == 'text':
-                        continue
-                    w[key] /= target_scale
-                # precalculate half a word area/size as the "coverage
-                # threshold" for cell inclusion requirement, in other
-                # words, half the word must be in the cell
-                w['coverage_threshold'] = 0.5 * (w['xmax'] - w['xmin']) * (w['ymax'] - w['ymin'])
-                words.append(w)
 
             taken_cells = []
             # loop through predicted tables
@@ -83,9 +90,6 @@ def collect_tables(pseg_results, page_content):
 
                 # the 2d list for the table
                 table = [[''] * len(cell_col_starts) for i in range(0, len(cell_row_starts))]
-                # used_word_indices is a mechanism to prevent a single word
-                # to be used more than one time, due to duplicate cells
-                used_word_indices = set()
                 # loop for the rows
                 for tr_idx, tr_start in enumerate(cell_row_starts):
                     # enumerate and loop all cells for the row
