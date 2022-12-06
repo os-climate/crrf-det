@@ -27,8 +27,6 @@ def parse(input_image):
     column_row_grp_row_spacings = row_hspacings_from_row_groups(columns, column_row_groups, im_bin_clear)
 
     column_row_grp_vlines = {}
-    column_row_grp_table_rows = {}
-    column_row_grp_table_cols = {}
     column_row_grp_tablevspan = {
         '01_group_adjacent_lines':                  {},
         '02_remove_smaller_adjacent_rectangles':    {},
@@ -36,20 +34,18 @@ def parse(input_image):
         '04_is_first_rectangle_column_valid':      {},
         '05_remove_busy_column_rectangles':         {},
     }
-    column_row_grp_table_scopes = {}
+    column_row_grp_build_table = {}
 
     for col_idx in sorted(column_row_grp_row_spacings):
         column = columns[col_idx]
         col_crop = im_bin_clear[0:im_bin_clear.shape[0], column[0]:column[1]]
         column_row_grp_vlines[col_idx] = {}
-        column_row_grp_table_rows[col_idx] = {}
-        column_row_grp_table_cols[col_idx] = {}
         column_row_grp_tablevspan['01_group_adjacent_lines'][col_idx] = {}
         column_row_grp_tablevspan['02_remove_smaller_adjacent_rectangles'][col_idx] = {}
         column_row_grp_tablevspan['03_remove_edge_rectangles'][col_idx] = {}
         column_row_grp_tablevspan['04_is_first_rectangle_column_valid'][col_idx] = {}
         column_row_grp_tablevspan['05_remove_busy_column_rectangles'][col_idx] = {}
-        column_row_grp_table_scopes[col_idx] = {}
+        column_row_grp_build_table[col_idx] = {}
         for row_grp_idx in sorted(column_row_grp_row_spacings[col_idx]):
             rows = column_row_groups[col_idx][row_grp_idx]
             row_hspacings = column_row_grp_row_spacings[col_idx][row_grp_idx]
@@ -76,6 +72,7 @@ def parse(input_image):
                     break
                 if not tablevspan.is_first_rectangle_column_valid(rects, row_hspacings):
                     rects = rects[1:]
+                    continue
                 break
             column_row_grp_tablevspan['04_is_first_rectangle_column_valid'][col_idx][row_grp_idx] = rects.copy()
 
@@ -85,39 +82,8 @@ def parse(input_image):
             rects = tablevspan.remove_busy_column_rectangles(rects, row_hspacings)
             column_row_grp_tablevspan['05_remove_busy_column_rectangles'][col_idx][row_grp_idx] = rects.copy()
 
-            # enumerate all rects for covered row spacings, use them to clear out
-            # the blurred version so that table cell texts are no longer sticked
-            # together
-            table_rows = set()
-            for ((x0, y0), (x1, y1)) in rects:
-                for i in range(y0, y1):
-                    row_x = (rows[i][1] + rows[i + 1][0]) / 2
-                    row = (row_x, column[0], row_x, column[1])
-                    table_rows.add(row)
-                    # clear out the lines to split blurred parts for table cell text
-                    rr, cc = skimage.draw.line(*[int(x) for x in row])
-                    im_bin_blurred[rr, cc] = 255
-            column_row_grp_table_rows[col_idx][row_grp_idx] = table_rows
-
-            table_cols = set()
-            for ((x0, y0), (x1, y1)) in rects:
-                if y0 > 0:
-                    col_y_start = (rows[y0][0] + rows[y0 - 1][1]) / 2
-                else:
-                    col_y_start = rows[y0][0]
-                if y1 < len(rows) - 1:
-                    col_y_end = (rows[y1][1] + rows[y1 + 1][0]) / 2
-                else:
-                    col_y_end = rows[y1][1]
-                col_x = column[0] + x0 + (x1 - x0) / 2
-                col = (col_y_start, col_x, col_y_end, col_x)
-                table_cols.add(col)
-                # clear out the lines to split blurred parts for table cell text
-                rr, cc = skimage.draw.line(*[int(x) for x in col])
-                im_bin_blurred[rr, cc] = 255
-
-            column_row_grp_table_rows[col_idx][row_grp_idx] = table_rows
-            column_row_grp_table_cols[col_idx][row_grp_idx] = table_cols
+            (table_scope, table_rows, table_cols) = tablevspan.build_table(column, rows, row_hspacings, rects, im_bin_blurred)
+            column_row_grp_build_table[col_idx][row_grp_idx] = (table_scope, table_rows, table_cols)
 
     text_vertices = []
     contours = skimage.measure.find_contours(im_bin_blurred)
@@ -150,12 +116,11 @@ def parse(input_image):
         'columns':              columns,
         'spacings':             spacings,
         'column_row_groups':    column_row_groups,
+        'column_row_vspacings': column_row_vspacings,
         'column_row_grp_vlines':        column_row_grp_vlines,
         'column_row_grp_row_spacings':  column_row_grp_row_spacings,
-        'column_row_grp_table_rows':    column_row_grp_table_rows,
-        'column_row_grp_table_cols':    column_row_grp_table_cols,
         'column_row_grp_tablevspan':    column_row_grp_tablevspan,
-        'column_row_grp_table_scopes':  column_row_grp_table_scopes
+        'column_row_grp_build_table':   column_row_grp_build_table,
     }
 
 
@@ -194,6 +159,18 @@ def kmean_binarize(n_clusters, image):
     return image
 
 
+def calc_target_scale(width, height):
+    # Target narrow side in pixels for segmentation processing, height for
+    # a landscape document, width for a portrait one
+    TARGET_NARROW_SIDE = 400
+    target_scale = 1
+    if (width > height):
+        target_scale = height / TARGET_NARROW_SIDE
+    else:
+        target_scale = width / TARGET_NARROW_SIDE
+    return target_scale
+
+
 def prepare_images_for_segmentation(source_image):
     """
     `prepare_images_for_segmentation` prepares binarized images for
@@ -213,9 +190,6 @@ def prepare_images_for_segmentation(source_image):
                     format: numpy.array(nrows, ncols), 1-channel ubyte (0-255)
 
     """
-    # Target narrow side in pixels for segmentation processing, height for
-    # a landscape document, width for a portrait one
-    TARGET_NARROW_SIDE = 400
     # Gaussian blur sigma for the "blurred_bin" version, used primarily
     # to isolate paragraphs. For it to work properly, the characters in a
     # paragraph must be touched together to form a connected shape, but not
@@ -232,11 +206,8 @@ def prepare_images_for_segmentation(source_image):
     image = skimage.color.rgb2gray(source_image)
     height = image.shape[0]
     width = image.shape[1]
-    target_scale = 1
-    if (width > height):
-        target_scale = height / TARGET_NARROW_SIDE
-    else:
-        target_scale = width / TARGET_NARROW_SIDE
+
+    target_scale = calc_target_scale(width, height)
 
     twidth = int(width / target_scale)
     theight = int(height / target_scale)
@@ -246,7 +217,7 @@ def prepare_images_for_segmentation(source_image):
     # before even doing anything else, turn 5% from the top of the page
     # to white to avoid any weird navigation bars or headers like the us
     # steel report situation
-    thumb_image[0:int(400 * 0.05), :] = 1
+    thumb_image[0:int(min(twidth, theight) * 0.045), :] = 1
 
     # im_bin = kmean_binarize(3, skimage.util.img_as_ubyte(thumb_image))
     # skimage.io.imsave(filename.replace('test', 'bin'), skimage.util.img_as_ubyte(im_bin))
@@ -729,12 +700,20 @@ class tablevspan:
             filled_count2 < height2):
             return False
         # heuristics 2: first column should relatively be tall, and it
-        # should not be the shortest column of the entire table.
+        # should not be the shortest column of the entire table, also
+        # it should end in the same row as some other columns
         if len(rects) > 1:
             ((x0, y0), (x1, y1)) = rects[0]
             col_heights = [y1 - y0 for ((x0, y0), (x1, y1)) in rects[1:]]
             col_height_thrs = numpy.median(col_heights)
-            if y1 - y0 < col_height_thrs:
+            all_rect_bottoms = set([y1 for ((x0, y0), (x1, y1)) in rects[1:]])
+            if (y1 - y0 < col_height_thrs and
+                (y1 not in all_rect_bottoms or
+                # often times, the bottom row is "total", which can extend
+                # into contents below table, forming an unnecessary column.
+                # the following statement requires the first column to be
+                # at least 3 rows tall
+                y1 - y0 < 3)):
                 return False
         return True
 
@@ -762,6 +741,136 @@ class tablevspan:
         for rect in filtered_rects:
             rects.remove(rect)
         return rects
+
+    @staticmethod
+    def build_table(column, rows, row_hspacings, rects, im_bin_blurred):
+        """
+        `build_table` generates coordinates for rows and columns that could
+        be used to build a table from "row vertical spacing" covering
+        rectangles from previous steps.
+
+        It also clears the rows and columns from the `im_bin_blurred`
+        image so that later contour finding operations can skip clear edges
+        of tables and stick to the cell text.
+
+        """
+        # the left most rect's left side is the first column, use its content
+        # to identify potentially multiple tables
+        table_scope = []
+        if rects:
+            # mechanism for recording the right side (or end) of the first
+            # text column
+            per_row_col1_ends = {}
+            for ((x0, y0), (x1, y1)) in rects:
+                per_row_col1_ends[y0] = min(x0, per_row_col1_ends.get(y0, 100000))
+            # loop through all the "first columns"
+            rect_left = numpy.array([x0 for ((x0, y0), (x1, y1)) in rects], dtype=numpy.uint)
+            for rect_row, col1_end in sorted(per_row_col1_ends.items()):
+                # locate this first column rect, and determine its
+                # top/bottom rows
+                col1_idx = numpy.where(rect_left == col1_end)[0][0]
+                col1_top_row_idx = rects[col1_idx][0][1]
+                col1_bottom_row_idx = rects[col1_idx][1][1]
+                # loop through all the rows primarily to check whether
+                # the first column has content, because generally
+                # speaking, the first column should be filled with text,
+                # or this could be mis-detection
+                cur_table_start = None
+                for row_idx in range(col1_top_row_idx, col1_bottom_row_idx + 1):
+                    # determine the column at least has one pixel black (0)
+                    has_content = numpy.sum(row_hspacings[row_idx, 0:col1_end]) < col1_end
+                    # this row is text
+                    if has_content:
+                        # `cur_table_start=None` means the last row is blank space
+                        if cur_table_start is None:
+                            # except for the top row, all the rest tables can have
+                            # a single row of empty cells, for either a first
+                            # column header, or caption
+                            if row_idx > col1_top_row_idx:
+                                # reduce last "table height"
+                                if table_scope:
+                                    table_scope[-1][1] -= 1
+                                # mark table start as the last row (blank space)
+                                cur_table_start = row_idx - 1
+                            else:
+                                cur_table_start = row_idx
+                        continue
+                    # this row is blank space
+                    else:
+                        # continue expand the previous table if applicable,
+                        # tables are allowed to have blank space rows in
+                        # the bottom
+                        if (table_scope and
+                            table_scope[-1][1] == row_idx - 1):
+                            table_scope[-1][1] = row_idx
+                        # no tables found yet, create the first one
+                        elif cur_table_start is not None:
+                            if (not table_scope or
+                                cur_table_start >= table_scope[-1][1]):
+                                table_scope.append([cur_table_start, row_idx])
+                            cur_table_start = None
+                if cur_table_start is not None:
+                    if (not table_scope or
+                        cur_table_start >= table_scope[-1][1]):
+                        table_scope.append([cur_table_start, row_idx])
+        #
+
+        # enumerate all rects for covered row spacings, use them to clear out
+        # the blurred version so that table cell texts are no longer sticked
+        # together
+        table_rows = set()
+        for ((x0, y0), (x1, y1)) in rects:
+            for i in range(y0, y1):
+                row_x = (rows[i][1] + rows[i + 1][0]) / 2
+                row = (row_x, column[0], row_x, column[1])
+                table_rows.add(row)
+                # clear out the lines to split blurred parts for table cell text
+                rr, cc = skimage.draw.line(*[int(x) for x in row])
+                im_bin_blurred[rr, cc] = 255
+
+        # additional logic: the above mechanism cannot detect multiple tables
+        # inside the same column delimited by a segment of footnotes, like
+        # John Deere 2021, page 64
+        # to address this, add additional rows when there are multiple
+        # rectangles touching the same top or bottom, but not row group
+        # boundaries
+        rect_tops = {}
+        rect_bottoms = {}
+        for ((x0, y0), (x1, y1)) in rects:
+            if (y0 == 0 or
+                y1 >= rows[-1][1]):
+                continue
+            rect_tops[y0] = rect_tops.get(y0, 0) + 1
+            rect_bottoms[y1] = rect_bottoms.get(y1, 0) + 1
+        for i, count in rect_tops.items():
+            if count >= 2:
+                row_x = (rows[i][0] + rows[i - 1][1]) / 2
+                table_rows.add((row_x, column[0], row_x, column[1]))
+        for i, count in rect_bottoms.items():
+            if (count >= 2 and
+                i < len(rows) - 1):
+                row_x = (rows[i][1] + rows[i + 1][0]) / 2
+                table_rows.add((row_x, column[0], row_x, column[1]))
+
+        table_cols = set()
+        for ((x0, y0), (x1, y1)) in rects:
+            if y0 > 0:
+                col_y_start = (rows[y0][0] + rows[y0 - 1][1]) / 2
+            else:
+                col_y_start = rows[y0][0]
+            if y1 < len(rows) - 1:
+                col_y_end = (rows[y1][1] + rows[y1 + 1][0]) / 2
+            else:
+                col_y_end = rows[y1][1]
+            col_x = column[0] + x0 + (x1 - x0) / 2
+            col = (col_y_start, col_x, col_y_end, col_x)
+            table_cols.add(col)
+            # clear out the lines to split blurred parts for table cell text
+            rr, cc = skimage.draw.line(*[int(x) for x in col])
+            im_bin_blurred[rr, cc] = 255
+
+        return (table_scope, table_rows, table_cols)
+
 
 
 class debug_painter:
@@ -836,3 +945,35 @@ class debug_painter:
                 for ((x0, y0), (x1, y1)) in rects:
                     rr, cc = skimage.draw.rectangle((rows[y0][0], x0 + column[0]), (rows[y1][1], x1 + column[0]))
                     skimage.draw.set_color(test_img, (rr, cc), helper.get_color_cycle_rgb(), 0.5)
+
+    @staticmethod
+    def tablevspan_build_table(test_img, results):
+        (columns, column_row_groups, column_row_grp_row_spacings, fresult) = results
+        for col_idx in sorted(column_row_grp_row_spacings):
+            column = columns[col_idx]
+            for row_grp_idx in sorted(column_row_grp_row_spacings[col_idx]):
+                if col_idx not in fresult:
+                    continue
+                if row_grp_idx not in fresult[col_idx]:
+                    continue
+                rows = column_row_groups[col_idx][row_grp_idx]
+                (table_scope, table_rows, table_cols) = fresult[col_idx][row_grp_idx]
+                for row in table_rows:
+                    row = [int(x) for x in row]
+                    rr, cc = skimage.draw.line(*row)
+                    skimage.draw.set_color(test_img, (rr, cc), (255, 192, 0), 1)
+                for col in table_cols:
+                    col = [int(x) for x in col]
+                    rr, cc = skimage.draw.line(*col)
+                    skimage.draw.set_color(test_img, (rr, cc), (255, 0, 0), 1)
+                for (row_top_idx, row_bottom_idx) in table_scope:
+                    if row_top_idx > 0:
+                        table_row_top = (rows[row_top_idx][0] + rows[row_top_idx - 1][1]) / 2
+                    else:
+                        table_row_top = rows[row_top_idx][0]
+                    if row_bottom_idx == len(rows) - 1:
+                        table_row_bottom = rows[row_bottom_idx][1]
+                    else:
+                        table_row_bottom = (rows[row_bottom_idx][1] + rows[row_bottom_idx + 1][0]) / 2
+                    rr, cc = skimage.draw.rectangle((int(table_row_top), column[0] - 5), (int(table_row_bottom), column[0]))
+                    skimage.draw.set_color(test_img, (rr, cc), helper.get_color_cycle_rgb(), 1)
