@@ -25,10 +25,9 @@ def _run_page(debug_dir, image, content, page):
     tables = aggr.collect_tables(results, content)
     for table in tables:
         table_ = Texttable(max_width=os.get_terminal_size()[0])
-        table_.set_deco(Texttable.HEADER | Texttable.BORDER)
+        table_.set_deco(Texttable.BORDER | Texttable.VLINES)
         table_.add_rows(table['content'])
         print(table_.draw())
-        print("")
 
     if debug_dir:
         debug_img = skimage.color.gray2rgb(results['im_bin_clear'])

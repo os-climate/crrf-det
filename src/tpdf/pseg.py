@@ -972,6 +972,12 @@ class tablevspan:
 
     @staticmethod
     def find_cells(intersections, intersections_upward, intersections_downward):
+        """
+        `find_cells` searches for a "table cell" from the intersections
+        returned from `find_intersections`. Search is implemented mainly
+        by pairing the top-left corner and the bottom-right corner.
+
+        """
         intersections_set = set(intersections)
         cells = []
         for inters_idx, (row, col) in enumerate(intersections):
@@ -979,14 +985,48 @@ class tablevspan:
                 continue
             if inters_idx >= len(intersections) - 1:
                 continue
-            next_col = intersections[inters_idx + 1][1]
-            next_row = None
-            for i in range(inters_idx + 1, len(intersections)):
-                if intersections[i][1] == col:
-                    next_row = intersections[i][0]
+            # column span, given the top-left corner, find the next
+            # bottom-right corner, giving the chance for the column
+            # to span multiple intersections
+            col_span = 0
+            row_span = 0
+            while True:
+                try:
+                    next_col = intersections[inters_idx + 1 + col_span][1]
+                except IndexError:
+                    # col_span too large
+                    next_col = None
+                    next_row = None
                     break
-            if next_row is not None:
+                next_row = None
+                for i in range(inters_idx + 1 + row_span, len(intersections)):
+                    if intersections[i][1] == col:
+                        next_row = intersections[i][0]
+                        break
+                # bottom-right corner is downward only, continue
+                # search in the same row
+                if (next_row, next_col) in intersections_downward:
+                    col_span += 1
+                    continue
+                # bottom-right corner is not an intersection
+                if (next_row, next_col) not in intersections_set:
+                    col_span += 1
+                    continue
+                if next_col == col:
+                    col_span += 1
+                    continue
+                if next_row == row:
+                    row_span += 1
+                    continue
+                break
+            if (next_row is not None and
+                # ensure the cell is not in negative position
+                next_row > row and
+                next_col > col):
                 cells.append((row, col, next_row, next_col))
+        # remove duplicates
+        cells = set(cells)
+        cells = sorted(cells, key=lambda cells:cells[0] * 10000 + cells[1])
         return cells
 
 
