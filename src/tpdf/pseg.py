@@ -433,7 +433,9 @@ def row_groups_from_columns(columns, im_bin_clear):
                         # at least MIN_ROW_HEIGHT tall a group of rows
                         (rows[-1][1] - rows[0][0] >= MIN_ROW_HEIGHT or
                         # or at least MIN_ROW_HEIGHT tall vspacing
-                        i - last_row_end >= MIN_ROW_HEIGHT)):
+                        i - last_row_end >= MIN_ROW_HEIGHT or
+                        # first row
+                        not row_groups)):
                         row_groups.append(rows)
                         rows = []
                     cur_row.append(i)
@@ -729,8 +731,10 @@ class tablevspan:
             ((x0, y0), (x1, y1)) = rects[0]
             col_heights = [y1 - y0 for ((x0, y0), (x1, y1)) in rects[1:]]
             col_height_thrs = numpy.median(col_heights)
+            col_height_max = numpy.amax(col_heights)
             all_rect_bottoms = set([y1 for ((x0, y0), (x1, y1)) in rects[1:]])
             if (y1 - y0 < col_height_thrs and
+                y1 - y0 < col_height_max / 2 and
                 (y1 not in all_rect_bottoms or
                 # often times, the bottom row is "total", which can extend
                 # into contents below table, forming an unnecessary column.
