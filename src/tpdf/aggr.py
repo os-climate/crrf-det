@@ -8,17 +8,24 @@ document.
 from . import pseg
 
 
-def _recalc_word_coords(page_content):
+def _recalc_word_coords(page_content, doc_meta):
     # recalculate per-word coordinates so that it matches
     # cells coordinate "narrow side 400px" proportions
-    target_scale = pseg.calc_target_scale(page_content['page']['width'], page_content['page']['height'])
+    if doc_meta['mediabox'] != doc_meta['cropbox']:
+        target_scale = pseg.calc_target_scale(doc_meta['cropbox'][2] - doc_meta['cropbox'][0], doc_meta['cropbox'][3] - doc_meta['cropbox'][1])
+        x_shift = doc_meta['cropbox'][0]
+        y_shift = doc_meta['cropbox'][1]
+    else:
+        target_scale = pseg.calc_target_scale(page_content['page']['width'], page_content['page']['height'])
+        x_shift = 0
+        y_shift = 0
     words = []
     for w in page_content['words']:
         if not w.get('_recalc_word_coords', False):
-            for key in w:
-                if key == 'text':
-                    continue
-                w[key] /= target_scale
+            w['xmin'] = (w['xmin'] - x_shift) / target_scale
+            w['xmax'] = (w['xmax'] - x_shift) / target_scale
+            w['ymin'] = (w['ymin'] - y_shift) / target_scale
+            w['ymax'] = (w['ymax'] - y_shift) / target_scale
             # precalculate half a word area/size as the "coverage
             # threshold" for cell inclusion requirement, in other
             # words, half the word must be in the cell
@@ -41,7 +48,7 @@ def _is_overlapped(box, word):
     return False
 
 
-def collect_tables(pseg_results, page_content):
+def collect_tables(pseg_results, page_content, doc_meta):
     """
     `collect_tables` combines the "cells" results from page segmentation
     with per-word coordinates in page_content to build final csv-like
@@ -57,7 +64,7 @@ def collect_tables(pseg_results, page_content):
     column_row_grp_build_table = pseg_results.get('column_row_grp_build_table', {})
     column_row_grp_cells = pseg_results.get('column_row_grp_cells', {})
 
-    words = _recalc_word_coords(page_content)
+    words = _recalc_word_coords(page_content, doc_meta)
 
     # used_words is a mechanism to prevent a single word
     # to be used more than one time
@@ -136,8 +143,8 @@ def collect_tables(pseg_results, page_content):
     return (tables, used_words)
 
 
-def collect_text(pseg_results, page_content, used_words):
-    words = _recalc_word_coords(page_content)
+def collect_text(pseg_results, page_content, doc_meta, used_words):
+    words = _recalc_word_coords(page_content, doc_meta)
     boxes = []
     for box in pseg_results.get('text_boxes', []):
         box_words = []

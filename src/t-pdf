@@ -11,7 +11,7 @@ import argparse
 from tpdf import pseg, docmt, helper, aggr
 
 
-def _run_page(debug_dir, image, content, page):
+def _run_page(debug_dir, image, content, page, doc_meta={}):
     results = pseg.parse(image)
     target_scale = results['target_scale']
     columns = results['columns']
@@ -23,8 +23,8 @@ def _run_page(debug_dir, image, content, page):
     column_row_grp_build_table = results.get('column_row_grp_build_table', {})
     column_row_grp_cells = results.get('column_row_grp_cells', {})
 
-    (tables, used_words) = aggr.collect_tables(results, content)
-    text_boxes = aggr.collect_text(results, content, used_words)
+    (tables, used_words) = aggr.collect_tables(results, content, doc_meta)
+    text_boxes = aggr.collect_text(results, content, doc_meta, used_words)
 
     all_contents = text_boxes + tables
     all_contents = sorted(all_contents, key=lambda all_contents:all_contents['box'][0] * 10000 + all_contents['box'][1])
@@ -89,7 +89,7 @@ def _run_page(debug_dir, image, content, page):
 
 def main(args):
     if args.input.lower().endswith('.pdf'):
-        r = docmt.get_info(args.input)
+        doc_meta = docmt.get_info(args.input)
         if args.page:
             if ',' in args.page:
                 pages = [int(x) for x in args.page.split(',')]
@@ -99,18 +99,18 @@ def main(args):
             else:
                 pages = [int(args.page)]
         else:
-            pages = range(1, r['pages'] + 1)
+            pages = range(1, doc_meta['pages'] + 1)
         print('processing document {}, {} pages ...'.format(os.path.basename(args.input), len(pages)))
         doc = {
             'meta': {},
             'pages': []
         }
-        doc['meta'].update(r)
+        doc['meta'].update(doc_meta)
         checkpoint = time.time()
         for page_idx, page in enumerate(pages):
             image = docmt.load_page_image(args.input, page)
             content = docmt.load_page_content(args.input, page)
-            rpage = _run_page(args.debug, image, content, page)
+            rpage = _run_page(args.debug, image, content, page, doc_meta)
             doc['pages'].append(rpage)
             if args.verbose:
                 from colorama import Fore, Back, Style

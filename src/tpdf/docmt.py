@@ -8,11 +8,13 @@ import skimage.io
 
 DOCMT_BIN=''
 PDFTOTEXT_BIN=''
+PDFINFO_BIN=''
 
 
 def search_for_docmt_bin():
     global DOCMT_BIN
     global PDFTOTEXT_BIN
+    global PDFINFO_BIN
     if DOCMT_BIN:
         return
     paths = [
@@ -20,6 +22,7 @@ def search_for_docmt_bin():
         '/docmt/docmt',
     ]
     PDFTOTEXT_BIN = '/usr/bin/pdftotext'
+    PDFINFO_BIN = '/usr/bin/pdfinfo'
     for filename in paths:
         if os.path.isfile(filename):
             DOCMT_BIN = filename
@@ -86,24 +89,25 @@ def load_page_content(filename, page):
 
 
 def get_info(filename):
-    global DOCMT_BIN
-    cmd = ['-i', filename]
-    p = subprocess.Popen([DOCMT_BIN, *cmd, 'preview'], stdin=subprocess.PIPE, stdout=subprocess.PIPE)
+    global PDFINFO_BIN
+    cmd = ['-box', filename]
+    p = subprocess.Popen([PDFINFO_BIN, *cmd], stdin=subprocess.PIPE, stdout=subprocess.PIPE)
     r = p.communicate()
     ret = {}
-    do_parse = False
     for line in r[0].decode('utf-8').split('\n'):
-        if line == '[essential]':
-            do_parse = True
+        colon = line.find(': ')
+        if colon <= 0:
             continue
-        elif line.startswith('['):
-            break
-        if do_parse:
-            (key, value) = line.split(' ')
-            try:
-                ret[key] = int(value)
-            except ValueError:
-                ret[key] = value
+        key = line[:colon].lower()
+        value = line[colon + 1:].strip()
+        if key.endswith('box'):
+            value = [float(v) for v in value.split(' ') if len(v) > 0]
+        try:
+            ret[key] = int(value)
+        except ValueError:
+            ret[key] = value
+        except TypeError:
+            ret[key] = value
     return ret
 
 
