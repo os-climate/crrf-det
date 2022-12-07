@@ -2,11 +2,12 @@
 
 import os
 import sys
+import time
 import numpy
+import orjson
 import skimage
 import argparse
 
-from texttable import Texttable
 from tpdf import pseg, docmt, helper, aggr
 
 
@@ -22,12 +23,11 @@ def _run_page(debug_dir, image, content, page):
     column_row_grp_build_table = results.get('column_row_grp_build_table', {})
     column_row_grp_cells = results.get('column_row_grp_cells', {})
 
-    tables = aggr.collect_tables(results, content)
-    for table in tables:
-        table_ = Texttable(max_width=os.get_terminal_size()[0])
-        table_.set_deco(Texttable.BORDER | Texttable.VLINES)
-        table_.add_rows(table['content'])
-        print(table_.draw())
+    (tables, used_words) = aggr.collect_tables(results, content)
+    text_boxes = aggr.collect_text(results, content, used_words)
+
+    all_contents = text_boxes + tables
+    all_contents = sorted(all_contents, key=lambda all_contents:all_contents['box'][0] * 10000 + all_contents['box'][1])
 
     if debug_dir:
         debug_img = skimage.color.gray2rgb(results['im_bin_clear'])
@@ -79,23 +79,64 @@ def _run_page(debug_dir, image, content, page):
         ofn = os.path.join(debug_dir, '{}.{}.debug.parse.jpg'.format(os.path.basename(args.input), page))
         skimage.io.imsave(ofn, image)
 
+    return {
+        'page':     page,
+        'width':    results.get('width', 0),
+        'height':   results.get('height', 0),
+        'content':  all_contents
+    }
+
 
 def main(args):
     if args.input.lower().endswith('.pdf'):
-        print('processing document {}'.format(args.input))
         r = docmt.get_info(args.input)
         if args.page:
             if ',' in args.page:
                 pages = [int(x) for x in args.page.split(',')]
+            elif '-' in args.page:
+                (page_left, page_right) = args.page.split('-')
+                pages = range(int(page_left), int(page_right) + 1)
             else:
                 pages = [int(args.page)]
-            for page in pages:
-                print('processing page {}'.format(page))
-                image = docmt.load_page_image(args.input, page)
-                content = docmt.load_page_content(args.input, page)
-                _run_page(args.debug, image, content, page)
+        else:
+            pages = range(1, r['pages'] + 1)
+        print('processing document {}, {} pages ...'.format(os.path.basename(args.input), len(pages)))
+        doc = {
+            'meta': {},
+            'pages': []
+        }
+        doc['meta'].update(r)
+        checkpoint = time.time()
+        for page_idx, page in enumerate(pages):
+            image = docmt.load_page_image(args.input, page)
+            content = docmt.load_page_content(args.input, page)
+            rpage = _run_page(args.debug, image, content, page)
+            doc['pages'].append(rpage)
+            if args.verbose:
+                from colorama import Fore, Back, Style
+                from texttable import Texttable
+                indent = ' ' * 2
+                print(Fore.WHITE + Style.BRIGHT + '--------------- page {} ---------------'.format(rpage['page']) + Style.RESET_ALL)
+                for e in rpage['content']:
+                    if e['type'] == 'text':
+                        print(Fore.GREEN + Style.BRIGHT + 'text' + Style.DIM, 'at', e['box'], Style.RESET_ALL)
+                        print('{}{}'.format(indent, e['content']))
+                    elif e['type'] == 'table':
+                        print(Fore.CYAN + Style.BRIGHT + 'table' + Style.DIM, 'at', e['box'], Style.RESET_ALL)
+                        table_ = Texttable(max_width=(os.get_terminal_size()[0] - len(indent)))
+                        table_.set_deco(Texttable.BORDER | Texttable.VLINES)
+                        table_.add_rows(e['content'])
+                        print('\n'.join([indent + x for x in table_.draw().split('\n')]))
+            else:
+                if time.time() - checkpoint > 30:
+                    print('- {} of {} pages processed'.format(page_idx + 1, len(pages)))
+                    checkpoint = time.time()
+        if args.output:
+            os.makedirs(args.output, exist_ok=True)
+            json_fn = os.path.join(args.output, 'pdf.json')
+            with open(json_fn, 'wb') as f:
+                f.write(orjson.dumps(doc, option=orjson.OPT_SERIALIZE_NUMPY))
     else:
-        print('processing image {}'.format(args.input))
         image = skimage.io.imread(args.input)
         _run_page(args.debug, image, {}, '_')
 
@@ -103,7 +144,9 @@ def main(args):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='t-pdf utility translates a pdf file into a program-friendly structure')
     parser.add_argument('-i', '--input', type=str, required=True, help='input pdf path file name, supply an image file to run on a single image page')
+    parser.add_argument('-o', '--output', type=str, help='output directory for structure and images')
     parser.add_argument('-p', '--page', type=str, help='process a particular page')
     parser.add_argument('-d', '--debug', type=str, help='specify output directory for debug image output')
+    parser.add_argument('-v', '--verbose', action='store_true', help='print verbose document content during translation')
     args = parser.parse_args()
     main(args)

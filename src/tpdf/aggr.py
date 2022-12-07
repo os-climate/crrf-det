@@ -8,6 +8,39 @@ document.
 from . import pseg
 
 
+def _recalc_word_coords(page_content):
+    # recalculate per-word coordinates so that it matches
+    # cells coordinate "narrow side 400px" proportions
+    target_scale = pseg.calc_target_scale(page_content['page']['width'], page_content['page']['height'])
+    words = []
+    for w in page_content['words']:
+        if not w.get('_recalc_word_coords', False):
+            for key in w:
+                if key == 'text':
+                    continue
+                w[key] /= target_scale
+            # precalculate half a word area/size as the "coverage
+            # threshold" for cell inclusion requirement, in other
+            # words, half the word must be in the cell
+            w['coverage_threshold'] = 0.5 * (w['xmax'] - w['xmin']) * (w['ymax'] - w['ymin'])
+            w['_recalc_word_coords'] = True
+        words.append(w)
+    return words
+
+
+def _is_overlapped(box, word):
+    # calculate overlap, and see if the word is inside the box (according
+    # to the predefined 'coverage_threshold')
+    #
+    # `box` is a tuple of (ymin, xmin, ymax, xmax) or
+    #                     (y0, x0, y1, x1)
+    x_overlap = max(0, min(box[3], word['xmax']) - max(box[1], word['xmin']))
+    y_overlap = max(0, min(box[2], word['ymax']) - max(box[0], word['ymin']))
+    if x_overlap * y_overlap > word['coverage_threshold']:
+        return True
+    return False
+
+
 def collect_tables(pseg_results, page_content):
     """
     `collect_tables` combines the "cells" results from page segmentation
@@ -24,24 +57,11 @@ def collect_tables(pseg_results, page_content):
     column_row_grp_build_table = pseg_results.get('column_row_grp_build_table', {})
     column_row_grp_cells = pseg_results.get('column_row_grp_cells', {})
 
-    # recalculate per-word coordinates so that it matches
-    # cells coordinate "narrow side 400px" proportions
-    target_scale = pseg.calc_target_scale(page_content['page']['width'], page_content['page']['height'])
-    words = []
-    for w in page_content['words']:
-        for key in w:
-            if key == 'text':
-                continue
-            w[key] /= target_scale
-        # precalculate half a word area/size as the "coverage
-        # threshold" for cell inclusion requirement, in other
-        # words, half the word must be in the cell
-        w['coverage_threshold'] = 0.5 * (w['xmax'] - w['xmin']) * (w['ymax'] - w['ymin'])
-        words.append(w)
+    words = _recalc_word_coords(page_content)
 
-    # used_word_indices is a mechanism to prevent a single word
-    # to be used more than one time, due to duplicate cells
-    used_word_indices = set()
+    # used_words is a mechanism to prevent a single word
+    # to be used more than one time
+    used_words = set()
 
     tables = []
 
@@ -100,20 +120,38 @@ def collect_tables(pseg_results, page_content):
                         cell_word = []
                         # list all the words
                         for w_idx, w in enumerate(words):
-                            if w_idx in used_word_indices:
+                            if w_idx in used_words:
                                 continue
-                            # calculate overlap, and see if the word is
-                            # inside the cell (according to the
-                            # predefined threshold)
-                            x_overlap = max(0, min(row_cell[3], w['xmax']) - max(row_cell[1], w['xmin']))
-                            y_overlap = max(0, min(row_cell[2], w['ymax']) - max(row_cell[0], w['ymin']))
-                            if x_overlap * y_overlap > w['coverage_threshold']:
-                                used_word_indices.add(w_idx)
+                            if _is_overlapped(row_cell, w):
+                                used_words.add(w_idx)
                                 cell_word.append(w['text'])
                         if cell_word:
                             table[tr_idx][tc_idx] = ' '.join(cell_word)
                 if table:
                     tables.append({
-                        'content': table
+                        'type':     'table',
+                        'content':  table,
+                        'box':      (rows[row_top_idx][0], column[0], rows[row_bottom_idx][1], column[1])
                     })
-    return tables
+    return (tables, used_words)
+
+
+def collect_text(pseg_results, page_content, used_words):
+    words = _recalc_word_coords(page_content)
+    boxes = []
+    for box in pseg_results.get('text_boxes', []):
+        box_words = []
+        for w_idx, w in enumerate(words):
+            if w_idx in used_words:
+                continue
+            if _is_overlapped(box, w):
+                used_words.add(w_idx)
+                box_words.append(w['text'])
+        if not box_words:
+            continue
+        boxes.append({
+            'type':     'text',
+            'content':  ' '.join(box_words),
+            'box':      box
+        })
+    return boxes

@@ -98,6 +98,8 @@ def parse(input_image):
         'target_scale':         target_scale,
         'text_boxes':           text_boxes,
         'im_bin_clear':         im_bin_clear,
+        'width':                im_bin_clear.shape[1],
+        'height':               im_bin_clear.shape[0],
         'columns':              columns,
         'spacings':             spacings,
         'column_row_groups':    column_row_groups,
