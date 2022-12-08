@@ -56,7 +56,7 @@ def collect_tables(pseg_results, page_content, doc_meta):
 
     """
     if not page_content:
-        return []
+        return ([], set())
 
     columns = pseg_results['columns']
     spacings = pseg_results['spacings']
@@ -144,6 +144,8 @@ def collect_tables(pseg_results, page_content, doc_meta):
 
 
 def collect_text(pseg_results, page_content, doc_meta, used_words):
+    if not doc_meta:
+        return []
     words = _recalc_word_coords(page_content, doc_meta)
     boxes = []
     for box in pseg_results.get('text_boxes', []):

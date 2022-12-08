@@ -202,10 +202,15 @@ def prepare_images_for_segmentation(source_image):
     thumb_image = skimage.transform.resize_local_mean(image, (theight, twidth))
     thumb_image[thumb_image > 1] = 1
 
-    # before even doing anything else, turn 5% from the top of the page
+    # before even doing anything else, turn 4.5% from the top of the page
     # to white to avoid any weird navigation bars or headers like the us
     # steel report situation
-    thumb_image[0:int(min(twidth, theight) * 0.045), :] = 1
+    # plus 3.5% on the side
+    ref_side = min(twidth, theight)
+    thumb_image[0:int(ref_side * 0.045), :] = 1
+    # thumb_image[thumb_image.shape[0] - int(ref_side * 0.05):, :] = 1
+    thumb_image[:, 0:int(ref_side * 0.035)] = 1
+    thumb_image[:, thumb_image.shape[1] - int(ref_side * 0.035):] = 1
 
     # im_bin = kmean_binarize(3, skimage.util.img_as_ubyte(thumb_image))
     # skimage.io.imsave(filename.replace('test', 'bin'), skimage.util.img_as_ubyte(im_bin))
@@ -247,6 +252,7 @@ def columns_from_image(im_bin_clear):
 
     """
     MIN_COLUMN_SPACING = 15
+    MIN_COLUMN_WIDTH = 100
 
     width = im_bin_clear.shape[1]
     height = im_bin_clear.shape[0]
@@ -288,7 +294,7 @@ def columns_from_image(im_bin_clear):
         if not col_changed:
             break
     # eliminate narrow spacings
-    spacings = [[spl, spr] for (spl, spr) in spacings if (spr - spl) >= MIN_COLUMN_SPACING]
+    spacings = [[spl, spr] for sp_idx, (spl, spr) in enumerate(spacings) if (spr - spl) >= MIN_COLUMN_SPACING or sp_idx == 0 or sp_idx == (len(spacings) - 1)]
 
     if len(columns) > 3:
         # Four or more columns might be too many for a page. We are likely
@@ -301,7 +307,7 @@ def columns_from_image(im_bin_clear):
         # Two trials to find the middle spacing, first try full page
         # middle (width / 2). If fails, run on max spacing middle
         # (spacings[-1][1] / 2) to account for side binding shift.
-        for middle in [width / 2, spacings[-1][1] / 2]:
+        for middle in [width / 2, spacings[-1][1] / 2, spacings[-1][0] / 2, (spacings[-1][0] + spacings[-1][1]) / 2 / 2]:
             for spc_idx, spacing in enumerate(spacings):
                 if (spacing[1] >= middle and
                     spacing[0] <= middle):
@@ -324,26 +330,14 @@ def columns_from_image(im_bin_clear):
                 if spacing[1] - spacing[0] > mid_spc_width:
                     rogue_spacings.append(spacing)
             if rogue_spacings:
-                new_columns = []
-                removed_columns = []
                 for spacing in rogue_spacings:
-                    new_column = [-1, -1]
-                    for column in columns:
-                        if column[1] == spacing[0]:
-                            new_column[0] = column[0]
-                            removed_columns.append(column)
-                        elif column[0] == spacing[1]:
-                            new_column[1] = column[1]
-                            removed_columns.append(column)
-                        if (new_column[0] != -1 and
-                            new_column[1] != -1):
-                            break
-                    new_columns.append(new_column)
+                    column_begins = [c[0] for c in columns]
+                    column_ends = [c[1] for c in columns]
+                    col_idx_merge_right = column_ends.index(spacing[0])
+                    col_idx_merge_left = column_begins.index(spacing[1])
+                    columns[col_idx_merge_right][1] = columns[col_idx_merge_left][1]
+                    del columns[col_idx_merge_left]
                     spacings.remove(spacing)
-                for column in removed_columns:
-                    columns.remove(column)
-                columns += new_columns
-                columns = sorted(columns, key=lambda columns:columns[0])
         else:
             # Heuristic #2, it is not a two column layout. But it is risky
             # to proceed with so many columns. It is still very likely a
@@ -354,6 +348,25 @@ def columns_from_image(im_bin_clear):
                 spacing_right = spacings[-1]
                 columns = [[spacing_left[1], spacing_right[0]]]
                 spacings = [spacing_left, spacing_right]
+
+    # merge narrow columns
+    while True:
+        col_changed = False
+        column_widths = [column[1] - column[0] for column in columns]
+        for col_idx in range(1, len(column_widths)):
+            if column_widths[col_idx] >= MIN_COLUMN_WIDTH:
+                continue
+            column = columns[col_idx]
+            del columns[col_idx]
+            spacing_left = columns[col_idx - 1][1]
+            spacing_right = column[0]
+            columns[col_idx - 1][1] = column[1]
+            spacings = [[spl, spr] for (spl, spr) in spacings if not (spl == spacing_left and spr == spacing_right)]
+            col_changed = True
+            break
+        if not col_changed:
+            break
+
     return (columns, spacings)
 
 
@@ -399,7 +412,7 @@ def row_groups_from_columns(columns, im_bin_clear):
 
     """
     MAX_ROW_VSPACING = 15
-    MIN_ROW_HEIGHT = 50
+    MIN_ROW_GROUP_HEIGHT = 50
     column_row_groups = {}
     column_row_vspacings = {}
     for col_idx, column in enumerate(columns):
@@ -430,10 +443,10 @@ def row_groups_from_columns(columns, im_bin_clear):
                     # begin of a new row
                     if (i - last_row_end >= MAX_ROW_VSPACING and
                         rows and
-                        # at least MIN_ROW_HEIGHT tall a group of rows
-                        (rows[-1][1] - rows[0][0] >= MIN_ROW_HEIGHT or
-                        # or at least MIN_ROW_HEIGHT tall vspacing
-                        i - last_row_end >= MIN_ROW_HEIGHT or
+                        # at least MIN_ROW_GROUP_HEIGHT tall a group of rows
+                        (rows[-1][1] - rows[0][0] >= MIN_ROW_GROUP_HEIGHT or
+                        # or at least MIN_ROW_GROUP_HEIGHT tall vspacing
+                        i - last_row_end >= MIN_ROW_GROUP_HEIGHT or
                         # first row
                         not row_groups)):
                         row_groups.append(rows)
@@ -701,8 +714,8 @@ class tablevspan:
         # to 60%, otherwise disregard everything.
         if not rects:
             return False
-        filled_count = 0
         ((x0, y0), (x1, y1)) = rects[0]
+        filled_count = 0
         height = 0.6 * (y1 - y0 + 1)
         white_sum = x0
         for i in range(y0, y1 + 1):
