@@ -10,7 +10,7 @@
   },
   "dependencies": {
     "@fontsource/lato": "^4.5.10",
-    "daisyui": "^2.42.1",
+    "daisyui": "^2.43.2",
     "react": "^18.2.0",
     "react-cool-virtual": "^0.7.0",
     "react-dom": "^18.2.0",

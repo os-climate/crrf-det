@@ -160,11 +160,7 @@ const MemoImage = memo(({ width, height, url, ...rest }) => {
 });
 
 
-// function PageImages({ width, setPageNum }) {
 const PageImages = forwardRef(({ width, setPageNum }, ref) => {
-
-  if (width == 0)
-    return (null);
 
   var page = pages[0];
   var pageHeight = parseInt(page.height / page.width * width) + 10;
@@ -199,9 +195,6 @@ const PageImages = forwardRef(({ width, setPageNum }, ref) => {
       <div ref={innerRef}>
         { items.map(({index, size, start}) => (
           <MemoImage key={ index } width={ width } height={ size } url={ pages[index].url } />
-          // <div key={index} style={{ width: `${width}px`, height: `${size}px` }} className="mb-[10px] drop-shadow">
-          //   <img src={pages[index].url} style={{ width: `${width}px`, height: `${size}px` }}/>
-          // </div>
         ))}
       </div>
     </div>
@@ -264,7 +257,9 @@ export default function DocumentView({ path, file }) {
       <div ref={ ref } className="absolute left-0 top-0 right-80 h-9 bg-slate-100 rounded-t-md items-center inline-flex">
         <PageNavigation pageNum={ pageNum } setPageNum={ setPageNum } pageCount={ pages.length } pageImages={ pageImagesRef }/>
       </div>
-      <PageImages width={ width } setPageNum={ setPageNum } ref={ pageImagesRef } />
+      { width > 0 ? (
+        <PageImages width={ width } setPageNum={ setPageNum } ref={ pageImagesRef } />
+      ):(null) }
     </div>
   )
 }

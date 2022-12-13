@@ -14,8 +14,8 @@ function ItemInfo({ info }) {
 
   return (
     <td className="text-xs bg-transparent">
-      <div className="flex items-center text-blue-600">
-        <div className="w-4 h-4 mr-2 rounded-full animate-spin border border-solid border-2 border-blue-500 border-t-transparent"></div>
+      <div className="flex items-center text-teal-600">
+        <div className="w-4 h-4 mr-2 rounded-full animate-spin border border-solid border-2 border-teal-500 border-t-transparent"></div>
         {info.status}
       </div>
     </td> 
@@ -58,7 +58,7 @@ function Item({ listSel, setListSel, index, path, item }) {
   let hoverCls = 'hover:bg-slate-100';
   let selCls = hoverCls;
   if (findListSelIndices().indexOf(index) >= 0)
-    selCls = 'bg-sky-100';
+    selCls = 'bg-teal-100';
 
   if (item.type == 'folder') {
     return (

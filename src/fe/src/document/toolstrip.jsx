@@ -1,17 +1,22 @@
+import { useRef } from 'react';
 import { Link, useParams, useNavigate } from 'react-router-dom';
 
 
-function CurrentFolderDropdown() {
+function CurrentFolderDropdown({ menuFunc }) {
+
   return (
-    <ul tabIndex={0} className="dropdown-content menu menu-compact drop-shadow-lg bg-base-100 rounded w-44">
-      <li><a className="pr-6 hover:text-slate-500"><i className="icon-folder text-slate-500"/>New Folder</a></li>
-      <li className="border-t border-slate-100"><a className="hover:text-slate-500"><i className="icon-upload text-slate-500"/>Upload Files</a></li>
-    </ul>
+    <div>
+      <ul tabIndex={0} className="dropdown-content menu menu-compact drop-shadow-lg bg-base-100 rounded w-48">
+        <li><a className="hover:text-slate-500" onClick={ menuFunc.newFolder }><i className="icon-folder text-slate-500"/>New Folder</a></li>
+        <li className="border-t border-slate-100"><a className="hover:text-slate-500" onClick={ menuFunc.connectS3 }><i className="icon-upload text-slate-500"/>Connect S3 Bucket</a></li>
+        <li className=""><a className="hover:text-slate-500"><i className="icon-upload text-slate-500"/>Upload Files</a></li>
+      </ul>
+    </div>
   )
 }
 
 
-function FolderButton({ idx, folders, listSel, listCount, file }) {
+function FolderButton({ idx, folders, listSel, listCount, file, menuFunc }) {
   var folder = folders[idx];
   let navigate = useNavigate();
 
@@ -26,7 +31,7 @@ function FolderButton({ idx, folders, listSel, listCount, file }) {
             {folder} <FolderCount sel={ listSel } count={ listCount }/>
             <i className="icon-down-dir pl-3 pr-2 text-slate-500"/>
           </label>
-          <CurrentFolderDropdown/>
+          <CurrentFolderDropdown menuFunc={ menuFunc }/>
         </div>
       </span>
     )
@@ -66,59 +71,136 @@ function FolderCount({ sel, count }) {
 }
 
 
+function DocumentsButton() {
+  let navigate = useNavigate();
+
+  function goDocuments() {
+    navigate("/documents");
+  }
+
+  return (
+    <button className="bg-white hover:bg-slate-100 hover:border-slate-200 border border-white px-2 py-1 rounded inline-flex min-h-fit" onClick={ goDocuments }><i className="icon-archive text-slate-500 pl-1 pr-6"/>Documents</button>
+  );
+}
+
+
 export default function DocumentToolstrip({ listSel, listCount }) {
 
   const { path, file } = useParams();
-  let navigate = useNavigate();
+  const refDlgNewFolder = useRef();
+  const refDlgConnectS3 = useRef();
 
   let folders = [];
   if (typeof path !== 'undefined' &&
     path !== '|')
     folders = path.split('|');
 
-  if (file) {
-    return (
-      <div>
-        <button className="bg-white hover:bg-slate-100 hover:border-slate-200 border border-white px-2 py-1 rounded inline-flex min-h-fit" onClick={(node, event) => {
-          navigate("/documents");
-        }}><i className="icon-archive text-slate-500 pl-1 pr-6"/>Documents</button>
-        {
-          folders.map((folder, idx) => (
-            <FolderButton idx={ idx } folders={ folders } listSel={ listSel } listCount={ listCount } file={ file }/>
-          ))
-        }
+  // Dialog handlers
+  function newFolder(e) {
+    document.activeElement.blur();
+    refDlgNewFolder.current.checked = true;
+  }
+  function closeNewFolder(e) {
+    refDlgNewFolder.current.checked = false;
+  }
+
+  function connectS3(e) {
+    document.activeElement.blur();
+    refDlgConnectS3.current.checked = true;
+  }
+  function closeConnectS3(e) {
+    refDlgConnectS3.current.checked = false;
+  }
+
+  // A single "Documents" dropdown button
+  let documentsButton = (
+    <div className="dropdown">
+      <label tabIndex={0} className="cursor-pointer hover:bg-slate-100 hover:border-slate-200 border border-white px-2 py-1 rounded inline-flex min-h-fit items-center">
+        <i className="icon-archive text-slate-500 pl-1 pr-6"/>
+        Documents <FolderCount sel={ listSel } count={ listCount }/>
+        <i className="icon-down-dir pl-3 pr-2 text-slate-500"/>
+      </label>
+      <CurrentFolderDropdown menuFunc={ { newFolder: newFolder, connectS3: connectS3 } }/>
+    </div>
+  );
+  // "Documents" non-dropdown button shows up whenever viewing a
+  // file or in at least one level folder.
+  if (file ||
+    folders.length > 0)
+    documentsButton = (<DocumentsButton/>);
+
+  // A file button appears only when viewing a file
+  let fileButton = (null);
+  if (file)
+    fileButton = (
+      <span>
         <i className="icon-right-open text-slate-300"/>
         <button className="bg-white hover:bg-slate-100 hover:border-slate-200 border border-white px-2 py-1 rounded inline-flex min-h-fit">
           <i className="icon-doc-text text-slate-500 pl-1 pr-6"/>{ file }
         </button>
-      </div>
+      </span>
     )
-  }
 
-  if (folders.length == 0)
-    return (
-      <div>
-        <div className="dropdown">
-          <label tabIndex={0} className="cursor-pointer hover:bg-slate-100 hover:border-slate-200 border border-white px-2 py-1 rounded inline-flex min-h-fit items-center">
-            <i className="icon-archive text-slate-500 pl-1 pr-6"/>
-            Documents <FolderCount sel={ listSel } count={ listCount }/>
-            <i className="icon-down-dir pl-3 pr-2 text-slate-500"/>
-          </label>
-          <CurrentFolderDropdown/>
+  // Dialogs
+  let dialogs = (
+    <div>
+      <input type="checkbox" id="dialog-new-folder" className="modal-toggle" ref={ refDlgNewFolder } />
+      <div className="modal">
+        <div className="modal-box">
+          <h3 className="font-bold text-lg">New Folder</h3>
+          <div className="form-control w-full">
+            <p className="py-3">Enter a name to create a new folder</p>
+            <input type="text" placeholder="Name of the Folder" className="input input-bordered w-full" />
+          </div>
+          <div className="modal-action">
+            <button className="btn bg-slate-50 text-slate-500 border-slate-300 hover:bg-slate-200 hover:border-slate-400" onClick={ closeNewFolder }>Cancel</button>
+            <label htmlFor="dialog-new-folder" className="btn bg-teal-300 hover:bg-teal-600 hover:border-teal-700 border-teal-500">Create</label>
+          </div>
         </div>
       </div>
-    )
+
+
+      <input type="checkbox" id="dialog-connect-s3" className="modal-toggle" ref={ refDlgConnectS3 } />
+      <div className="modal">
+        <div className="modal-box">
+          <h3 className="font-bold text-lg">Connect an S3 Bucket</h3>
+          <div className="form-control w-full">
+            <label className="label">
+              <span className="label-text">Bucket Location</span>
+            </label>
+            <input type="text" placeholder="s3://" className="input input-bordered w-full" />
+          </div>
+          <div className="form-control w-full">
+            <label className="label">
+              <span className="label-text">AccessKeyId</span>
+            </label>
+            <input type="text" placeholder="AccessKeyId" className="input input-bordered w-full" />
+          </div>
+          <div className="form-control w-full">
+            <label className="label">
+              <span className="label-text">SecretAccessKey</span>
+            </label>
+            <input type="text" placeholder="SecretAccessKey" className="input input-bordered w-full" />
+          </div>
+          <div className="modal-action">
+            <button className="btn bg-slate-50 text-slate-500 border-slate-300 hover:bg-slate-200 hover:border-slate-400" onClick={ closeConnectS3 }>Cancel</button>
+            <label htmlFor="dialog-connect-s3" className="btn bg-teal-300 hover:bg-teal-600 hover:border-teal-700 border-teal-500">Connect</label>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
 
   return (
     <div>
-      <button className="bg-white hover:bg-slate-100 hover:border-slate-200 border border-white px-2 py-1 rounded inline-flex min-h-fit" onClick={(node, event) => {
-        navigate("/documents");
-      }}><i className="icon-archive text-slate-500 pl-1 pr-6"/>Documents</button>
+      { documentsButton }
       {
         folders.map((folder, idx) => (
-          <FolderButton folder={ folder } idx={ idx } folders={ folders } listSel={ listSel } listCount={ listCount }/>
+          <FolderButton idx={ idx } folders={ folders } listSel={ listSel } listCount={ listCount } file={ file } menuFunc={ { newFolder: newFolder, connectS3: connectS3 } }/>
         ))
       }
+      { fileButton }
+      { dialogs }
     </div>
   )
 }

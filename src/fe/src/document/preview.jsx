@@ -26,36 +26,41 @@ function HasSelection({ listSel, listCount }) {
     }
   }
 
-  if (listSel[0].type !== 'file')
-    return (
-      <div className="p-3">
-        <table>
-          <tbody>
-            <tr>
-              <td className="align-top"><i className="icon-folder mx-2 text-sky-500 text-lg"/></td><td className="align-top text-slate-700">
-                <div className="text-lg">{ listSel[0].name }</div>
-                <div className="text-sm text-slate-400">{ listSel[0].info }</div>
-              </td>
-            </tr>
-          </tbody>
-        </table>
+  let details;
+  let thumbs = (null);
+  if (listSel[0].type === 'file') {
+    details = (
+      <tr>
+        <td className="align-top"><i className="icon-doc-text mx-2 text-teal-500 text-lg"/></td><td className="align-top text-slate-700">
+          <div className="text-lg">{ listSel[0].name }</div>
+          <div className="text-sm text-slate-400">{ listSel[0].size } / { listSel[0].info }</div>
+          <div className="text-sm text-slate-400">{ listSel[0].date }</div>
+        </td>
+      </tr>
+    )
+    thumbs = (
+      <div className="ml-1 mr-1 mt-2">
+        <Thumbnail itemData={ previewData[listSel[0].name] }/>
       </div>
+    )
+  } else
+    details = (
+      <tr>
+        <td className="align-top"><i className="icon-folder mx-2 text-teal-500 text-lg"/></td><td className="align-top text-slate-700">
+          <div className="text-lg">{ listSel[0].name }</div>
+          <div className="text-sm text-slate-400">{ listSel[0].info }</div>
+        </td>
+      </tr>
     )
 
   return (
     <div className="p-3">
       <table>
-        <tr>
-          <td className="align-top"><i className="icon-doc-text mx-2 text-sky-500 text-lg"/></td><td className="align-top text-slate-700">
-            <div className="text-lg">{ listSel[0].name }</div>
-            <div className="text-sm text-slate-400">{ listSel[0].size } / { listSel[0].info }</div>
-            <div className="text-sm text-slate-400">{ listSel[0].date }</div>
-          </td>
-        </tr>
+        <tbody>
+        { details }
+        </tbody>
       </table>
-      <div className="ml-1 mr-1 mt-2">
-        <Thumbnail itemData={ previewData[listSel[0].name] }/>
-      </div>
+      { thumbs }
     </div>
   )
 }
