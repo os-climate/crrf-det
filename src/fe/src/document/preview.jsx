@@ -5,7 +5,7 @@ function Thumbnail({ itemData }) {
   return (
     <div className="relative">
     { itemData.thumbs.slice().reverse().map((url, idx) => (
-      <img className="absolute rounded border border-slate-500/50 right-0 hover:z-20" style={{top: (idx * 20) + 'px', width: (100 - (itemData.thumbs.length - idx) * 5) + '%'}} src={ url }/>
+      <img key={ idx } className="absolute rounded border border-slate-500/50 right-0 hover:z-20" style={{top: (idx * 20) + 'px', width: (100 - (itemData.thumbs.length - idx) * 5) + '%'}} src={ url }/>
     ))}
     </div>
   )

@@ -6,10 +6,10 @@ function CurrentFolderDropdown({ menuFunc }) {
 
   return (
     <div>
-      <ul tabIndex={0} className="dropdown-content menu menu-compact drop-shadow-lg bg-base-100 rounded w-48">
-        <li><a className="hover:text-slate-500" onClick={ menuFunc.newFolder }><i className="icon-folder text-slate-500"/>New Folder</a></li>
-        <li className="border-t border-slate-100"><a className="hover:text-slate-500" onClick={ menuFunc.connectS3 }><i className="icon-upload text-slate-500"/>Connect S3 Bucket</a></li>
-        <li className=""><a className="hover:text-slate-500"><i className="icon-upload text-slate-500"/>Upload Files</a></li>
+      <ul tabIndex={0} className="dropdown-content menu menu-compact shadow-md border border-slate-200 bg-base-100 rounded w-48">
+        <li className="border-b border-slate-100"><a className="hover:text-slate-500" onClick={ menuFunc.newFolder }><i className="icon-folder text-slate-500"/>New Folder</a></li>
+        <li><a className="hover:text-slate-500" onClick={ menuFunc.connectS3 }><i className="icon-upload text-slate-500"/>Connect S3 Bucket</a></li>
+        <li className=""><a className="hover:text-slate-500" onClick={ menuFunc.upload }><i className="icon-upload text-slate-500"/>Upload Files</a></li>
       </ul>
     </div>
   )
@@ -84,7 +84,7 @@ function DocumentsButton() {
 }
 
 
-export default function DocumentToolstrip({ listSel, listCount }) {
+export default function DocumentToolstrip({ listSel, listCount, uploadFunc }) {
 
   const { path, file } = useParams();
   const refDlgNewFolder = useRef();
@@ -112,6 +112,11 @@ export default function DocumentToolstrip({ listSel, listCount }) {
     refDlgConnectS3.current.checked = false;
   }
 
+  function upload(e) {
+    document.activeElement.blur();
+    uploadFunc();
+  }
+
   // A single "Documents" dropdown button
   let documentsButton = (
     <div className="dropdown">
@@ -120,7 +125,7 @@ export default function DocumentToolstrip({ listSel, listCount }) {
         Documents <FolderCount sel={ listSel } count={ listCount }/>
         <i className="icon-down-dir pl-3 pr-2 text-slate-500"/>
       </label>
-      <CurrentFolderDropdown menuFunc={ { newFolder: newFolder, connectS3: connectS3 } }/>
+      <CurrentFolderDropdown menuFunc={ { newFolder: newFolder, connectS3: connectS3, upload: upload } }/>
     </div>
   );
   // "Documents" non-dropdown button shows up whenever viewing a
@@ -196,7 +201,7 @@ export default function DocumentToolstrip({ listSel, listCount }) {
       { documentsButton }
       {
         folders.map((folder, idx) => (
-          <FolderButton idx={ idx } folders={ folders } listSel={ listSel } listCount={ listCount } file={ file } menuFunc={ { newFolder: newFolder, connectS3: connectS3 } }/>
+          <FolderButton idx={ idx } folders={ folders } listSel={ listSel } listCount={ listCount } file={ file } menuFunc={ { newFolder: newFolder, connectS3: connectS3, upload: upload } }/>
         ))
       }
       { fileButton }

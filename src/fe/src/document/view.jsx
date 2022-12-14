@@ -153,7 +153,7 @@ var pages = [
 
 const MemoImage = memo(({ width, height, url, ...rest }) => {
   return (
-    <div {...rest} style={{ width: `${width}`, height: `${height - 10}px` }} className="mb-[10px] drop-shadow">
+    <div {...rest} style={{ width: `${width}`, height: `${height - 10}px` }} className="mb-[10px] shadow-md">
       <img src={url} style={{ width: `${width}`, height: `${height - 10}px` }}/>
     </div>
   )
@@ -191,7 +191,7 @@ const PageImages = forwardRef(({ width, setPageNum }, ref) => {
   }))
 
   return (
-    <div ref={outerRef} className="absolute border border-slate-100 left-0 top-9 right-80 bottom-0 overflow-auto">
+    <div ref={outerRef} className="absolute border border-slate-100 left-0 top-9 right-0 bottom-0 overflow-auto">
       <div ref={innerRef}>
         { items.map(({index, size, start}) => (
           <MemoImage key={ index } width={ width } height={ size } url={ pages[index].url } />
@@ -233,7 +233,7 @@ function PageNavigation({ pageNum, setPageNum, pageCount, pageImages }) {
       </button>
       <div className="dropdown">
         <label tabIndex="0" className="btn normal-case min-h-fit h-8 bg-slate-100 border-slate-100 text-slate-500 hover:bg-white hover:border-slate-200">Page { pageNum }</label>
-        <ul tabIndex="0" className="dropdown-content block menu menu-compact shadow bg-base-100 rounded max-h-96 overflow-auto">
+        <ul tabIndex="0" className="dropdown-content block menu menu-compact shadow-md border border-slate-200 bg-base-100 rounded max-h-96 overflow-auto">
           <li className="block px-3 py-1 whitespace-nowrap text-xs uppercase font-bold text-slate-400">Go to Page</li>
           { dropContent }
         </ul>
@@ -246,15 +246,15 @@ function PageNavigation({ pageNum, setPageNum, pageCount, pageImages }) {
 }
 
 
-export default function DocumentView({ path, file }) {
-  const [ pageNum, setPageNum ] = useState(1);
+export default function DocumentView({ path, file, pageNum, setPageNum }) {
+
   const [ scrollToItem, setScrollToItem ] = useState(null);
   const [ ref, { x, y, width, height, top, right, bottom, left } ] = useMeasure();
   const pageImagesRef = useRef();
 
   return (
-    <div className="absolute left-0 right-0 top-0 bottom-0">
-      <div ref={ ref } className="absolute left-0 top-0 right-80 h-9 bg-slate-100 rounded-t-md items-center inline-flex">
+    <div>
+      <div ref={ ref } className="absolute left-0 top-0 right-0 h-9 bg-slate-100 rounded-t-md items-center inline-flex">
         <PageNavigation pageNum={ pageNum } setPageNum={ setPageNum } pageCount={ pages.length } pageImages={ pageImagesRef }/>
       </div>
       { width > 0 ? (

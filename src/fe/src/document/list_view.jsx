@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from "react-router-dom";
 
 
@@ -142,25 +142,27 @@ function ParentFolderItem({ listSel, setListSel, path }) {
 
 function AllItems({ listSel, setListSel, path, items }) {
 
-  if (!items)
-    return (
-      <tbody>
-        <ParentFolderItem listSel={ listSel } setListSel={ setListSel } path={ path }/>
-      </tbody>
-    )
+  let renderedItems = (null);
+  if (items)
+    renderedItems = (items.map(( item, idx ) => (
+      <Item key={ idx } listSel={ listSel } setListSel={ setListSel } index={ idx } path={ path } item={ item }/>
+    )))
 
   return (
     <tbody>
       <ParentFolderItem listSel={ listSel } setListSel={ setListSel } path={ path }/>
-    { items.map(( item, idx ) => (
-      <Item key={ idx } listSel={ listSel } setListSel={ setListSel } index={ idx } path={ path } item={ item }/>
-    )) }
+      { renderedItems }
+      <tr>
+        <td colspan="5">
+          <div className="text-center text-slate-400 cursor-default"><i className="icon-docs mr-2"/>Drop files here to upload</div>
+        </td>
+      </tr>
     </tbody>
   )
 }
 
 
-export default function DocumentListView({ listSel, setListSel, setListCount, path }) {
+export default function DocumentListView({ path, listSel, setListSel, setListCount, getRootProps, getInputProps, isDragActive, isDragAccept, isDragReject, uploadFunc }) {
 
   const allItems = {
     root: [
@@ -215,19 +217,30 @@ export default function DocumentListView({ listSel, setListSel, setListCount, pa
   }, [path]);
 
   return (
-    <div className="mr-1">
-      <table className="table table-compact w-full select-none">
-        <thead className="sticky top-0 cursor-default bg-slate-100">
-          <tr>
-            <th className="text-xs w-8"></th>
-            <th className="text-xs">Name</th> 
-            <th className="text-xs">Size</th> 
-            <th className="text-xs">Date</th> 
-            <th className="text-xs">Info</th> 
-          </tr>
-        </thead>
-        <AllItems listSel={ listSel } setListSel={ setListSel } path={ path } items={ items }/>
-      </table>
+    <div {...getRootProps({
+        className: 'absolute left-0 right-0 top-0 bottom-0 dropzone',
+      })}>
+      <input {...getInputProps()} />
+      <div className={`${ isDragActive ? '':'hidden' } z-50 border-2 border-teal-500 bg-teal-200/20 absolute left-0 right-0 top-0 bottom-0 dropzone grid place-items-center`}>
+        <div className="bg-white py-5 px-8 rounded-lg">
+          <div className="text-2xl text-center text-teal-600"><i className="icon-upload"/></div>
+          <div className="text-xl text-center text-teal-700">Drop files to upload</div>
+        </div>
+      </div>
+      <div className="mr-1">
+        <table className="table table-compact w-full select-none">
+          <thead className="sticky top-0 cursor-default bg-slate-100">
+            <tr>
+              <th className="text-xs w-8"></th>
+              <th className="text-xs">Name</th> 
+              <th className="text-xs">Size</th> 
+              <th className="text-xs">Date</th> 
+              <th className="text-xs">Info</th> 
+            </tr>
+          </thead>
+          <AllItems listSel={ listSel } setListSel={ setListSel } path={ path } items={ items }/>
+        </table>
+      </div>
     </div>
   )
 }
