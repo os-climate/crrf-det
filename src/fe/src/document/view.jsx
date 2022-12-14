@@ -151,16 +151,51 @@ var pages = [
 ];
 
 
-const MemoImage = memo(({ width, height, url, ...rest }) => {
+const COLORS_TRANSPARENT = [
+  'rgba(31, 119, 180, 0.25)',
+  'rgba(255, 127, 14, 0.25)',
+  'rgba(44, 160, 44, 0.25)',
+  'rgba(214, 39, 40, 0.25)',
+  'rgba(148, 103, 189, 0.25)',
+  'rgba(140, 86, 75, 0.25)',
+  'rgba(227, 119, 194, 0.25)',
+  'rgba(127, 127, 127, 0.25)',
+  'rgba(188, 189, 34, 0.25)',
+  'rgba(23, 190, 207, 0.25)',
+];
+const COLORS = [
+  'rgba(31, 119, 180, 0.95)',
+  'rgba(255, 127, 14, 0.95)',
+  'rgba(44, 160, 44, 0.95)',
+  'rgba(214, 39, 40, 0.95)',
+  'rgba(148, 103, 189, 0.95)',
+  'rgba(140, 86, 75, 0.95)',
+  'rgba(227, 119, 194, 0.95)',
+  'rgba(127, 127, 127, 0.95)',
+  'rgba(188, 189, 34, 0.95)',
+  'rgba(23, 190, 207, 0.95)',
+];
+
+
+const MemoImage = memo(({ width, height, url, displayPageNum, pageNum, tableBoxes, tableBoxHL, ...rest }) => {
+  var heightNP = height - 10;
+
   return (
-    <div {...rest} style={{ width: `${width}`, height: `${height - 10}px` }} className="mb-[10px] shadow-md">
-      <img src={url} style={{ width: `${width}`, height: `${height - 10}px` }}/>
+    <div {...rest} style={{ width: `${width}`, height: `${heightNP}px` }} className="mb-[10px] shadow-md relative">
+      <img src={url} style={{ width: `${width}`, height: `${heightNP}px` }}/>
+      { displayPageNum == pageNum && tableBoxes.length > 0 ? (
+        <svg width={width} height={heightNP} className="absolute left-0 top-0">
+        { tableBoxes.map((tableBox, idx) => (
+          <rect key={ url + '_' + idx } x={ tableBox[1] * width } y={ tableBox[0] * heightNP } width={ (tableBox[3] - tableBox[1]) * width } height={ (tableBox[2] - tableBox[0]) * heightNP } style={{ opacity: idx === tableBoxHL?1.0:0.25, fill: COLORS_TRANSPARENT[idx % COLORS.length], strokeWidth: 1, stroke: COLORS[idx % COLORS.length]}} />
+        ))}
+        </svg>
+      ):(null)}
     </div>
   )
 });
 
 
-const PageImages = forwardRef(({ width, setPageNum }, ref) => {
+const PageImages = forwardRef(({ width, pageNum, setPageNum, tableBoxes, tableBoxHL }, ref) => {
 
   var page = pages[0];
   var pageHeight = parseInt(page.height / page.width * width) + 10;
@@ -174,13 +209,17 @@ const PageImages = forwardRef(({ width, setPageNum }, ref) => {
     scrollForward, // (boolean) The scroll direction of up/down or left/right, depending on the `horizontal` option
     userScroll, // (boolean) Tells you the scrolling is through the user or not
   }) => {
-    setPageNum(visibleStartIndex + 1);
+    var index = visibleStartIndex;
+    var visCount = visibleStopIndex - visibleStartIndex;
+    if (visCount >= 2)
+      index = visibleStartIndex + parseInt(visCount / 2);
+    setPageNum(index + 1);
   };
 
   const { outerRef, innerRef, items, scrollToItem } = useVirtual({
     itemCount: pages.length,
     itemSize: pageHeight,
-    overscanCount: 3,
+    overscanCount: 1,
     onScroll: onScroll
   });
 
@@ -194,7 +233,7 @@ const PageImages = forwardRef(({ width, setPageNum }, ref) => {
     <div ref={outerRef} className="absolute border border-slate-100 left-0 top-9 right-0 bottom-0 overflow-auto">
       <div ref={innerRef}>
         { items.map(({index, size, start}) => (
-          <MemoImage key={ index } width={ width } height={ size } url={ pages[index].url } />
+          <MemoImage key={ index } width={ width } height={ size } url={ pages[index].url } displayPageNum={ index + 1 } pageNum={ pageNum } tableBoxes={ tableBoxes } tableBoxHL={ tableBoxHL }/>
         ))}
       </div>
     </div>
@@ -232,7 +271,7 @@ function PageNavigation({ pageNum, setPageNum, pageCount, pageImages }) {
         <i className="icon-left-dir"/>
       </button>
       <div className="dropdown">
-        <label tabIndex="0" className="btn normal-case min-h-fit h-8 bg-slate-100 border-slate-100 text-slate-500 hover:bg-white hover:border-slate-200">Page { pageNum }</label>
+        <label tabIndex="0" className="btn normal-case min-h-fit h-8 bg-slate-100 border-slate-100 text-slate-500 hover:bg-white hover:border-slate-200">Page { pageNum } of { pageCount }</label>
         <ul tabIndex="0" className="dropdown-content block menu menu-compact shadow-md border border-slate-200 bg-base-100 rounded max-h-96 overflow-auto">
           <li className="block px-3 py-1 whitespace-nowrap text-xs uppercase font-bold text-slate-400">Go to Page</li>
           { dropContent }
@@ -246,7 +285,7 @@ function PageNavigation({ pageNum, setPageNum, pageCount, pageImages }) {
 }
 
 
-export default function DocumentView({ path, file, pageNum, setPageNum }) {
+export default function DocumentView({ path, file, pageNum, setPageNum, tableBoxes, tableBoxHL }) {
 
   const [ scrollToItem, setScrollToItem ] = useState(null);
   const [ ref, { x, y, width, height, top, right, bottom, left } ] = useMeasure();
@@ -258,7 +297,7 @@ export default function DocumentView({ path, file, pageNum, setPageNum }) {
         <PageNavigation pageNum={ pageNum } setPageNum={ setPageNum } pageCount={ pages.length } pageImages={ pageImagesRef }/>
       </div>
       { width > 0 ? (
-        <PageImages width={ width } setPageNum={ setPageNum } ref={ pageImagesRef } />
+        <PageImages width={ width } pageNum={ pageNum } setPageNum={ setPageNum } tableBoxes={ tableBoxes } ref={ pageImagesRef } tableBoxHL={ tableBoxHL }/>
       ):(null) }
     </div>
   )

@@ -14,6 +14,9 @@ import DocumentStructure from './structure';
 
 function Content({ path, file, listSel, setListSel, listCount, setListCount, getRootProps, getInputProps, isDragActive, isDragAccept, isDragReject, uploadFunc, pageNum, setPageNum }) {
 
+  const [tableBoxes, setTableBoxes] = useState([]);
+  const [tableBoxHL, setTableBoxHL] = useState(-1);
+
   if (!file)
     return (
       <div>
@@ -28,13 +31,13 @@ function Content({ path, file, listSel, setListSel, listCount, setListCount, get
 
   return (
     <div>
-      <div className="absolute left-0 right-80 top-0 bottom-0">
-        <DocumentView path={ path } file={ file } pageNum={ pageNum } setPageNum={ setPageNum }/>
+      <div className="absolute left-0 right-96 top-0 bottom-0">
+        <DocumentView path={ path } file={ file } pageNum={ pageNum } setPageNum={ setPageNum } tableBoxes={ tableBoxes } tableBoxHL={ tableBoxHL }/>
       </div>
-      <div className="absolute right-0 w-80 top-0 bottom-40">
-        <DocumentStructure pageNum={ pageNum }/>
+      <div className="absolute right-0 w-96 top-0 bottom-40">
+        <DocumentStructure pageNum={ pageNum } setTableBoxes={ setTableBoxes } setTableBoxHL={ setTableBoxHL }/>
       </div>
-      <div className="absolute right-0 w-80 h-40 bottom-0">
+      <div className="absolute right-0 w-96 h-40 bottom-0">
         <DocumentFilterDeck/>
       </div>
     </div>
