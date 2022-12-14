@@ -111,6 +111,11 @@ def main(args):
             image = docmt.load_page_image(args.input, page)
             content = docmt.load_page_content(args.input, page)
             rpage = _run_page(args.debug, image, content, page, doc_meta)
+            if args.output:
+                os.makedirs(args.output, exist_ok=True)
+                json_fn = os.path.join(args.output, 'page.{}.json'.format(page))
+                with open(json_fn, 'wb') as f:
+                    f.write(orjson.dumps(rpage, option=orjson.OPT_SERIALIZE_NUMPY))
             doc['pages'].append(rpage)
             if args.verbose:
                 from colorama import Fore, Back, Style
