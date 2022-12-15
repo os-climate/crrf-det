@@ -1,8 +1,22 @@
-import { useState, useEffect } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { getColor } from '../shared/colors';
 
 
+function isElementVisible(el) {
+  // taken from https://stackoverflow.com/a/41754707/19223886
+  var holder = el.parentElement.parentElement;
+  const { top, bottom, height } = el.getBoundingClientRect();
+  const holderRect = holder.getBoundingClientRect();
+
+  return top <= holderRect.top
+    ? holderRect.top - top <= height
+    : bottom - holderRect.bottom <= height
+}
+
+
 function TextStructure({ text, pageNum, textBoxHL, setTextBoxHL }) {
+
+  const refHL = useRef();
 
   function highlightTextBox(e) {
     setTextBoxHL(parseInt(e.currentTarget.getAttribute('data-textbox-index')));
@@ -11,10 +25,17 @@ function TextStructure({ text, pageNum, textBoxHL, setTextBoxHL }) {
     setTextBoxHL(-1);
   }
 
+  useEffect(() => {
+    if (refHL.current) {
+      if (!isElementVisible(refHL.current))
+        refHL.current.scrollIntoView({behavior: 'smooth'});
+    }
+  }, [ textBoxHL ]);
+
   return (
     <div>
     { text.map((p, idx) => (
-      <p key={idx} className="text-sm mb-2 py-1 px-2 border rounded italic" data-textbox-index={idx} style={{ backgroundColor: getColor(idx, idx == textBoxHL?0.25:0.0625), borderColor: getColor(idx, idx == textBoxHL?0.65:0.1625) }} onMouseEnter={highlightTextBox} onMouseLeave={resetHighlightTextBox}>{p.content}</p>
+      <p key={idx} className="text-sm mb-2 py-1 px-2 border rounded italic" data-textbox-index={idx} style={{ backgroundColor: getColor(idx, idx == textBoxHL?0.25:0.0625), borderColor: getColor(idx, idx == textBoxHL?0.65:0.1625) }} onMouseEnter={highlightTextBox} onMouseLeave={resetHighlightTextBox} ref={ idx == textBoxHL?refHL:null }>{p.content}</p>
       ))}
     </div>
   )
@@ -23,12 +44,21 @@ function TextStructure({ text, pageNum, textBoxHL, setTextBoxHL }) {
 
 function TablesStructure({ tables, pageNum, tableBoxHL, setTableBoxHL }) {
 
+  const refHL = useRef();
+
   function highlightTableBox(e) {
     setTableBoxHL(parseInt(e.currentTarget.getAttribute('data-tablebox-index')));
   }
   function resetHighlightTableBox(e) {
     setTableBoxHL(-1);
   }
+
+  useEffect(() => {
+    if (refHL.current) {
+      if (!isElementVisible(refHL.current))
+        refHL.current.scrollIntoView({behavior: 'smooth'});
+    }
+  }, [ tableBoxHL ]);
 
   let rendered = [];
   for (var i = 0; i < tables.length; i++) {
@@ -48,7 +78,7 @@ function TablesStructure({ tables, pageNum, tableBoxHL, setTableBoxHL }) {
       }
       rendered_body.push(<tr className="odd:bg-white" key={ i + '_' + j }>{rendered_row}</tr>);
     }
-    rendered.push(<table key={ i } className="table-fixed mb-2 border" data-tablebox-index={i} style={{backgroundColor: getColor(i, i == tableBoxHL?0.25:0.0625), borderColor: getColor(i, i == tableBoxHL?0.65:0.1625) }} onMouseEnter={highlightTableBox} onMouseLeave={resetHighlightTableBox}><thead><tr style={{ backgroundColor: getColor(i, i == tableBoxHL?0.65:0.1625) }}>{rendered_head}</tr></thead><tbody>{rendered_body}</tbody></table>);
+    rendered.push(<table key={ i } className="table-fixed mb-2 border" data-tablebox-index={i} style={{backgroundColor: getColor(i, i == tableBoxHL?0.25:0.0625), borderColor: getColor(i, i == tableBoxHL?0.65:0.1625) }} onMouseEnter={highlightTableBox} onMouseLeave={resetHighlightTableBox} ref={ i == tableBoxHL?refHL:null }><thead><tr style={{ backgroundColor: getColor(i, i == tableBoxHL?0.65:0.1625) }}>{rendered_head}</tr></thead><tbody>{rendered_body}</tbody></table>);
   }
 
   if (rendered.length === 0) {
@@ -83,9 +113,7 @@ function ModeTab({ mode, setMode }) {
 }
 
 
-export default function DocumentStructure({ pageNum, tables, setTables, setTableBoxes, tableBoxHL, setTableBoxHL, text, setText, setTextBoxes, textBoxHL, setTextBoxHL }) {
-
-  const [mode, setMode] = useState('text');
+export default function DocumentStructure({ pageNum, mode, setMode, tables, setTables, setTableBoxes, tableBoxHL, setTableBoxHL, text, setText, setTextBoxes, textBoxHL, setTextBoxHL }) {
 
   const pageChange = async () => {
     const res = await fetch('/page.' + pageNum + '.json');

@@ -28,7 +28,7 @@ function FolderButton({ idx, folders, listSel, listCount, file, menuFunc }) {
         <div className="dropdown">
           <label tabIndex={0} className="cursor-pointer hover:bg-slate-100 hover:border-slate-200 border border-white px-2 py-1 rounded inline-flex min-h-fit items-center">
             <i className="icon-folder text-slate-500 pl-1 pr-6"/>
-            {folder} <FolderCount sel={ listSel } count={ listCount }/>
+            {folder} <FolderCount sel={ listSel.indices.length } count={ listCount }/>
             <i className="icon-down-dir pl-3 pr-2 text-slate-500"/>
           </label>
           <CurrentFolderDropdown menuFunc={ menuFunc }/>
@@ -59,13 +59,13 @@ function FolderCount({ sel, count }) {
   if (count <= 0)
     return (null)
 
-  if (sel.length == 0)
+  if (sel == 0)
     return (
-      <span className="ml-2 h-4 px-1 font-bold text-xs text-white rounded-full bg-slate-400">{ count }</span>
+      <span className="ml-2 h-4 px-1 font-black text-xs text-white rounded-full bg-slate-400">{ count }</span>
     )
 
   return (
-    <span className="ml-2 h-4 px-1 font-bold text-xs text-white rounded-full bg-slate-400">{ sel.length }/{ count }</span>
+    <span className="ml-2 h-4 px-1 text-xs text-white rounded-full bg-slate-400"><span className="font-black">{ sel }</span>/<span className="font-black">{ count }</span></span>
   )
 
 }
@@ -122,7 +122,7 @@ export default function DocumentToolstrip({ listSel, listCount, uploadFunc }) {
     <div className="dropdown">
       <label tabIndex={0} className="cursor-pointer hover:bg-slate-100 hover:border-slate-200 border border-white px-2 py-1 rounded inline-flex min-h-fit items-center">
         <i className="icon-archive text-slate-500 pl-1 pr-6"/>
-        Documents <FolderCount sel={ listSel } count={ listCount }/>
+        Documents <FolderCount sel={ listSel.indices.length } count={ listCount }/>
         <i className="icon-down-dir pl-3 pr-2 text-slate-500"/>
       </label>
       <CurrentFolderDropdown menuFunc={ { newFolder: newFolder, connectS3: connectS3, upload: upload } }/>

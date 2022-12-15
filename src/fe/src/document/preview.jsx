@@ -28,27 +28,27 @@ function HasSelection({ listSel, listCount }) {
 
   let details;
   let thumbs = (null);
-  if (listSel[0].type === 'file') {
+  if (listSel.items[0].type === 'file') {
     details = (
       <tr>
         <td className="align-top"><i className="icon-doc-text mx-2 text-teal-500 text-lg"/></td><td className="align-top text-slate-700">
-          <div className="text-lg">{ listSel[0].name }</div>
-          <div className="text-sm text-slate-400">{ listSel[0].size } / { listSel[0].info }</div>
-          <div className="text-sm text-slate-400">{ listSel[0].date }</div>
+          <div className="text-lg">{ listSel.items[0].name }</div>
+          <div className="text-sm text-slate-400">{ listSel.items[0].size } / { listSel.items[0].info }</div>
+          <div className="text-sm text-slate-400">{ listSel.items[0].date }</div>
         </td>
       </tr>
     )
     thumbs = (
       <div className="ml-1 mr-1 mt-2">
-        <Thumbnail itemData={ previewData[listSel[0].name] }/>
+        <Thumbnail itemData={ previewData[listSel.items[0].name] }/>
       </div>
     )
   } else
     details = (
       <tr>
         <td className="align-top"><i className="icon-folder mx-2 text-teal-500 text-lg"/></td><td className="align-top text-slate-700">
-          <div className="text-lg">{ listSel[0].name }</div>
-          <div className="text-sm text-slate-400">{ listSel[0].info }</div>
+          <div className="text-lg">{ listSel.items[0].name }</div>
+          <div className="text-sm text-slate-400">{ listSel.items[0].info }</div>
         </td>
       </tr>
     )
@@ -76,7 +76,7 @@ function NoSelection({ listSel, listCount }) {
 
 
 export default function DocumentPreview({ listSel, listCount }) {
-  if (listSel.length == 0)
+  if (listSel.items.length == 0)
     return (
       <div className="ml-1">
         <NoSelection listSel={ listSel } listCount={ listCount }/>

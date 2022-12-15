@@ -152,10 +152,12 @@ var pages = [
 ];
 
 
-const MemoImage = memo(({ isScrolling, width, height, url, displayPageNum, pageNum, tables, tableBoxes, tableBoxHL, setTableBoxHL, text, textBoxes, textBoxHL, setTextBoxHL, ...rest }) => {
+const MemoImage = memo(({ isScrolling, width, height, url, displayPageNum, pageNum, mode, setMode, tables, tableBoxes, tableBoxHL, setTableBoxHL, text, textBoxes, textBoxHL, setTextBoxHL, ...rest }) => {
   var heightNP = height - 10;
 
   function highlightTextBox(e) {
+    if (mode === 'table')
+      setMode('text');
     var idx = parseInt(e.currentTarget.getAttribute('data-textbox-index'));
     setTextBoxHL(idx);
   }
@@ -170,6 +172,8 @@ const MemoImage = memo(({ isScrolling, width, height, url, displayPageNum, pageN
     });
   }
   function highlightTableBox(e) {
+    if (mode === 'text')
+      setMode('table');
     var idx = parseInt(e.currentTarget.getAttribute('data-tablebox-index'));
     setTableBoxHL(idx);
   }
@@ -220,7 +224,7 @@ const MemoImage = memo(({ isScrolling, width, height, url, displayPageNum, pageN
 });
 
 
-const PageImages = forwardRef(({ width, pageNum, setPageNum, tables, tableBoxes, tableBoxHL, setTableBoxHL, text, textBoxes, textBoxHL, setTextBoxHL }, ref) => {
+const PageImages = forwardRef(({ width, height, pageNum, setPageNum, mode, setMode, tables, tableBoxes, tableBoxHL, setTableBoxHL, text, textBoxes, textBoxHL, setTextBoxHL }, ref) => {
 
   var page = pages[0];
   var pageHeight = parseInt(page.height / page.width * width) + 10;
@@ -234,11 +238,9 @@ const PageImages = forwardRef(({ width, pageNum, setPageNum, tables, tableBoxes,
     scrollForward, // (boolean) The scroll direction of up/down or left/right, depending on the `horizontal` option
     userScroll, // (boolean) Tells you the scrolling is through the user or not
   }) => {
-    var index = visibleStartIndex;
-    var visCount = visibleStopIndex - visibleStartIndex;
-    if (visCount >= 2)
-      index = visibleStartIndex + parseInt(visCount / 2);
-    setPageNum(index + 1);
+    var viewportTopDiff = (pageHeight - height) / 2;
+    var targetPageNum = Math.max(1, Math.round((scrollOffset - viewportTopDiff) / pageHeight) + 1);
+    setPageNum(targetPageNum);
   };
 
   const { outerRef, innerRef, items, scrollToItem } = useVirtual({
@@ -256,10 +258,10 @@ const PageImages = forwardRef(({ width, pageNum, setPageNum, tables, tableBoxes,
   }))
 
   return (
-    <div ref={outerRef} className="absolute border border-slate-100 left-0 top-9 right-0 bottom-0 overflow-auto">
+    <div ref={outerRef} className="absolute left-0 top-0 right-0 bottom-0 overflow-auto">
       <div ref={innerRef}>
         { items.map(({index, size, start, isScrolling}) => (
-          <MemoImage key={ index } isScrolling={ isScrolling } width={ width } height={ size } url={ pages[index].url } displayPageNum={ index + 1 } pageNum={ pageNum } tables={ tables } tableBoxes={ tableBoxes } tableBoxHL={ tableBoxHL } setTableBoxHL={ setTableBoxHL } text={ text } textBoxes={ textBoxes } textBoxHL={ textBoxHL } setTextBoxHL={ setTextBoxHL }/>
+          <MemoImage key={ index } isScrolling={ isScrolling } width={ width } height={ size } url={ pages[index].url } displayPageNum={ index + 1 } pageNum={ pageNum } mode={ mode } setMode={ setMode } tables={ tables } tableBoxes={ tableBoxes } tableBoxHL={ tableBoxHL } setTableBoxHL={ setTableBoxHL } text={ text } textBoxes={ textBoxes } textBoxHL={ textBoxHL } setTextBoxHL={ setTextBoxHL }/>
         ))}
       </div>
     </div>
@@ -311,7 +313,7 @@ function PageNavigation({ pageNum, setPageNum, pageCount, pageImages }) {
 }
 
 
-export default function DocumentView({ path, file, pageNum, setPageNum, tables, tableBoxes, tableBoxHL, setTableBoxHL, text, textBoxes, textBoxHL, setTextBoxHL }) {
+export default function DocumentView({ path, file, pageNum, setPageNum, mode, setMode, tables, tableBoxes, tableBoxHL, setTableBoxHL, text, textBoxes, textBoxHL, setTextBoxHL }) {
 
   const [ scrollToItem, setScrollToItem ] = useState(null);
   const [ ref, { x, y, width, height, top, right, bottom, left } ] = useMeasure();
@@ -319,12 +321,14 @@ export default function DocumentView({ path, file, pageNum, setPageNum, tables, 
 
   return (
     <div>
-      <div ref={ ref } className="absolute left-0 top-0 right-0 h-9 bg-slate-100 rounded-t-md items-center inline-flex">
+      <div className="absolute left-0 top-0 right-0 h-9 bg-slate-100 rounded-t-md items-center inline-flex">
         <PageNavigation pageNum={ pageNum } setPageNum={ setPageNum } pageCount={ pages.length } pageImages={ pageImagesRef }/>
       </div>
+      <div ref={ ref } className="absolute border border-slate-100 left-0 top-9 right-0 bottom-0">
       { width > 0 ? (
-        <PageImages width={ width } pageNum={ pageNum } setPageNum={ setPageNum } tables={ tables } tableBoxes={ tableBoxes } tableBoxHL={ tableBoxHL } setTableBoxHL={ setTableBoxHL } text={ text } textBoxes={ textBoxes } textBoxHL={ textBoxHL } setTextBoxHL={ setTextBoxHL } ref={ pageImagesRef }/>
+        <PageImages width={ width } height={ height } pageNum={ pageNum } setPageNum={ setPageNum } mode={ mode } setMode={ setMode } tables={ tables } tableBoxes={ tableBoxes } tableBoxHL={ tableBoxHL } setTableBoxHL={ setTableBoxHL } text={ text } textBoxes={ textBoxes } textBoxHL={ textBoxHL } setTextBoxHL={ setTextBoxHL } ref={ pageImagesRef }/>
       ):(null) }
+      </div>
     </div>
   )
 }

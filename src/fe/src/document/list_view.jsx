@@ -24,30 +24,77 @@ function ItemInfo({ info }) {
 }
 
 
-function Item({ listSel, setListSel, index, path, item }) {
+function Item({ listSel, setListSel, index, path, item, items }) {
   let navigate = useNavigate();
 
-  function findListSelIndices() {
-    var ret = [];
-    for (var i = 0; i < listSel.length; i++) {
-      ret.push(listSel[i].itemIndex);
-    }
-    return ret;
-  }
-
   function itemClick(e) {
-    if (item.type === 's3')
+    if (item.type === 's3' ||
+      typeof item.info !== 'string')
       return;
-    if (typeof item.info !== 'string')
-      return;
-    var selIndices = findListSelIndices();
-    if (selIndices.length > 0) {
-      if (selIndices.indexOf(index) >= 0)
-        setListSel([]);
-      else
-        setListSel([Object.assign({}, item, { itemIndex: index })]);
-    } else {
-      setListSel([Object.assign({}, item, { itemIndex: index })]);
+    // no selection, select a single one regardless of modifier keys
+    if (listSel.indices.length === 0 ||
+      // no modifier keys
+      (!(e.ctrlKey || e.metaKey || e.shiftKey) &&
+        // 1 selected, not the currently selected one
+        // select the new one
+        ((listSel.indices.length === 1 &&
+        listSel.indices[0] !== index) ||
+        // more than 1 item are selected
+        listSel.indices.length > 1))) {
+      setListSel({
+        anchor:   index,
+        indices:  [index],
+        items:    [item],
+      });
+    // selected clicked again, remove selection regardless of
+    // modifier keys
+    } else if (listSel.indices.length === 1 &&
+      listSel.indices[0] == index) {
+      setListSel({
+        anchor:   -1,
+        indices:  [],
+        items:    [],
+      });
+    // shift pressed, calculate the new selection according
+    // to the anchor
+    } else if (listSel.anchor !== -1 &&
+      e.shiftKey) {
+      var indices_ = [];
+      var items_ = [];
+      for (var i = Math.min(listSel.anchor, index); i <= Math.max(listSel.anchor, index); i++) {
+        if (items[i].type === 's3' ||
+          typeof items[i].info !== 'string')
+          continue;
+        indices_.push(i);
+        items_.push(items[i]);
+      }
+      setListSel({
+        anchor:   listSel.anchor,
+        indices:  indices_,
+        items:    items_,
+      });
+    // ctrl/cmd pressed, add or remove selection
+    } else if (e.ctrlKey || e.metaKey) {
+      // remove existing
+      var idx_ = listSel.indices.indexOf(index);
+      if (idx_ >= 0) {
+        var indices_ = listSel.indices.slice();
+        var items_ = listSel.items.slice();
+        indices_.splice(idx_, 1);
+        items_.splice(idx_, 1);
+        setListSel({
+          anchor:   index,
+          indices:  indices_,
+          items:    items_,
+        });
+      // add new
+      } else {
+        setListSel({
+          anchor:   index,
+          indices:  listSel.indices.concat([index]),
+          items:    listSel.items.concat([items[index]]),
+        });
+      }
     }
   }
 
@@ -56,15 +103,15 @@ function Item({ listSel, setListSel, index, path, item }) {
   }
 
   let hoverCls = 'hover:bg-slate-100';
-  let selCls = hoverCls;
-  if (findListSelIndices().indexOf(index) >= 0)
-    selCls = 'bg-teal-100';
+  let selCls = hoverCls + ' border-b-slate-100';
+  if (listSel.indices.indexOf(index) >= 0)
+    selCls = 'bg-teal-100 border-b-teal-100';
 
   if (item.type == 'folder') {
     return (
-      <tr className={`${ selCls } cursor-default`} onDoubleClick={(node, event) => {
+      <tr className={`${ selCls } cursor-default border-b`} onDoubleClick={(node, event) => {
+        setListSel({ anchor: -1, indices: [], items: [] });
         navigate("/documents/" + (typeof path === 'undefined' ? item.name : (path + '|' + item.name)));
-        setListSel([]);
       }} onClick={ itemClick }>
         <td className="bg-transparent"><i className="icon-folder text-slate-500"/></td>
         <td className="bg-transparent">{item.name}</td> 
@@ -75,16 +122,15 @@ function Item({ listSel, setListSel, index, path, item }) {
     )
   } else if (item.type == 'parent_folder') {
     return (
-      <tr className={`${ hoverCls } cursor-default`} onDoubleClick={(node, event) => {
+      <tr className={`${ hoverCls } cursor-default border-b border-b-slate-100`} onDoubleClick={(node, event) => {
         if (typeof path !== 'undefined') {
+          setListSel({ anchor: -1, indices: [], items: [] });
           let idx = path.lastIndexOf("|");
           if (idx > 0) {
             let newPath = path.substr(0, idx);
             navigate("/documents/" + newPath);
-            setListSel([]);
             return;
           }
-          setListSel([]);
           navigate("/documents");
         }
       }}>
@@ -97,7 +143,7 @@ function Item({ listSel, setListSel, index, path, item }) {
     )
   } else if (item.type == 's3') {
     return (
-      <tr className={`${ hoverCls } cursor-default`} onClick={ itemClick }>
+      <tr className={`${ hoverCls } cursor-default border-b border-b-slate-100`} onClick={ itemClick }>
         <td className="bg-transparent"><i className="icon-cloud text-slate-500"/></td>
         <td className="bg-transparent">{item.name}</td> 
         <td className="bg-transparent"></td> 
@@ -113,10 +159,10 @@ function Item({ listSel, setListSel, index, path, item }) {
   if (typeof item.info !== 'string') {
     trCls = 'text-slate-400';
     iconCls = 'icon-doc text-slate-300';
-    selCls = '';
+    selCls = 'border-b-slate-100';
   }
   return (
-    <tr className={`${ trCls } ${ selCls } cursor-default`} onClick={ itemClick } onDoubleClick={ itemDblClick }>
+    <tr className={`${ trCls } ${ selCls } border-b cursor-default`} onClick={ itemClick } onDoubleClick={ itemDblClick }>
       <td className="bg-transparent"><i className={`${ iconCls }`}/></td>
       <td className="bg-transparent">{item.name}</td>
       <td className="bg-transparent text-xs">{item.size}</td>
@@ -145,7 +191,7 @@ function AllItems({ listSel, setListSel, path, items }) {
   let renderedItems = (null);
   if (items)
     renderedItems = (items.map(( item, idx ) => (
-      <Item key={ idx } listSel={ listSel } setListSel={ setListSel } index={ idx } path={ path } item={ item }/>
+      <Item key={ idx } listSel={ listSel } setListSel={ setListSel } index={ idx } path={ path } item={ item } items={ items }/>
     )))
 
   return (
@@ -228,7 +274,7 @@ export default function DocumentListView({ path, listSel, setListSel, setListCou
         </div>
       </div>
       <div className="mr-1">
-        <table className="table table-compact w-full select-none">
+        <table className="table-compact border-collapse w-full select-none">
           <thead className="sticky top-0 cursor-default bg-slate-100">
             <tr>
               <th className="text-xs w-8"></th>
