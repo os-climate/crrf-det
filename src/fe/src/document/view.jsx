@@ -1,6 +1,7 @@
 import { useState, useRef, forwardRef, useImperativeHandle, memo } from 'react';
 import { useMeasure } from "react-use";
 import useVirtual from 'react-cool-virtual';
+import { getColor } from '../shared/colors';
 
 
 var pages = [
@@ -151,42 +152,19 @@ var pages = [
 ];
 
 
-const COLORS_TRANSPARENT = [
-  'rgba(31, 119, 180, 0.25)',
-  'rgba(255, 127, 14, 0.25)',
-  'rgba(44, 160, 44, 0.25)',
-  'rgba(214, 39, 40, 0.25)',
-  'rgba(148, 103, 189, 0.25)',
-  'rgba(140, 86, 75, 0.25)',
-  'rgba(227, 119, 194, 0.25)',
-  'rgba(127, 127, 127, 0.25)',
-  'rgba(188, 189, 34, 0.25)',
-  'rgba(23, 190, 207, 0.25)',
-];
-const COLORS = [
-  'rgba(31, 119, 180, 0.95)',
-  'rgba(255, 127, 14, 0.95)',
-  'rgba(44, 160, 44, 0.95)',
-  'rgba(214, 39, 40, 0.95)',
-  'rgba(148, 103, 189, 0.95)',
-  'rgba(140, 86, 75, 0.95)',
-  'rgba(227, 119, 194, 0.95)',
-  'rgba(127, 127, 127, 0.95)',
-  'rgba(188, 189, 34, 0.95)',
-  'rgba(23, 190, 207, 0.95)',
-];
-
-
-const MemoImage = memo(({ width, height, url, displayPageNum, pageNum, tableBoxes, tableBoxHL, ...rest }) => {
+const MemoImage = memo(({ isScrolling, width, height, url, displayPageNum, pageNum, tableBoxes, tableBoxHL, textBoxes, textBoxHL, ...rest }) => {
   var heightNP = height - 10;
 
   return (
     <div {...rest} style={{ width: `${width}`, height: `${heightNP}px` }} className="mb-[10px] shadow-md relative">
       <img src={url} style={{ width: `${width}`, height: `${heightNP}px` }}/>
-      { displayPageNum == pageNum && tableBoxes.length > 0 ? (
-        <svg width={width} height={heightNP} className="absolute left-0 top-0">
-        { tableBoxes.map((tableBox, idx) => (
-          <rect key={ url + '_' + idx } x={ tableBox[1] * width } y={ tableBox[0] * heightNP } width={ (tableBox[3] - tableBox[1]) * width } height={ (tableBox[2] - tableBox[0]) * heightNP } style={{ opacity: idx === tableBoxHL?1.0:0.25, fill: COLORS_TRANSPARENT[idx % COLORS.length], strokeWidth: 1, stroke: COLORS[idx % COLORS.length]}} />
+      { !isScrolling && displayPageNum == pageNum && (tableBoxes.length > 0 || textBoxes.length > 0) ? (
+        <svg width={width - 2} height={heightNP} className="absolute left-0 top-0">
+        { tableBoxes.map((box, idx) => (
+          <rect key={ url + '_ta' + idx } x={ box[1] * width } y={ box[0] * heightNP } width={ (box[3] - box[1]) * width } height={ (box[2] - box[0]) * heightNP } style={{ opacity: idx === tableBoxHL?1.0:0.25, fill: getColor(idx, 0.25), strokeWidth: 1, stroke: getColor(idx, 0.65)}} />
+        ))}
+        { textBoxes.map((box, idx) => (
+          <rect key={ url + '_te' + idx } x={ box[1] * width } y={ box[0] * heightNP } width={ (box[3] - box[1]) * width } height={ (box[2] - box[0]) * heightNP } style={{ opacity: idx === textBoxHL?1.0:0.25, fill: getColor(idx, 0.25), strokeWidth: 1, stroke: getColor(idx, 0.65)}} />
         ))}
         </svg>
       ):(null)}
@@ -195,7 +173,7 @@ const MemoImage = memo(({ width, height, url, displayPageNum, pageNum, tableBoxe
 });
 
 
-const PageImages = forwardRef(({ width, pageNum, setPageNum, tableBoxes, tableBoxHL }, ref) => {
+const PageImages = forwardRef(({ width, pageNum, setPageNum, tableBoxes, tableBoxHL, textBoxes, textBoxHL }, ref) => {
 
   var page = pages[0];
   var pageHeight = parseInt(page.height / page.width * width) + 10;
@@ -220,6 +198,7 @@ const PageImages = forwardRef(({ width, pageNum, setPageNum, tableBoxes, tableBo
     itemCount: pages.length,
     itemSize: pageHeight,
     overscanCount: 1,
+    useIsScrolling: true,
     onScroll: onScroll
   });
 
@@ -232,8 +211,8 @@ const PageImages = forwardRef(({ width, pageNum, setPageNum, tableBoxes, tableBo
   return (
     <div ref={outerRef} className="absolute border border-slate-100 left-0 top-9 right-0 bottom-0 overflow-auto">
       <div ref={innerRef}>
-        { items.map(({index, size, start}) => (
-          <MemoImage key={ index } width={ width } height={ size } url={ pages[index].url } displayPageNum={ index + 1 } pageNum={ pageNum } tableBoxes={ tableBoxes } tableBoxHL={ tableBoxHL }/>
+        { items.map(({index, size, start, isScrolling}) => (
+          <MemoImage key={ index } isScrolling={ isScrolling } width={ width } height={ size } url={ pages[index].url } displayPageNum={ index + 1 } pageNum={ pageNum } tableBoxes={ tableBoxes } tableBoxHL={ tableBoxHL } textBoxes={ textBoxes } textBoxHL={ textBoxHL }/>
         ))}
       </div>
     </div>
@@ -285,7 +264,7 @@ function PageNavigation({ pageNum, setPageNum, pageCount, pageImages }) {
 }
 
 
-export default function DocumentView({ path, file, pageNum, setPageNum, tableBoxes, tableBoxHL }) {
+export default function DocumentView({ path, file, pageNum, setPageNum, tableBoxes, tableBoxHL, textBoxes, textBoxHL }) {
 
   const [ scrollToItem, setScrollToItem ] = useState(null);
   const [ ref, { x, y, width, height, top, right, bottom, left } ] = useMeasure();
@@ -297,7 +276,7 @@ export default function DocumentView({ path, file, pageNum, setPageNum, tableBox
         <PageNavigation pageNum={ pageNum } setPageNum={ setPageNum } pageCount={ pages.length } pageImages={ pageImagesRef }/>
       </div>
       { width > 0 ? (
-        <PageImages width={ width } pageNum={ pageNum } setPageNum={ setPageNum } tableBoxes={ tableBoxes } ref={ pageImagesRef } tableBoxHL={ tableBoxHL }/>
+        <PageImages width={ width } pageNum={ pageNum } setPageNum={ setPageNum } tableBoxes={ tableBoxes } tableBoxHL={ tableBoxHL } textBoxes={ textBoxes } textBoxHL={ textBoxHL } ref={ pageImagesRef }/>
       ):(null) }
     </div>
   )

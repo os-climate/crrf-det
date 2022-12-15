@@ -16,6 +16,8 @@ function Content({ path, file, listSel, setListSel, listCount, setListCount, get
 
   const [tableBoxes, setTableBoxes] = useState([]);
   const [tableBoxHL, setTableBoxHL] = useState(-1);
+  const [textBoxes, setTextBoxes] = useState([]);
+  const [textBoxHL, setTextBoxHL] = useState(-1);
 
   if (!file)
     return (
@@ -32,10 +34,10 @@ function Content({ path, file, listSel, setListSel, listCount, setListCount, get
   return (
     <div>
       <div className="absolute left-0 right-96 top-0 bottom-0">
-        <DocumentView path={ path } file={ file } pageNum={ pageNum } setPageNum={ setPageNum } tableBoxes={ tableBoxes } tableBoxHL={ tableBoxHL }/>
+        <DocumentView path={ path } file={ file } pageNum={ pageNum } setPageNum={ setPageNum } tableBoxes={ tableBoxes } tableBoxHL={ tableBoxHL } textBoxes={ textBoxes } textBoxHL={ textBoxHL }/>
       </div>
       <div className="absolute right-0 w-96 top-0 bottom-40">
-        <DocumentStructure pageNum={ pageNum } setTableBoxes={ setTableBoxes } setTableBoxHL={ setTableBoxHL }/>
+        <DocumentStructure pageNum={ pageNum } setTableBoxes={ setTableBoxes } setTableBoxHL={ setTableBoxHL } setTextBoxes={ setTextBoxes } setTextBoxHL={ setTextBoxHL }/>
       </div>
       <div className="absolute right-0 w-96 h-40 bottom-0">
         <DocumentFilterDeck/>
