@@ -201,7 +201,7 @@ export default function DocumentToolstrip({ listSel, listCount, uploadFunc }) {
       { documentsButton }
       {
         folders.map((folder, idx) => (
-          <FolderButton idx={ idx } folders={ folders } listSel={ listSel } listCount={ listCount } file={ file } menuFunc={ { newFolder: newFolder, connectS3: connectS3, upload: upload } }/>
+          <FolderButton key={ idx } idx={ idx } folders={ folders } listSel={ listSel } listCount={ listCount } file={ file } menuFunc={ { newFolder: newFolder, connectS3: connectS3, upload: upload } }/>
         ))
       }
       { fileButton }

@@ -14,6 +14,8 @@ import DocumentStructure from './structure';
 
 function Content({ path, file, listSel, setListSel, listCount, setListCount, getRootProps, getInputProps, isDragActive, isDragAccept, isDragReject, uploadFunc, pageNum, setPageNum }) {
 
+  const [text, setText] = useState([]);
+  const [tables, setTables] = useState([]);
   const [tableBoxes, setTableBoxes] = useState([]);
   const [tableBoxHL, setTableBoxHL] = useState(-1);
   const [textBoxes, setTextBoxes] = useState([]);
@@ -34,10 +36,10 @@ function Content({ path, file, listSel, setListSel, listCount, setListCount, get
   return (
     <div>
       <div className="absolute left-0 right-96 top-0 bottom-0">
-        <DocumentView path={ path } file={ file } pageNum={ pageNum } setPageNum={ setPageNum } tableBoxes={ tableBoxes } tableBoxHL={ tableBoxHL } textBoxes={ textBoxes } textBoxHL={ textBoxHL }/>
+        <DocumentView path={ path } file={ file } pageNum={ pageNum } setPageNum={ setPageNum } tables={ tables } tableBoxes={ tableBoxes } tableBoxHL={ tableBoxHL } setTableBoxHL={ setTableBoxHL } text={ text } textBoxes={ textBoxes } textBoxHL={ textBoxHL } setTextBoxHL={ setTextBoxHL }/>
       </div>
       <div className="absolute right-0 w-96 top-0 bottom-40">
-        <DocumentStructure pageNum={ pageNum } setTableBoxes={ setTableBoxes } setTableBoxHL={ setTableBoxHL } setTextBoxes={ setTextBoxes } setTextBoxHL={ setTextBoxHL }/>
+        <DocumentStructure pageNum={ pageNum } tables={ tables } setTables={ setTables } setTableBoxes={ setTableBoxes } tableBoxHL={ tableBoxHL } setTableBoxHL={ setTableBoxHL } text={ text } setText={ setText } setTextBoxes={ setTextBoxes } textBoxHL={ textBoxHL } setTextBoxHL={ setTextBoxHL }/>
       </div>
       <div className="absolute right-0 w-96 h-40 bottom-0">
         <DocumentFilterDeck/>

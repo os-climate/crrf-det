@@ -153,7 +153,7 @@ function AllItems({ listSel, setListSel, path, items }) {
       <ParentFolderItem listSel={ listSel } setListSel={ setListSel } path={ path }/>
       { renderedItems }
       <tr>
-        <td colspan="5">
+        <td colSpan="5">
           <div className="text-center text-slate-400 cursor-default"><i className="icon-docs mr-2"/>Drop files here to upload</div>
         </td>
       </tr>

@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { getColor } from '../shared/colors';
 
 
-function TextStructure({ text, pageNum, setTextBoxHL }) {
+function TextStructure({ text, pageNum, textBoxHL, setTextBoxHL }) {
 
   function highlightTextBox(e) {
     setTextBoxHL(parseInt(e.currentTarget.getAttribute('data-textbox-index')));
@@ -14,14 +14,14 @@ function TextStructure({ text, pageNum, setTextBoxHL }) {
   return (
     <div>
     { text.map((p, idx) => (
-      <p key={idx} className="text-sm mb-2 py-1 px-2 border rounded italic" data-textbox-index={idx} style={{ backgroundColor: getColor(idx, 0.0625), borderColor: getColor(idx, 0.1625) }} onMouseEnter={highlightTextBox} onMouseLeave={resetHighlightTextBox}>{p.content}</p>
+      <p key={idx} className="text-sm mb-2 py-1 px-2 border rounded italic" data-textbox-index={idx} style={{ backgroundColor: getColor(idx, idx == textBoxHL?0.25:0.0625), borderColor: getColor(idx, idx == textBoxHL?0.65:0.1625) }} onMouseEnter={highlightTextBox} onMouseLeave={resetHighlightTextBox}>{p.content}</p>
       ))}
     </div>
   )
 }
 
 
-function TablesStructure({ tables, pageNum, setTableBoxHL }) {
+function TablesStructure({ tables, pageNum, tableBoxHL, setTableBoxHL }) {
 
   function highlightTableBox(e) {
     setTableBoxHL(parseInt(e.currentTarget.getAttribute('data-tablebox-index')));
@@ -48,7 +48,7 @@ function TablesStructure({ tables, pageNum, setTableBoxHL }) {
       }
       rendered_body.push(<tr className="odd:bg-white" key={ i + '_' + j }>{rendered_row}</tr>);
     }
-    rendered.push(<table key={ i } className="table-fixed mb-2 border" data-tablebox-index={i} style={{backgroundColor: getColor(i, 0.0625), borderColor: getColor(i, 0.1625) }} onMouseEnter={highlightTableBox} onMouseLeave={resetHighlightTableBox}><thead><tr style={{ backgroundColor: getColor(i, 0.1625) }}>{rendered_head}</tr></thead><tbody>{rendered_body}</tbody></table>);
+    rendered.push(<table key={ i } className="table-fixed mb-2 border" data-tablebox-index={i} style={{backgroundColor: getColor(i, i == tableBoxHL?0.25:0.0625), borderColor: getColor(i, i == tableBoxHL?0.65:0.1625) }} onMouseEnter={highlightTableBox} onMouseLeave={resetHighlightTableBox}><thead><tr style={{ backgroundColor: getColor(i, i == tableBoxHL?0.65:0.1625) }}>{rendered_head}</tr></thead><tbody>{rendered_body}</tbody></table>);
   }
 
   if (rendered.length === 0) {
@@ -83,10 +83,8 @@ function ModeTab({ mode, setMode }) {
 }
 
 
-export default function DocumentStructure({ pageNum, setTableBoxes, setTableBoxHL, setTextBoxes, setTextBoxHL }) {
+export default function DocumentStructure({ pageNum, tables, setTables, setTableBoxes, tableBoxHL, setTableBoxHL, text, setText, setTextBoxes, textBoxHL, setTextBoxHL }) {
 
-  const [text, setText] = useState([]);
-  const [tables, setTables] = useState([]);
   const [mode, setMode] = useState('text');
 
   const pageChange = async () => {
@@ -121,8 +119,8 @@ export default function DocumentStructure({ pageNum, setTableBoxes, setTableBoxH
     <div className="ml-2">
       <ModeTab mode={ mode } setMode={ setMode }/>
       <div className="absolute bottom-0 top-9 left-2 right-0 border border-slate-100 overflow-auto p-2 text-xs">
-        { mode == 'table'?(<TablesStructure tables={ tables } pageNum={ pageNum } setTableBoxHL={ setTableBoxHL }/>):(null) }
-        { mode == 'text'?(<TextStructure text={ text } pageNum={ pageNum } setTextBoxHL={ setTextBoxHL }/>):(null) }
+        { mode == 'table'?(<TablesStructure tables={ tables } pageNum={ pageNum } tableBoxHL={ tableBoxHL } setTableBoxHL={ setTableBoxHL }/>):(null) }
+        { mode == 'text'?(<TextStructure text={ text } pageNum={ pageNum } textBoxHL={ textBoxHL } setTextBoxHL={ setTextBoxHL }/>):(null) }
      </div>
     </div>
   )

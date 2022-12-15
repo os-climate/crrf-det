@@ -2,7 +2,7 @@ import { useState, useRef, forwardRef, useImperativeHandle, memo } from 'react';
 import { useMeasure } from "react-use";
 import useVirtual from 'react-cool-virtual';
 import { getColor } from '../shared/colors';
-
+import toast from 'react-hot-toast';
 
 var pages = [
   { url: '/2021-tesla-impact-report.preview.1.jpg', width: 1583, height: 890 },
@@ -152,8 +152,55 @@ var pages = [
 ];
 
 
-const MemoImage = memo(({ isScrolling, width, height, url, displayPageNum, pageNum, tableBoxes, tableBoxHL, textBoxes, textBoxHL, ...rest }) => {
+const MemoImage = memo(({ isScrolling, width, height, url, displayPageNum, pageNum, tables, tableBoxes, tableBoxHL, setTableBoxHL, text, textBoxes, textBoxHL, setTextBoxHL, ...rest }) => {
   var heightNP = height - 10;
+
+  function highlightTextBox(e) {
+    var idx = parseInt(e.currentTarget.getAttribute('data-textbox-index'));
+    setTextBoxHL(idx);
+  }
+  function resetHighlightTextBox(e) {
+    setTextBoxHL(-1);
+  }
+  function copyTextBox(e) {
+    var idx = parseInt(e.currentTarget.getAttribute('data-textbox-index'));
+    navigator.clipboard.writeText(text[idx].content);
+    toast.success('Text copied to clipboard', {
+      position: 'bottom-right'
+    });
+  }
+  function highlightTableBox(e) {
+    var idx = parseInt(e.currentTarget.getAttribute('data-tablebox-index'));
+    setTableBoxHL(idx);
+  }
+  function resetHighlightTableBox(e) {
+    setTableBoxHL(-1);
+  }
+  function copyTableBox(e) {
+    var idx = parseInt(e.currentTarget.getAttribute('data-tablebox-index'));
+    var text = '';
+    var table_ = tables[idx].content;
+    var colLen = {};
+    for (var i = 0; i < table_.length; i++) {
+      for (var j = 0; j < table_[i].length; j++) {
+        if (!colLen[j] ||
+          colLen[j] < table_[i][j].length)
+          colLen[j] = table_[i][j].length;
+      }
+    }
+    for (var i = 0; i < table_.length; i++) {
+      for (var j = 0; j < table_[i].length; j++) {
+        text += '"' + table_[i][j] + '"';
+        if (j != table_[i].length - 1)
+          text += ',';
+      }
+      text += '\n';
+    }
+    navigator.clipboard.writeText(text);
+    toast.success('Table copied to clipboard', {
+      position: 'bottom-right'
+    });
+  }
 
   return (
     <div {...rest} style={{ width: `${width}`, height: `${heightNP}px` }} className="mb-[10px] shadow-md relative">
@@ -161,10 +208,10 @@ const MemoImage = memo(({ isScrolling, width, height, url, displayPageNum, pageN
       { !isScrolling && displayPageNum == pageNum && (tableBoxes.length > 0 || textBoxes.length > 0) ? (
         <svg width={width - 2} height={heightNP} className="absolute left-0 top-0">
         { tableBoxes.map((box, idx) => (
-          <rect key={ url + '_ta' + idx } x={ box[1] * width } y={ box[0] * heightNP } width={ (box[3] - box[1]) * width } height={ (box[2] - box[0]) * heightNP } style={{ opacity: idx === tableBoxHL?1.0:0.25, fill: getColor(idx, 0.25), strokeWidth: 1, stroke: getColor(idx, 0.65)}} />
+          <rect key={ url + '_ta' + idx } className="cursor-copy" x={ box[1] * width } y={ box[0] * heightNP } width={ (box[3] - box[1]) * width } height={ (box[2] - box[0]) * heightNP } style={{ opacity: idx === tableBoxHL?1.0:0.25, fill: getColor(idx, 0.25), strokeWidth: 1, stroke: getColor(idx, 0.65)}} onMouseEnter={ highlightTableBox } onMouseLeave={ resetHighlightTableBox } onClick={ copyTableBox } data-tablebox-index={ idx }/>
         ))}
         { textBoxes.map((box, idx) => (
-          <rect key={ url + '_te' + idx } x={ box[1] * width } y={ box[0] * heightNP } width={ (box[3] - box[1]) * width } height={ (box[2] - box[0]) * heightNP } style={{ opacity: idx === textBoxHL?1.0:0.25, fill: getColor(idx, 0.25), strokeWidth: 1, stroke: getColor(idx, 0.65)}} />
+          <rect key={ url + '_te' + idx } className="cursor-copy" x={ box[1] * width } y={ box[0] * heightNP } width={ (box[3] - box[1]) * width } height={ (box[2] - box[0]) * heightNP } style={{ opacity: idx === textBoxHL?1.0:0.25, fill: getColor(idx, 0.25), strokeWidth: 1, stroke: getColor(idx, 0.65)}} onMouseEnter={ highlightTextBox } onMouseLeave={ resetHighlightTextBox } onClick={ copyTextBox } data-textbox-index={ idx }/>
         ))}
         </svg>
       ):(null)}
@@ -173,7 +220,7 @@ const MemoImage = memo(({ isScrolling, width, height, url, displayPageNum, pageN
 });
 
 
-const PageImages = forwardRef(({ width, pageNum, setPageNum, tableBoxes, tableBoxHL, textBoxes, textBoxHL }, ref) => {
+const PageImages = forwardRef(({ width, pageNum, setPageNum, tables, tableBoxes, tableBoxHL, setTableBoxHL, text, textBoxes, textBoxHL, setTextBoxHL }, ref) => {
 
   var page = pages[0];
   var pageHeight = parseInt(page.height / page.width * width) + 10;
@@ -212,7 +259,7 @@ const PageImages = forwardRef(({ width, pageNum, setPageNum, tableBoxes, tableBo
     <div ref={outerRef} className="absolute border border-slate-100 left-0 top-9 right-0 bottom-0 overflow-auto">
       <div ref={innerRef}>
         { items.map(({index, size, start, isScrolling}) => (
-          <MemoImage key={ index } isScrolling={ isScrolling } width={ width } height={ size } url={ pages[index].url } displayPageNum={ index + 1 } pageNum={ pageNum } tableBoxes={ tableBoxes } tableBoxHL={ tableBoxHL } textBoxes={ textBoxes } textBoxHL={ textBoxHL }/>
+          <MemoImage key={ index } isScrolling={ isScrolling } width={ width } height={ size } url={ pages[index].url } displayPageNum={ index + 1 } pageNum={ pageNum } tables={ tables } tableBoxes={ tableBoxes } tableBoxHL={ tableBoxHL } setTableBoxHL={ setTableBoxHL } text={ text } textBoxes={ textBoxes } textBoxHL={ textBoxHL } setTextBoxHL={ setTextBoxHL }/>
         ))}
       </div>
     </div>
@@ -264,7 +311,7 @@ function PageNavigation({ pageNum, setPageNum, pageCount, pageImages }) {
 }
 
 
-export default function DocumentView({ path, file, pageNum, setPageNum, tableBoxes, tableBoxHL, textBoxes, textBoxHL }) {
+export default function DocumentView({ path, file, pageNum, setPageNum, tables, tableBoxes, tableBoxHL, setTableBoxHL, text, textBoxes, textBoxHL, setTextBoxHL }) {
 
   const [ scrollToItem, setScrollToItem ] = useState(null);
   const [ ref, { x, y, width, height, top, right, bottom, left } ] = useMeasure();
@@ -276,7 +323,7 @@ export default function DocumentView({ path, file, pageNum, setPageNum, tableBox
         <PageNavigation pageNum={ pageNum } setPageNum={ setPageNum } pageCount={ pages.length } pageImages={ pageImagesRef }/>
       </div>
       { width > 0 ? (
-        <PageImages width={ width } pageNum={ pageNum } setPageNum={ setPageNum } tableBoxes={ tableBoxes } tableBoxHL={ tableBoxHL } textBoxes={ textBoxes } textBoxHL={ textBoxHL } ref={ pageImagesRef }/>
+        <PageImages width={ width } pageNum={ pageNum } setPageNum={ setPageNum } tables={ tables } tableBoxes={ tableBoxes } tableBoxHL={ tableBoxHL } setTableBoxHL={ setTableBoxHL } text={ text } textBoxes={ textBoxes } textBoxHL={ textBoxHL } setTextBoxHL={ setTextBoxHL } ref={ pageImagesRef }/>
       ):(null) }
     </div>
   )
