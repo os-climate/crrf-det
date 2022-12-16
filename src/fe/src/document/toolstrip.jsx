@@ -8,7 +8,7 @@ function CurrentFolderDropdown({ menuFunc }) {
     <div>
       <ul tabIndex={0} className="dropdown-content menu menu-compact shadow-md border border-slate-200 bg-base-100 rounded w-48">
         <li className="border-b border-slate-100"><a className="hover:text-slate-500" onClick={ menuFunc.newFolder }><i className="icon-folder text-slate-500"/>New Folder</a></li>
-        <li><a className="hover:text-slate-500" onClick={ menuFunc.connectS3 }><i className="icon-upload text-slate-500"/>Connect S3 Bucket</a></li>
+        <li><a className="hover:text-slate-500" onClick={ menuFunc.connectS3 }><i className="icon-upload-cloud text-slate-500"/>Connect S3 Bucket</a></li>
         <li className=""><a className="hover:text-slate-500" onClick={ menuFunc.upload }><i className="icon-upload text-slate-500"/>Upload Files</a></li>
       </ul>
     </div>
