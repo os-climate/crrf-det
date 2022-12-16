@@ -275,13 +275,13 @@ export default function DocumentListView({ path, listSel, setListSel, setListCou
       </div>
       <div className="mr-1">
         <table className="table-compact border-collapse w-full select-none">
-          <thead className="sticky top-0 cursor-default bg-slate-100">
-            <tr>
-              <th className="text-xs w-8 rounded-tl-md"></th>
-              <th className="text-xs text-left">Name</th>
-              <th className="text-xs">Size</th>
-              <th className="text-xs">Date</th>
-              <th className="text-xs rounded-tr-md text-left">Info</th>
+          <thead className="sticky top-0 cursor-default text-sm">
+            <tr className="backdrop-blur-md h-9">
+              <th className="sticky w-8" style={{ boxShadow: '0 1px #2dd4bf' }}></th>
+              <th className="sticky text-left" style={{ boxShadow: '0 1px #2dd4bf' }}>Name</th>
+              <th className="sticky" style={{ boxShadow: '0 1px #2dd4bf' }}>Size</th>
+              <th className="sticky" style={{ boxShadow: '0 1px #2dd4bf' }}>Date</th>
+              <th className="sticky text-left" style={{ boxShadow: '0 1px #2dd4bf' }}>Info</th>
             </tr>
           </thead>
           <AllItems listSel={ listSel } setListSel={ setListSel } path={ path } items={ items }/>

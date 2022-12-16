@@ -1,5 +1,6 @@
 import { useRef } from 'react';
 import { Link, useParams, useNavigate } from 'react-router-dom';
+import { scn } from '../shared/styles';
 
 
 function CurrentFolderDropdown({ menuFunc }) {
@@ -7,9 +8,9 @@ function CurrentFolderDropdown({ menuFunc }) {
   return (
     <div>
       <ul tabIndex={0} className="dropdown-content menu menu-compact shadow-md border border-slate-200 bg-base-100 rounded w-48">
-        <li className="border-b border-slate-100"><a className="hover:text-slate-500" onClick={ menuFunc.newFolder }><i className="icon-folder text-slate-500"/>New Folder</a></li>
-        <li><a className="hover:text-slate-500" onClick={ menuFunc.connectS3 }><i className="icon-upload-cloud text-slate-500"/>Connect S3 Bucket</a></li>
-        <li className=""><a className="hover:text-slate-500" onClick={ menuFunc.upload }><i className="icon-upload text-slate-500"/>Upload Files</a></li>
+        <li className="border-b border-slate-100"><a className={scn.menuA} onClick={ menuFunc.newFolder }><i className="icon-folder text-slate-500 mr-3"/>New Folder</a></li>
+        <li><a className={scn.menuA} onClick={ menuFunc.connectS3 }><i className="icon-upload-cloud text-slate-500 mr-3"/>Connect S3 Bucket</a></li>
+        <li className=""><a className={scn.menuA} onClick={ menuFunc.upload }><i className="icon-upload text-slate-500 mr-3"/>Upload Files</a></li>
       </ul>
     </div>
   )
@@ -26,7 +27,7 @@ function FolderButton({ idx, folders, listSel, listCount, file, menuFunc }) {
       <span>
         <i className="icon-right-open text-slate-300"/>
         <div className="dropdown">
-          <label tabIndex={0} className="cursor-pointer hover:bg-slate-100 hover:border-slate-200 border border-white px-2 py-1 rounded inline-flex min-h-fit items-center">
+          <label tabIndex={0} className={`cursor-pointer items-center ${scn.clearButton}`}>
             <i className="icon-folder text-slate-500 pl-1 pr-6"/>
             {folder} <FolderCount sel={ listSel.indices.length } count={ listCount }/>
             <i className="icon-down-dir pl-3 pr-2 text-slate-500"/>
@@ -38,7 +39,7 @@ function FolderButton({ idx, folders, listSel, listCount, file, menuFunc }) {
   return (
     <span>
       <i className="icon-right-open text-slate-300"/>
-      <button className="bg-white hover:bg-slate-100 hover:border-slate-200 border border-white px-2 py-1 rounded inline-flex min-h-fit" onClick={(node, event) => {
+      <button className={scn.clearButton} onClick={(node, event) => {
         let path = "/documents/";
         for (var i = 0; i <= idx; i++) {
           if (i == 0) {
@@ -79,7 +80,7 @@ function DocumentsButton() {
   }
 
   return (
-    <button className="bg-white hover:bg-slate-100 hover:border-slate-200 border border-white px-2 py-1 rounded inline-flex min-h-fit" onClick={ goDocuments }><i className="icon-archive text-slate-500 pl-1 pr-6"/>Documents</button>
+    <button className={scn.clearButton} onClick={ goDocuments }><i className="icon-archive text-slate-500 pl-1 pr-6"/>Documents</button>
   );
 }
 
@@ -120,7 +121,7 @@ export default function DocumentToolstrip({ listSel, listCount, uploadFunc }) {
   // A single "Documents" dropdown button
   let documentsButton = (
     <div className="dropdown">
-      <label tabIndex={0} className="cursor-pointer hover:bg-slate-100 hover:border-slate-200 border border-white px-2 py-1 rounded inline-flex min-h-fit items-center">
+      <label tabIndex={0} className={`cursor-pointer items-center ${scn.clearButton}`}>
         <i className="icon-archive text-slate-500 pl-1 pr-6"/>
         Documents <FolderCount sel={ listSel.indices.length } count={ listCount }/>
         <i className="icon-down-dir pl-3 pr-2 text-slate-500"/>
@@ -140,7 +141,7 @@ export default function DocumentToolstrip({ listSel, listCount, uploadFunc }) {
     fileButton = (
       <span>
         <i className="icon-right-open text-slate-300"/>
-        <button className="bg-white hover:bg-slate-100 hover:border-slate-200 border border-white px-2 py-1 rounded inline-flex min-h-fit">
+        <button className={scn.clearButton}>
           <i className="icon-doc-text text-slate-500 pl-1 pr-6"/>{ file }
         </button>
       </span>

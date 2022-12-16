@@ -295,17 +295,17 @@ function PageNavigation({ pageNum, setPageNum, pageCount, pageImages }) {
 
   return (
     <div>
-      <button className="btn px-2 min-h-fit h-8 bg-slate-100 border-slate-100 text-slate-500 hover:bg-white hover:border-slate-200 disabled:bg-transparent disabled:hover:bg-transparent" onClick={ pageLeft } disabled={ pageNum < 2 }>
+      <button className="btn px-2 min-h-fit h-9 bg-slate-100 border-slate-100 text-slate-500 hover:bg-white hover:border-slate-200 disabled:bg-transparent disabled:hover:bg-transparent" onClick={ pageLeft } disabled={ pageNum < 2 }>
         <i className="icon-left-dir"/>
       </button>
       <div className="dropdown">
-        <label tabIndex="0" className="btn normal-case min-h-fit h-8 bg-slate-100 border-slate-100 text-slate-500 hover:bg-white hover:border-slate-200">Page { pageNum } of { pageCount }</label>
+        <label tabIndex="0" className="btn normal-case min-h-fit h-9 bg-slate-100 border-slate-100 text-slate-500 hover:bg-white hover:border-slate-200">Page { pageNum } of { pageCount }</label>
         <ul tabIndex="0" className="dropdown-content block menu menu-compact shadow-md border border-slate-200 bg-base-100 rounded max-h-96 overflow-auto">
           <li className="block px-3 py-1 whitespace-nowrap text-xs uppercase font-bold text-slate-400">Go to Page</li>
           { dropContent }
         </ul>
       </div>
-      <button className="btn px-2 min-h-fit h-8 bg-slate-100 border-slate-100 text-slate-500 hover:bg-white hover:border-slate-200 disabled:bg-transparent disabled:hover:bg-transparent" onClick={ pageRight } disabled={ pageNum > pageCount - 1 }>
+      <button className="btn px-2 min-h-fit h-9 bg-slate-100 border-slate-100 text-slate-500 hover:bg-white hover:border-slate-200 disabled:bg-transparent disabled:hover:bg-transparent" onClick={ pageRight } disabled={ pageNum > pageCount - 1 }>
         <i className="icon-right-dir"/>
       </button>
     </div>
@@ -321,10 +321,10 @@ export default function DocumentView({ path, file, pageNum, setPageNum, mode, se
 
   return (
     <div>
-      <div className="absolute left-0 top-0 right-0 h-9 bg-slate-100 rounded-t-md items-center inline-flex">
+      <div className="absolute left-0 top-0 right-0 h-10 bg-slate-100 rounded-t-md items-center inline-flex">
         <PageNavigation pageNum={ pageNum } setPageNum={ setPageNum } pageCount={ pages.length } pageImages={ pageImagesRef }/>
       </div>
-      <div ref={ ref } className="absolute border border-slate-100 left-0 top-9 right-0 bottom-0">
+      <div ref={ ref } className="absolute border border-slate-100 left-0 top-10 right-0 bottom-0">
       { width > 0 ? (
         <PageImages width={ width } height={ height } pageNum={ pageNum } setPageNum={ setPageNum } mode={ mode } setMode={ setMode } tables={ tables } tableBoxes={ tableBoxes } tableBoxHL={ tableBoxHL } setTableBoxHL={ setTableBoxHL } text={ text } textBoxes={ textBoxes } textBoxHL={ textBoxHL } setTextBoxHL={ setTextBoxHL } ref={ pageImagesRef }/>
       ):(null) }
