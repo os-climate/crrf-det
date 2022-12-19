@@ -4,4 +4,5 @@ export const scn = {
   clearButton:    'bg-white hover:bg-slate-100 hover:border-slate-200 border border-white px-2 py-1 rounded inline-flex min-h-fit',
   transparentButton:  'bg-transparent hover:bg-slate-100 hover:border-slate-200 border border-transparent px-2 py-1 rounded inline-flex min-h-fit',
   menuA:          'block border border-white hover:border-slate-200 hover:bg-slate-50 hover:text-slate-500',
+  input:          'border border-slate-200 rounded-md h-12 px-2 w-full',
 };

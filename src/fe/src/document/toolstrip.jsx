@@ -156,7 +156,7 @@ export default function DocumentToolstrip({ listSel, listCount, uploadFunc }) {
           <h3 className="font-bold text-lg">New Folder</h3>
           <div className="form-control w-full">
             <p className="py-3">Enter a name to create a new folder</p>
-            <input type="text" placeholder="Name of the Folder" className="input input-bordered w-full" />
+            <input type="text" placeholder="Name of the Folder" className={ scn.input } />
           </div>
           <div className="modal-action">
             <button className="btn bg-slate-50 text-slate-500 border-slate-300 hover:bg-slate-200 hover:border-slate-400" onClick={ closeNewFolder }>Cancel</button>
@@ -174,19 +174,19 @@ export default function DocumentToolstrip({ listSel, listCount, uploadFunc }) {
             <label className="label">
               <span className="label-text">Bucket Location</span>
             </label>
-            <input type="text" placeholder="s3://" className="input input-bordered w-full" />
+            <input type="text" placeholder="s3://" className={ scn.input } />
           </div>
           <div className="form-control w-full">
             <label className="label">
               <span className="label-text">AccessKeyId</span>
             </label>
-            <input type="text" placeholder="AccessKeyId" className="input input-bordered w-full" />
+            <input type="text" placeholder="AccessKeyId" className={ scn.input } />
           </div>
           <div className="form-control w-full">
             <label className="label">
               <span className="label-text">SecretAccessKey</span>
             </label>
-            <input type="text" placeholder="SecretAccessKey" className="input input-bordered w-full" />
+            <input type="text" placeholder="SecretAccessKey" className={ scn.input } />
           </div>
           <div className="modal-action">
             <button className="btn bg-slate-50 text-slate-500 border-slate-300 hover:bg-slate-200 hover:border-slate-400" onClick={ closeConnectS3 }>Cancel</button>

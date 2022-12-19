@@ -182,6 +182,8 @@ function AutoAvatar({ name, width, height, margin, textSize, styledTextSize }) {
     ['from-rose-700', 'to-rose-700'],
   ];
 
+  if (!name)
+    name = '/';
   var nameHash = Math.abs(hash(name));
   var baseColors = ['', ''];
   var textColor = 'text-white';
@@ -198,7 +200,7 @@ function AutoAvatar({ name, width, height, margin, textSize, styledTextSize }) {
   var charCount = 2;
   for (var i = 0; i < name.length; i++) {
     var char = name.charAt(i);
-    if (/[0-9A-Z]/.test(char))
+    if (/[0-9A-Z\/<>]/.test(char))
       shortChars += char;
     if (shortChars.length >= charCount)
       break

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import Editor from 'react-simple-code-editor';
 import { highlight, languages } from 'prismjs/components/prism-core';
 import 'prismjs/components/prism-regex';
@@ -8,7 +8,7 @@ import { AutoAvatar } from '../shared/widgets';
 import { getColor } from '../shared/colors';
 
 
-function FilterDropdown({ filters, setFilters, current, setCurrent, setCode }) {
+function FilterDropdown({ filters, setFilters, current, setCurrent, setCode, menuFunc }) {
 
   function filterClick(e) {
     var fname = e.currentTarget.getAttribute('data-filter-name');
@@ -22,7 +22,7 @@ function FilterDropdown({ filters, setFilters, current, setCurrent, setCode }) {
         <i className="icon-down-dir pl-3 pr-2 text-slate-500 absolute right-2 top-3"/>
       </label>
       <ul tabIndex="0" className="dropdown-content block menu menu-compact shadow-md border border-slate-200 bg-base-100 rounded max-h-[65vh] w-80 overflow-auto">
-        <li className="block border-b border-slate-100" key={0}><a className={scn.menuA}><i className="icon-plus mr-1"/> New Filter</a></li>
+        <li className="block border-b border-slate-100" key={0}><a className={scn.menuA} onClick={ menuFunc.newFilter }><i className="icon-plus mr-1"/> New Filter</a></li>
         { Object.keys(filters).map((filter) => (
           <li key={ filter }><a className={`${scn.menuA} inline-flex`} onClick={ filterClick } data-filter-name={ filter }>
             <AutoAvatar name={ filter } width={2} height={1.5} textSize="text-sm"/>
@@ -34,32 +34,42 @@ function FilterDropdown({ filters, setFilters, current, setCurrent, setCode }) {
 }
 
 
-function OptionDropdown({ }) {
+function OptionDropdown({ menuFunc }) {
 
   return (
     <div className="dropdown dropdown-top dropdown-end absolute w-[32px] absolute top-0.5 right-0">
       <label tabIndex="0" className="btn normal-case min-h-fit h-9 pt-2.5 pl-2 pr-6 bg-slate-100 border-slate-100 text-slate-500 hover:bg-white hover:border-slate-200 block"><i className="icon-dot-3 rotate-90"/>
       </label>
       <ul tabIndex="0" className="dropdown-content block menu menu-compact shadow-md border border-slate-200 bg-base-100 rounded max-h-[65vh] w-60 overflow-auto">
-        <li className="block" key={0}><a className={scn.menuA}><i className="icon-pencil mr-1"/> Rename</a></li>
-        <li className="block" key={0}><a className={scn.menuA}><i className="icon-window mr-1"/> Manage Tags</a></li>
+        <li className="block" key={0}><a className={scn.menuA} onClick={ menuFunc.renameFilter }><i className="icon-pencil mr-1"/> Rename</a></li>
+        <li className="block" key={1}><a className={scn.menuA} onClick={ menuFunc.manageTags }><i className="icon-window mr-1"/> Manage Tags</a></li>
       </ul>
     </div>
   )
 }
 
 
-function TagView({ filters, current }) {
+function renderTags(labels, manageTagsFunc) {
   let tags = [];
-  if (filters[current].labels) {
-    for (var i = 0; i < filters[current].labels.length; i++)
-      tags.push(<button className="rounded-full text-sm mr-2 mt-1.5 text-white font-bold inline-block" style={{backgroundColor: getColor(i, 1), paddingLeft: '0.55rem', paddingRight: '0.55rem', paddingTop: '0.05rem', paddingBottom: '0.05rem'}}><i className="icon-tag mr-1"/>{filters[current].labels[i]}</button>);
+  if (labels) {
+    for (var i = 0; i < labels.length; i++) {
+      var label = labels[i].trim();
+      if (!label)
+        continue;
+      tags.push(<button key={i} className="rounded-full text-sm mr-2 mt-1.5 text-white font-bold inline-block" style={{backgroundColor: getColor(i, 1), paddingLeft: '0.55rem', paddingRight: '0.55rem', paddingTop: '0.05rem', paddingBottom: '0.05rem'}} onClick={ manageTagsFunc }><i className="icon-tag mr-1"/>{label}</button>);
+    }
   }
+  return tags;
+}
+
+
+function TagView({ filters, current, menuFunc }) {
+  let tags = renderTags(filters[current].labels, menuFunc.manageTags);
 
   return (
     <div className="absolute left-0 bottom-0 h-10 right-0 border-t border-t-slate-100 p-0.5 overflow-x-auto overflow-y-hidden whitespace-nowrap">
       { tags.length > 0?(tags):(
-      <button className={`btn normal-case h-9 text-slate-500 ${scn.clearButton}`}><i className="icon-tag mr-1"/>Manage Tags for this Filter</button>
+      <button className={`btn normal-case h-9 text-slate-500 ${scn.clearButton}`} onClick={ menuFunc.manageTags }><i className="icon-tag mr-1"/>Manage Tags for this Filter</button>
       )}
     </div>
   )
@@ -67,6 +77,7 @@ function TagView({ filters, current }) {
 
 
 export default function DocumentFilterDeck() {
+
   const [filters, setFilters] = useState({
     'Scope 1/2/3 Emissions': { code: 'table:GHG.*', labels: ['Scope 1', 'Scope 2', 'Scope 3', 'Scope 1+2+3'] },
     'Emissions reduction target': { code: 'emission reduction target', labels: ['Relative emissions reduction target', 'Absolute emissions reduction target']},
@@ -94,13 +105,115 @@ export default function DocumentFilterDeck() {
   });
   const [current, setCurrent] = useState(Object.keys(filters)[0]);
   const [code, setCode] = useState(filters[current].code);
+  const [filterName, setFilterName] = useState('');
+  const [filterNameMode, setFilterNameMode] = useState('');
+  const [tags, setTags] = useState('');
+  const refDlgFilterName = useRef();
+  const refDlgTags = useRef();
+
+  // Dialog handlers
+  function newFilter(e) {
+    document.activeElement.blur();
+    setFilterName('');
+    setFilterNameMode('new');
+    refDlgFilterName.current.checked = true;
+  }
+  function renameFilter(e) {
+    document.activeElement.blur();
+    setFilterName(current);
+    setFilterNameMode('rename');
+    refDlgFilterName.current.checked = true;
+  }
+  function closeFilterName(e) {
+    refDlgFilterName.current.checked = false;
+  }
+  function doNewFilter(e) {
+    console.log('doNewFilter');
+    refDlgFilterName.current.checked = false;
+  }
+  function doRenameFilter(e) {
+    console.log('doRenameFilter');
+    refDlgFilterName.current.checked = false;
+  }
+  function manageTags(e) {
+    setTags(filters[current].labels);
+    refDlgTags.current.checked = true;
+  }
+  function closeTags(e) {
+    refDlgTags.current.checked = false;
+  }
+  function doUpdateTags(e) {
+    refDlgTags.current.checked = false;
+  }
+
+  function filterNameChange(e) {
+    setFilterName(e.target.value);
+  }
+  function tagsChange(e) {
+    setTags(e.target.value.split(','));
+  }
+
+  // Dialogs
+  let dialogs = (
+    <div>
+      <input type="checkbox" id="dialog-filter-name" className="modal-toggle" ref={ refDlgFilterName } />
+      <div className="modal">
+        <div className="modal-box">
+          <h3 className="font-bold text-lg">
+            { filterNameMode === 'new'?(<span>New Filter</span>):(null) }
+            { filterNameMode === 'rename'?(<span>Rename Filter</span>):(null) }
+          </h3>
+          <div className="form-control w-full">
+            <p className="py-3">Enter a name for the filter</p>
+            <table>
+              <tbody>
+                <tr>
+                  <td className="w-3 pr-1"><AutoAvatar name={ filterName } width={3} height={3} textSize="text-base" styledTextSize="text-lg"/></td>
+                  <td><input type="text" placeholder="Name of the Filter" className={ scn.input } value={filterName} onChange={filterNameChange}/></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <div className="modal-action">
+            <button className="btn bg-slate-50 text-slate-500 border-slate-300 hover:bg-slate-200 hover:border-slate-400" onClick={ closeFilterName }>Cancel</button>
+            <button className="btn bg-teal-300 hover:bg-teal-600 hover:border-teal-700 border-teal-500" onClick={
+              filterNameMode === 'new'?doNewFilter:(filterNameMode === 'rename'?doRenameFilter:null)
+            }>
+              { filterNameMode === 'new'?(<span>Create</span>):(null) }
+              { filterNameMode === 'rename'?(<span>Rename</span>):(null) }
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <input type="checkbox" id="dialog-tags" className="modal-toggle" ref={ refDlgTags } />
+      <div className="modal">
+        <div className="modal-box">
+          <h3 className="font-bold text-lg">Manage Tags</h3>
+          <div className="form-control w-full">
+            <p className="py-3">Enter comma(,)-delimited tags to describe the possible indicators in the content filtered by <span className="font-bold">{current}</span>:</p>
+            <textarea className="border border-slate-200 rounded-md px-2 w-full h-24" placeholder="comma delimited tags" onChange={tagsChange} defaultValue={tags}></textarea>
+          </div>
+          <div className="py-2 w-full">
+            {renderTags(tags)}
+          </div>
+          <div className="modal-action">
+            <button className="btn bg-slate-50 text-slate-500 border-slate-300 hover:bg-slate-200 hover:border-slate-400" onClick={ closeTags }>Cancel</button>
+            <button className="btn bg-teal-300 hover:bg-teal-600 hover:border-teal-700 border-teal-500" onClick={ doUpdateTags }>
+              Update
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  )
 
   return (
     <div className="ml-2">
       <div className="h-10 bg-slate-100 items-center w-full">
-        <FilterDropdown filters={ filters } setFilters={ setFilters } current={ current } setCurrent={ setCurrent } setCode={ setCode }/>
+        <FilterDropdown filters={ filters } setFilters={ setFilters } current={ current } setCurrent={ setCurrent } setCode={ setCode } menuFunc={{ newFilter: newFilter }}/>
         <button className={`w-[60px] absolute top-0 right-9 ${scn.primaryButton}`}>Go</button>
-        <OptionDropdown/>
+        <OptionDropdown menuFunc={{ renameFilter: renameFilter, manageTags: manageTags }}/>
       </div>
       <div className="absolute bottom-0 top-10 left-2 right-0 border border-slate-100 overflow-auto">
         <Editor
@@ -114,8 +227,9 @@ export default function DocumentFilterDeck() {
           }}
           className="absolute left-0 top-0 right-0 bottom-10"
         />
-        <TagView filters={ filters } current={ current } />
+        <TagView filters={ filters } current={ current } menuFunc={{ manageTags: manageTags }}/>
      </div>
+     { dialogs }
     </div>
   )
 }
