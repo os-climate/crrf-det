@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { getColor } from '../shared/colors';
+import { ModeTab } from '../shared/widgets';
 
 
 function isElementVisible(el) {
@@ -93,26 +94,6 @@ function TablesStructure({ tables, pageNum, tableBoxHL, setTableBoxHL }) {
 }
 
 
-function ModeTab({ mode, setMode }) {
-  let modes = {
-    'text': 'Text',
-    'table': 'Tables',
-  }
-
-  function switchMode(e) {
-    setMode(e.currentTarget.getAttribute('data-mode'));
-  }
-
-  return (
-    <div className="h-10 bg-slate-100 items-center justify-center inline-flex w-full rounded-t-md">
-      { Object.entries(modes).map(([key, value]) => (
-        <button key={ key } className={`btn normal-case min-h-fit h-9 rounded m-0.5 ${ mode === key?('bg-slate-600 text-white font-bold'):('bg-slate-100 border-slate-100 text-slate-500 hover:bg-white hover:border-slate-200')}`} onClick={ switchMode } data-mode={ key }>{ value }</button>
-        ))}
-    </div>
-  )
-}
-
-
 export default function DocumentStructure({ pageNum, mode, setMode, tables, setTables, setTableBoxes, tableBoxHL, setTableBoxHL, text, setText, setTextBoxes, textBoxHL, setTextBoxHL }) {
 
   const pageChange = async () => {
@@ -145,7 +126,7 @@ export default function DocumentStructure({ pageNum, mode, setMode, tables, setT
 
   return (
     <div className="ml-2">
-      <ModeTab mode={ mode } setMode={ setMode }/>
+      <ModeTab modes={{ 'text': 'Text', 'table': 'Tables' }} mode={ mode } setMode={ setMode }/>
       <div className="absolute bottom-0 top-10 left-2 right-0 border border-slate-100 overflow-auto p-2 text-xs">
         { mode == 'table'?(<TablesStructure tables={ tables } pageNum={ pageNum } tableBoxHL={ tableBoxHL } setTableBoxHL={ setTableBoxHL }/>):(null) }
         { mode == 'text'?(<TextStructure text={ text } pageNum={ pageNum } textBoxHL={ textBoxHL } setTextBoxHL={ setTextBoxHL }/>):(null) }
