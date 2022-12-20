@@ -11,6 +11,7 @@ export default function PageHost() {
         <Route path='/documents/:path' element={<DocumentPage/>}></Route>
         <Route path='/documents/:path/:file' element={<DocumentPage/>}></Route>
         <Route path='/projects' element={<ProjectPage/>}></Route>
+        <Route path='/projects/:name' element={<ProjectPage/>}></Route>
       </Routes>
     </div>
   )

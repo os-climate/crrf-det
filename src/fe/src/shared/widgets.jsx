@@ -1,3 +1,6 @@
+import { getColor } from '../shared/colors';
+
+
 function ModeTab({ modes, mode, setMode }) {
   function switchMode(e) {
     setMode(e.currentTarget.getAttribute('data-mode'));
@@ -224,7 +227,42 @@ function AutoAvatar({ name, width, height, margin, textSize, styledTextSize }) {
 }
 
 
+function Tag({ label, color, onClick }) {
+  return (
+    <button className="rounded-full text-sm mr-2 text-white font-bold inline-block" style={{backgroundColor: color, paddingLeft: '0.55rem', paddingRight: '0.55rem', paddingTop: '0.05rem', paddingBottom: '0.05rem'}} onClick={ onClick }><i className="icon-tag mr-1"/>{label}</button>
+  )
+}
+
+
+function renderTableStructure(table, index, tableBoxHL, highlightTableBox, resetHighlightTableBox, refHL) {
+  var renderedHead = [];
+  var renderedBody = [];
+  for (var k = 0; k < table[0].length; k++) {
+    var col = table[0][k];
+    renderedHead.push(<th key={ index + '_0_' + k }>{col}</th>);
+  }
+  for (var j = 1; j < table.length; j++) {
+    var row = table[j];
+    var rendered_row = [];
+    for (var k = 0; k < row.length; k++) {
+      var col = row[k];
+      rendered_row.push(<td key={ index + '_' + j + '_' + k } className="px-2 py-1">{col}</td>);
+    }
+    renderedBody.push(<tr className="odd:bg-white" key={ index + '_' + j }>{rendered_row}</tr>);
+  }
+  return (<table key={index} className="table-fixed mb-2 border" data-tablebox-index={index} style={{backgroundColor: getColor(index, index == tableBoxHL?0.25:0.0625), borderColor: getColor(index, index == tableBoxHL?0.65:0.1625) }} onMouseEnter={highlightTableBox} onMouseLeave={resetHighlightTableBox} ref={ index == tableBoxHL?refHL:null }><thead><tr style={{ backgroundColor: getColor(index, index == tableBoxHL?0.65:0.1625) }}>{renderedHead}</tr></thead><tbody>{renderedBody}</tbody></table>);
+}
+
+
+function renderTextStructure(content, index, textBoxHL, highlightTextBox, resetHighlightTextBox, refHL) {
+  return (<p key={index} className="text-sm mb-2 py-1 px-2 border rounded italic" data-textbox-index={index} style={{ backgroundColor: getColor(index, index == textBoxHL?0.25:0.0625), borderColor: getColor(index, index == textBoxHL?0.65:0.1625) }} onMouseEnter={highlightTextBox} onMouseLeave={resetHighlightTextBox} ref={ index == textBoxHL?refHL:null }>{content}</p>)
+}
+
+
 export {
   ModeTab,
   AutoAvatar,
+  Tag,
+  renderTableStructure,
+  renderTextStructure,
 }

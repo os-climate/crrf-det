@@ -1,4 +1,4 @@
-import { useRef } from 'react';
+import { useRef, useState } from 'react';
 import { Link, useParams, useNavigate } from 'react-router-dom';
 import { scn } from '../shared/styles';
 
@@ -17,12 +17,25 @@ function CurrentFolderDropdown({ menuFunc }) {
 }
 
 
-function FolderButton({ idx, folders, listSel, listCount, file, menuFunc }) {
+function FolderButton({ asPicker, idx, folders, listSel, listCount, file, menuFunc }) {
   var folder = folders[idx];
   let navigate = useNavigate();
 
+  function buttonClick(e) {
+    let path = "/documents/";
+    for (var i = 0; i <= idx; i++) {
+      if (i == 0) {
+        path += folders[i];
+        continue;
+      }
+      path += "|" + folders[i];
+    }
+    navigate(path);
+  }
+
   if (idx == folders.length - 1 &&
-    !file)
+    !file &&
+    !asPicker)
     return (
       <span>
         <i className="icon-right-open text-slate-300"/>
@@ -39,17 +52,7 @@ function FolderButton({ idx, folders, listSel, listCount, file, menuFunc }) {
   return (
     <span>
       <i className="icon-right-open text-slate-300"/>
-      <button className={scn.clearButton} onClick={(node, event) => {
-        let path = "/documents/";
-        for (var i = 0; i <= idx; i++) {
-          if (i == 0) {
-            path += folders[i];
-            continue;
-          }
-          path += "|" + folders[i];
-        }
-        navigate(path);
-      }}><i className="icon-folder text-slate-500 pl-1 pr-6"/>{folder}</button>
+      <button className={scn.clearButton} onClick={buttonClick}><i className="icon-folder text-slate-500 pl-1 pr-6"/>{folder}</button>
     </span>
   )
 }
@@ -72,11 +75,14 @@ function FolderCount({ sel, count }) {
 }
 
 
-function DocumentsButton() {
+function DocumentsButton({ asPicker, setPickerPath }) {
   let navigate = useNavigate();
 
   function goDocuments() {
-    navigate("/documents");
+    if (asPicker)
+      setPickerPath(null);
+    else
+      navigate("/documents");
   }
 
   return (
@@ -85,14 +91,19 @@ function DocumentsButton() {
 }
 
 
-export default function DocumentToolstrip({ listSel, listCount, uploadFunc }) {
+export default function DocumentToolstrip({ asPicker, pickerPath, setPickerPath, listSel, listCount, uploadFunc }) {
 
   const { path, file } = useParams();
   const refDlgNewFolder = useRef();
   const refDlgConnectS3 = useRef();
 
   let folders = [];
-  if (typeof path !== 'undefined' &&
+  if (asPicker &&
+    pickerPath &&
+    pickerPath !== '|')
+    folders = pickerPath.split('|');
+  else if (!asPicker &&
+    typeof path !== 'undefined' &&
     path !== '|')
     folders = path.split('|');
 
@@ -132,8 +143,9 @@ export default function DocumentToolstrip({ listSel, listCount, uploadFunc }) {
   // "Documents" non-dropdown button shows up whenever viewing a
   // file or in at least one level folder.
   if (file ||
-    folders.length > 0)
-    documentsButton = (<DocumentsButton/>);
+    folders.length > 0 ||
+    asPicker)
+    documentsButton = (<DocumentsButton asPicker={asPicker} setPickerPath={setPickerPath}/>);
 
   // A file button appears only when viewing a file
   let fileButton = (null);
@@ -160,7 +172,7 @@ export default function DocumentToolstrip({ listSel, listCount, uploadFunc }) {
           </div>
           <div className="modal-action">
             <button className="btn bg-slate-50 text-slate-500 border-slate-300 hover:bg-slate-200 hover:border-slate-400" onClick={ closeNewFolder }>Cancel</button>
-            <label htmlFor="dialog-new-folder" className="btn bg-teal-300 hover:bg-teal-600 hover:border-teal-700 border-teal-500">Create</label>
+            <label htmlFor="dialog-new-folder" className="btn bg-teal-300 hover:bg-teal-600 hover:border-teal-700 border-teal-500 text-white">Create</label>
           </div>
         </div>
       </div>
@@ -190,7 +202,7 @@ export default function DocumentToolstrip({ listSel, listCount, uploadFunc }) {
           </div>
           <div className="modal-action">
             <button className="btn bg-slate-50 text-slate-500 border-slate-300 hover:bg-slate-200 hover:border-slate-400" onClick={ closeConnectS3 }>Cancel</button>
-            <label htmlFor="dialog-connect-s3" className="btn bg-teal-300 hover:bg-teal-600 hover:border-teal-700 border-teal-500">Connect</label>
+            <label htmlFor="dialog-connect-s3" className="btn bg-teal-300 hover:bg-teal-600 hover:border-teal-700 border-teal-500 text-white">Connect</label>
           </div>
         </div>
       </div>
@@ -202,7 +214,7 @@ export default function DocumentToolstrip({ listSel, listCount, uploadFunc }) {
       { documentsButton }
       {
         folders.map((folder, idx) => (
-          <FolderButton key={ idx } idx={ idx } folders={ folders } listSel={ listSel } listCount={ listCount } file={ file } menuFunc={ { newFolder: newFolder, connectS3: connectS3, upload: upload } }/>
+          <FolderButton asPicker={asPicker} key={ idx } idx={ idx } folders={ folders } listSel={ listSel } listCount={ listCount } file={ file } menuFunc={ { newFolder: newFolder, connectS3: connectS3, upload: upload } }/>
         ))
       }
       { fileButton }

@@ -4,7 +4,7 @@ import { highlight, languages } from 'prismjs/components/prism-core';
 import 'prismjs/components/prism-regex';
 import 'prismjs/themes/prism.css';
 import { scn } from '../shared/styles';
-import { AutoAvatar } from '../shared/widgets';
+import { AutoAvatar, Tag } from '../shared/widgets';
 import { getColor } from '../shared/colors';
 
 
@@ -56,7 +56,7 @@ function renderTags(labels, manageTagsFunc) {
       var label = labels[i].trim();
       if (!label)
         continue;
-      tags.push(<button key={i} className="rounded-full text-sm mr-2 mt-1.5 text-white font-bold inline-block" style={{backgroundColor: getColor(i, 1), paddingLeft: '0.55rem', paddingRight: '0.55rem', paddingTop: '0.05rem', paddingBottom: '0.05rem'}} onClick={ manageTagsFunc }><i className="icon-tag mr-1"/>{label}</button>);
+      tags.push(<Tag key={i} label={ label } color={ getColor(i, 1) } onClick={ manageTagsFunc }/>);
     }
   }
   return tags;
@@ -68,7 +68,7 @@ function TagView({ filters, current, menuFunc }) {
 
   return (
     <div className="absolute left-0 bottom-0 h-10 right-0 border-t border-t-slate-100 p-0.5 overflow-x-auto overflow-y-hidden whitespace-nowrap">
-      { tags.length > 0?(tags):(
+      { tags.length > 0?(<div className="mt-1">{tags}</div>):(
       <button className={`btn normal-case h-9 text-slate-500 ${scn.clearButton}`} onClick={ menuFunc.manageTags }><i className="icon-tag mr-1"/>Manage Tags for this Filter</button>
       )}
     </div>
@@ -169,14 +169,14 @@ export default function DocumentFilterDeck() {
               <tbody>
                 <tr>
                   <td className="w-3 pr-1"><AutoAvatar name={ filterName } width={3} height={3} textSize="text-base" styledTextSize="text-lg"/></td>
-                  <td><input type="text" placeholder="Name of the Filter" className={ scn.input } value={filterName} onChange={filterNameChange}/></td>
+                  <td><input type="text" placeholder="Name of the Filter" className={`${ scn.input } h-12`} value={filterName} onChange={filterNameChange}/></td>
                 </tr>
               </tbody>
             </table>
           </div>
           <div className="modal-action">
             <button className="btn bg-slate-50 text-slate-500 border-slate-300 hover:bg-slate-200 hover:border-slate-400" onClick={ closeFilterName }>Cancel</button>
-            <button className="btn bg-teal-300 hover:bg-teal-600 hover:border-teal-700 border-teal-500" onClick={
+            <button className="btn bg-teal-300 hover:bg-teal-600 hover:border-teal-700 border-teal-500 text-white" onClick={
               filterNameMode === 'new'?doNewFilter:(filterNameMode === 'rename'?doRenameFilter:null)
             }>
               { filterNameMode === 'new'?(<span>Create</span>):(null) }
@@ -199,7 +199,7 @@ export default function DocumentFilterDeck() {
           </div>
           <div className="modal-action">
             <button className="btn bg-slate-50 text-slate-500 border-slate-300 hover:bg-slate-200 hover:border-slate-400" onClick={ closeTags }>Cancel</button>
-            <button className="btn bg-teal-300 hover:bg-teal-600 hover:border-teal-700 border-teal-500" onClick={ doUpdateTags }>
+            <button className="btn bg-teal-300 hover:bg-teal-600 hover:border-teal-700 border-teal-500 text-white" onClick={ doUpdateTags }>
               Update
             </button>
           </div>

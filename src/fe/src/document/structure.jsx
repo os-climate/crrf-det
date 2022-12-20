@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { getColor } from '../shared/colors';
-import { ModeTab } from '../shared/widgets';
+import { ModeTab, renderTableStructure, renderTextStructure } from '../shared/widgets';
 
 
 function isElementVisible(el) {
@@ -35,9 +35,7 @@ function TextStructure({ text, pageNum, textBoxHL, setTextBoxHL }) {
 
   return (
     <div>
-    { text.map((p, idx) => (
-      <p key={idx} className="text-sm mb-2 py-1 px-2 border rounded italic" data-textbox-index={idx} style={{ backgroundColor: getColor(idx, idx == textBoxHL?0.25:0.0625), borderColor: getColor(idx, idx == textBoxHL?0.65:0.1625) }} onMouseEnter={highlightTextBox} onMouseLeave={resetHighlightTextBox} ref={ idx == textBoxHL?refHL:null }>{p.content}</p>
-      ))}
+    { text.map((p, idx) => renderTextStructure(p.content, idx, textBoxHL, highlightTextBox, resetHighlightTextBox, refHL)) }
     </div>
   )
 }
@@ -63,23 +61,7 @@ function TablesStructure({ tables, pageNum, tableBoxHL, setTableBoxHL }) {
 
   let rendered = [];
   for (var i = 0; i < tables.length; i++) {
-    var table = tables[i].content;
-    var rendered_head = [];
-    var rendered_body = []
-    for (var k = 0; k < table[0].length; k++) {
-      var col = table[0][k];
-      rendered_head.push(<th key={ i + '_0_' + k }>{col}</th>);
-    }
-    for (var j = 1; j < table.length; j++) {
-      var row = table[j];
-      var rendered_row = [];
-      for (var k = 0; k < row.length; k++) {
-        var col = row[k];
-        rendered_row.push(<td key={ i + '_' + j + '_' + k } className="px-2 py-1">{col}</td>);
-      }
-      rendered_body.push(<tr className="odd:bg-white" key={ i + '_' + j }>{rendered_row}</tr>);
-    }
-    rendered.push(<table key={ i } className="table-fixed mb-2 border" data-tablebox-index={i} style={{backgroundColor: getColor(i, i == tableBoxHL?0.25:0.0625), borderColor: getColor(i, i == tableBoxHL?0.65:0.1625) }} onMouseEnter={highlightTableBox} onMouseLeave={resetHighlightTableBox} ref={ i == tableBoxHL?refHL:null }><thead><tr style={{ backgroundColor: getColor(i, i == tableBoxHL?0.65:0.1625) }}>{rendered_head}</tr></thead><tbody>{rendered_body}</tbody></table>);
+    rendered.push(renderTableStructure(tables[i].content, i, tableBoxHL, highlightTableBox, resetHighlightTableBox, refHL));
   }
 
   if (rendered.length === 0) {

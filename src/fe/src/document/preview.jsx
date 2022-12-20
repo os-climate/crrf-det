@@ -68,22 +68,22 @@ function HasSelection({ listSel, listCount }) {
     details = [];
     if (folders.length > 0)
       details.push(
-        <tr>
+        <tr key="folders">
           <td className="align-top"><i className="icon-folder mx-2 text-teal-500 text-lg"/></td><td className="align-top text-slate-700">
             <div className="text-lg">{ folders.length } folders</div>
-            { folders.map((item) => (
-              <div className="text-sm text-slate-400">{ item.name }<span className="ml-2 text-xs">{ item.info }</span></div>
+            { folders.map((item, idx) => (
+              <div className="text-sm text-slate-400" key={ 'folder' + idx }>{ item.name }<span className="ml-2 text-xs">{ item.info }</span></div>
             ))}
           </td>
         </tr>
       );
     if (files.length > 0)
       details.push(
-        <tr>
+        <tr key="files">
           <td className="align-top"><i className="icon-doc-text mx-2 text-teal-500 text-lg"/></td><td className="align-top text-slate-700">
             <div className="text-lg">{ files.length } files</div>
-            { files.map((item) => (
-              <div className="text-sm text-slate-400">{ item.name }<span className="ml-2 text-xs">{ item.info }</span></div>
+            { files.map((item, idx) => (
+              <div className="text-sm text-slate-400" key={ 'file' + idx }>{ item.name }<span className="ml-2 text-xs">{ item.info }</span></div>
             ))}
           </td>
         </tr>

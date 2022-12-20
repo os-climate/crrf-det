@@ -4,6 +4,11 @@
   padding: 0;
 }
 
+.steps .step:after {
+  font-family: Lato;
+  font-weight: 900;
+}
+
 .logo {
   height: 6em;
   padding: 1.5em;

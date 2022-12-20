@@ -10,7 +10,7 @@ import DocumentFilterDeck from './filter_deck';
 import DocumentStructure from './structure';
 
 
-function Content({ path, file, listSel, setListSel, listCount, setListCount, getRootProps, getInputProps, isDragActive, isDragAccept, isDragReject, uploadFunc, pageNum, setPageNum }) {
+function Content({ previewWidth, path, file, listSel, setListSel, listCount, setListCount, getRootProps, getInputProps, isDragActive, isDragAccept, isDragReject, uploadFunc, pageNum, setPageNum }) {
 
   const [mode, setMode] = useState('text');
   const [text, setText] = useState([]);
@@ -23,10 +23,10 @@ function Content({ path, file, listSel, setListSel, listCount, setListCount, get
   if (!file)
     return (
       <div>
-        <div className="absolute left-0 top-0 right-80 bottom-0 overflow-auto">
+        <div className="absolute left-0 top-0 bottom-0" style={{ right: previewWidth }}>
           <DocumentListView path={ path } listSel={ listSel } setListSel={ setListSel } setListCount={ setListCount } getRootProps={ getRootProps } getInputProps={ getInputProps } isDragActive={ isDragActive } isDragAccept={ isDragAccept } isDragReject={ isDragReject } uploadFunc={ uploadFunc }/>
         </div>
-        <div className="absolute w-80 top-0 right-0 bottom-0">
+        <div className="absolute top-0 right-0 bottom-0" style={{ width: previewWidth }}>
           <DocumentPreview listSel={ listSel } listCount={ listCount }/>
         </div>
       </div>
@@ -66,7 +66,7 @@ function Uploader({ files, isComplete }) {
 }
 
 
-export default function DocumentPage() {
+export default function DocumentPage({ previewWidth }) {
 
   const { path, file } = useParams();
   const [ listSel, setListSel ] = useState({
@@ -76,6 +76,9 @@ export default function DocumentPage() {
   });
   const [ listCount, setListCount ] = useState(-1);
   const [ pageNum, setPageNum ] = useState(1);
+
+  if (typeof previewWidth === 'undefined')
+    previewWidth = '20rem';
 
   const {getRootProps, getInputProps, isDragActive, isDragAccept, isDragReject, open} = useDropzone({
     accept: {
@@ -110,7 +113,7 @@ export default function DocumentPage() {
       </div>
 
       <div className="left-2 top-11 right-2 bottom-2 absolute">
-        <Content path={ path } file={ file } listSel={ listSel } setListSel={ setListSel } listCount={ listCount } setListCount={ setListCount } getRootProps={ getRootProps } getInputProps={ getInputProps } isDragActive={ isDragActive } isDragAccept={ isDragAccept } isDragReject={ isDragReject } uploadFunc={ open } pageNum={ pageNum } setPageNum={ setPageNum } />
+        <Content previewWidth={ previewWidth } path={ path } file={ file } listSel={ listSel } setListSel={ setListSel } listCount={ listCount } setListCount={ setListCount } getRootProps={ getRootProps } getInputProps={ getInputProps } isDragActive={ isDragActive } isDragAccept={ isDragAccept } isDragReject={ isDragReject } uploadFunc={ open } pageNum={ pageNum } setPageNum={ setPageNum } />
       </div>
 
     </div>
