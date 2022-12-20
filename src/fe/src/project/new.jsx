@@ -318,12 +318,12 @@ function StepReviewResults({ stepNext, prompt, setPrompt, resultIndex, setResult
         </div>
         <div className="absolute left-2 top-12 right-0 bottom-0 overflow-auto">
         { results[resultIndex].segments.map((seg, idx) => (
-            <div key={idx} className="text-sm mb-3">
+            <div key={'seg_' + idx} className="text-sm mb-3">
               {renderSegment(seg, idx)}
               <div className="text-slate-500 inline-block">
                 <span className="mr-3">{seg.filter}</span>
                 { seg.labels.map((label, idx) => (
-                  <Tag label={label} color={getColor(idx, 1)} />
+                  <Tag key={'label_' + idx} label={label} color={getColor(idx, 1)} />
                 ))}
               </div>
             </div>
@@ -385,7 +385,7 @@ export default function ProjectNew() {
     indices:  [],
     items:    [],
   });
-  const [listCount, setListCount] = useState(-1);
+  const [listCount, setListCount] = useState(0);
   const [filtersTags, setFiltersTags] = useState({});
   const [resultIndex, setResultIndex] = useState(0);
 

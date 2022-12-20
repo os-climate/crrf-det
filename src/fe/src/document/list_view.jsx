@@ -24,7 +24,7 @@ function ItemInfo({ info }) {
 }
 
 
-function Item({ asPicker, listSel, setListSel, index, path, setPath, item, items }) {
+function Item({ asPicker, listSel, setListSel, index, path, setPath, item, items, setLoaded }) {
   let navigate = useNavigate();
 
   function itemClick(e) {
@@ -99,6 +99,7 @@ function Item({ asPicker, listSel, setListSel, index, path, setPath, item, items
   }
 
   function folderDblClick(e) {
+    setLoaded(false);
     setListSel({ anchor: -1, indices: [], items: [] });
     if (asPicker) {
       setPath(typeof path === 'undefined' ? item.name : (path + '|' + item.name));
@@ -107,6 +108,7 @@ function Item({ asPicker, listSel, setListSel, index, path, setPath, item, items
     navigate("/documents/" + (typeof path === 'undefined' ? item.name : (path + '|' + item.name)));
   }
   function parentFolderDblClick(e) {
+    setLoaded(false);
     if (typeof path !== 'undefined') {
       setListSel({ anchor: -1, indices: [], items: [] });
       let idx = path.lastIndexOf("|");
@@ -125,6 +127,7 @@ function Item({ asPicker, listSel, setListSel, index, path, setPath, item, items
     }
   }
   function fileDblClick(e) {
+    setLoaded(false);
     if (asPicker)
       return;
     navigate("/documents/" + (path ? path : '|') + "/" + item.name);
@@ -187,30 +190,30 @@ function Item({ asPicker, listSel, setListSel, index, path, setPath, item, items
 }
 
 
-function ParentFolderItem({ asPicker, listSel, setListSel, path, setPath }) {
+function ParentFolderItem({ asPicker, listSel, setListSel, path, setPath, setLoaded }) {
   const parentFolder = { type: 'parent_folder' };
 
   if (path &&
     path != 'root') {
     return (
-      <Item asPicker={asPicker} listSel={ listSel } setListSel={ setListSel } index={ -1 } path={ path } setPath={ setPath } item={ parentFolder } />
+      <Item asPicker={asPicker} listSel={ listSel } setListSel={ setListSel } index={ -1 } path={ path } setPath={ setPath } item={ parentFolder } setLoaded={setLoaded}/>
     )
   }
   return (null)
 }
 
 
-function AllItems({ asPicker, listSel, setListSel, path, setPath, items }) {
+function AllItems({ asPicker, listSel, setListSel, path, setPath, items, setLoaded }) {
 
   let renderedItems = (null);
   if (items)
     renderedItems = (items.map(( item, idx ) => (
-      <Item asPicker={ asPicker } key={ idx } listSel={ listSel } setListSel={ setListSel } index={ idx } path={ path } setPath={ setPath } item={ item } items={ items }/>
+      <Item asPicker={ asPicker } key={ idx } listSel={ listSel } setListSel={ setListSel } index={ idx } path={ path } setPath={ setPath } item={ item } items={ items } setLoaded={ setLoaded }/>
     )))
 
   return (
     <tbody>
-      <ParentFolderItem asPicker={ asPicker } listSel={ listSel } setListSel={ setListSel } path={ path } setPath={ setPath }/>
+      <ParentFolderItem asPicker={ asPicker } listSel={ listSel } setListSel={ setListSel } path={ path } setPath={ setPath } setLoaded={setLoaded}/>
       { renderedItems }
       { asPicker?(null):(
       <tr>
@@ -274,14 +277,30 @@ export default function DocumentListView({ asPicker, path, setPath, listSel, set
     setScrollTop(refScroll.current.scrollTop);
   };
 
-  let items = allItems[path ? path : 'root'];
+  const [loaded, setLoaded] = useState(false);
+  const [items, setItems] = useState([]);
 
   useEffect(() => {
-    if (items)
-      setListCount(items.length);
-    else
-      setListCount(0);
+    setTimeout(() => {
+      var items_ = allItems[path ? path : 'root'];
+      if (items_)
+        setListCount(items_.length);
+      else
+        setListCount(0);
+      setItems(items_);
+      setLoaded(true);
+    }, 1000);
   }, [path]);
+
+  if (!loaded)
+    return (
+      <div className="absolute left-0 top-0 right-0 bottom-0 overflow-auto">
+        <div className="flex items-center text-teal-600">
+          <span className="w-5 h-5 mr-3 rounded-full animate-spin border border-solid border-[3px] border-slate-200 border-t-teal-500"></span>
+          Loading ...
+        </div>
+      </div>
+    )
 
   var table = (
     <div className="mr-1">
@@ -295,7 +314,7 @@ export default function DocumentListView({ asPicker, path, setPath, listSel, set
             <th className="sticky text-left" style={{ boxShadow: '0 1px #2dd4bf' }}>Info</th>
           </tr>
         </thead>
-        <AllItems asPicker={asPicker} listSel={ listSel } setListSel={ setListSel } path={ path } setPath={setPath} items={ items }/>
+        <AllItems asPicker={asPicker} listSel={ listSel } setListSel={ setListSel } path={ path } setPath={setPath} items={ items } setLoaded={setLoaded}/>
       </table>
     </div>
   )

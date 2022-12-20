@@ -74,7 +74,7 @@ export default function DocumentPage({ previewWidth }) {
     indices:  [],
     items:    [],
   });
-  const [ listCount, setListCount ] = useState(-1);
+  const [ listCount, setListCount ] = useState(0);
   const [ pageNum, setPageNum ] = useState(1);
 
   if (typeof previewWidth === 'undefined')
