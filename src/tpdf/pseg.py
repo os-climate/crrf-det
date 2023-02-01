@@ -636,7 +636,7 @@ class tablevspan:
             if (line[1][1] == rect[1][1] and
                 line[0][1] == rect[0][1] and
                 (rect[0][0] - line[0][0] == 1 or
-                line[0][0] - rect[1][0]) == 1):
+                line[0][0] - rect[1][0] == 1)):
                 # expand rect
                 rect = ((min(line[0][0], rect[0][0]), rect[0][1]), (max(line[0][0], rect[1][0]), rect[1][1]))
             else:
