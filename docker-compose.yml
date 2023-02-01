@@ -1,0 +1,14 @@
+# ---------------------------------------------------------------
+#  This is a development purpose, auto building docker-compose
+#  configuration
+# ---------------------------------------------------------------
+version: '2'
+services:
+  be:
+    build:
+      context: ./
+      dockerfile: dockerfile
+    volumes:
+      - ./src:/det
+    ports:
+      - 8000:8000
