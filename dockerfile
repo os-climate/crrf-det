@@ -4,6 +4,6 @@ COPY docmt /docmt
 WORKDIR /docmt
 RUN ./build-release.sh
 COPY src/requirements.txt /root/
-RUN pip install -r /root/requirements.txt
+RUN export MAKEFLAGS="-j$(nproc)" && pip install -r /root/requirements.txt
 WORKDIR /det
 CMD ["sanic", "det.app"]

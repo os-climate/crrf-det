@@ -8,7 +8,19 @@ services:
     build:
       context: ./
       dockerfile: dockerfile
+    command: sanic det.app --dev --host=0.0.0.0 --port=8000
     volumes:
       - ./src:/det
+      - ./dev-data/data:/data
     ports:
       - 8000:8000
+  redis:
+    image: redis
+    container_name: det-redis
+    network_mode: host
+    expose:
+      - "6379"
+    volumes:
+      - ./dev-data/huey_data:/huey_data
+    restart: "unless-stopped"
+    command: redis-server --save 3600 1 --loglevel warning
