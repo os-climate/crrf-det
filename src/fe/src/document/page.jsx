@@ -8,9 +8,88 @@ import DocumentToolstrip from './toolstrip';
 import DocumentView from './view';
 import DocumentFilterDeck from './filter_deck';
 import DocumentStructure from './structure';
+import { config } from '../shared/config';
+import { auth } from '../shared/auth';
 
 
-function Content({ previewWidth, path, file, listSel, setListSel, listCount, setListCount, getRootProps, getInputProps, isDragActive, isDragAccept, isDragReject, uploadFunc, pageNum, setPageNum }) {
+var uploadFiles = [];
+var uploadToastId = null;
+var uploading = false;
+
+
+function doUpload(setRefresh, path) {
+  if (uploading)
+    return;
+
+  if (uploadFiles.length > 0) {
+    uploading = true;
+    var file = uploadFiles[0];
+    uploadFiles = uploadFiles.slice(1);
+
+    let xhr = new XMLHttpRequest();
+    xhr.upload.onprogress = function(e) {
+      var percent = Math.round(100 * e.loaded / e.total);
+      toast.loading(<Uploader name={ file.name } left={ uploadFiles.length } percent={ percent } />, {
+        id: uploadToastId
+      });
+    };
+    xhr.upload.onerror = function() {
+      uploading = false;
+    };
+    xhr.onload = function() {
+      setTimeout(() => {
+        uploading = false;
+        doUpload(setRefresh);
+        setRefresh(Math.random());
+      });
+    };
+    let apiPath = '/files/new';
+    if (path)
+      apiPath += '/' + path;
+    xhr.open('POST', config.endpoint_base + apiPath);
+    xhr.setRequestHeader('Authorization', 'Bearer ' + auth.getToken());
+    var form = new FormData();
+    form.append('file', file);
+    xhr.send(form);
+
+    if (uploadToastId) {
+      toast.loading(<Uploader name={ file.name } left={ uploadFiles.length } percent={ 0 } />, {
+        id: uploadToastId
+      });
+    } else {
+      uploadToastId = toast.loading(<Uploader name={ file.name } left={ uploadFiles.length } percent={ 0 } />, {
+        position: 'bottom-right'
+      });
+    }
+  }
+  else if (uploadToastId) {
+    toast.success(<Uploader/>, {
+      id: uploadToastId
+    });
+    setRefresh(Math.random());
+    uploadToastId = null;
+  }
+}
+
+
+function Uploader({ name, left, percent }) {
+  if (!name)
+    return (
+      <div>
+        <div>All files uploaded.</div>
+      </div>
+    )
+
+  return (
+    <div>
+      <div className="text-left"><strong>Uploading</strong> {name} { left > 0 ? (<strong>{left} left</strong>):(null) } ...</div>
+      <progress className="progress progress-primary w-56" value={ percent } max="100"></progress>
+    </div>
+  )
+}
+
+
+function Content({ previewWidth, path, file, refresh, listSel, setListSel, listCount, setListCount, getRootProps, getInputProps, isDragActive, isDragAccept, isDragReject, uploadFunc, pageNum, setPageNum }) {
 
   const [mode, setMode] = useState('text');
   const [text, setText] = useState([]);
@@ -24,7 +103,7 @@ function Content({ previewWidth, path, file, listSel, setListSel, listCount, set
     return (
       <div>
         <div className="absolute left-0 top-0 bottom-0" style={{ right: previewWidth }}>
-          <DocumentListView path={ path } listSel={ listSel } setListSel={ setListSel } setListCount={ setListCount } getRootProps={ getRootProps } getInputProps={ getInputProps } isDragActive={ isDragActive } isDragAccept={ isDragAccept } isDragReject={ isDragReject } uploadFunc={ uploadFunc }/>
+          <DocumentListView path={ path } refresh={ refresh } listSel={ listSel } setListSel={ setListSel } setListCount={ setListCount } getRootProps={ getRootProps } getInputProps={ getInputProps } isDragActive={ isDragActive } isDragAccept={ isDragAccept } isDragReject={ isDragReject } uploadFunc={ uploadFunc }/>
         </div>
         <div className="absolute top-0 right-0 bottom-0" style={{ width: previewWidth }}>
           <DocumentPreview listSel={ listSel } listCount={ listCount }/>
@@ -48,24 +127,6 @@ function Content({ previewWidth, path, file, listSel, setListSel, listCount, set
 }
 
 
-function Uploader({ files, isComplete }) {
-  if (isComplete)
-    return (
-      <div>
-        <div>{files.length} files uploaded.</div>
-        <progress className="progress progress-success w-56" value="100" max="100"></progress>
-      </div>
-    )
-
-  return (
-    <div>
-      <div>Uploading {files[0].name} (1 / {files.length}) ...</div>
-      <progress className="progress progress-info w-56" value="40" max="100"></progress>
-    </div>
-  )
-}
-
-
 export default function DocumentPage({ previewWidth }) {
 
   const { path, file } = useParams();
@@ -76,6 +137,7 @@ export default function DocumentPage({ previewWidth }) {
   });
   const [ listCount, setListCount ] = useState(0);
   const [ pageNum, setPageNum ] = useState(1);
+  const [ refresh, setRefresh ] = useState(0);
 
   if (typeof previewWidth === 'undefined')
     previewWidth = '20rem';
@@ -93,15 +155,17 @@ export default function DocumentPage({ previewWidth }) {
         })
         return;
       }
-      const id = toast.loading(<Uploader files={ acceptedFiles } isComplete={ false }/>, {
-        position: 'bottom-right'
-      });
-      setTimeout(() => {
-        toast.success(<Uploader files={ acceptedFiles } isComplete={ true }/>, {
-          id: id,
-          duration: 5000
-        })
-      }, 10000);
+      // const id = toast.loading(<Uploader files={ acceptedFiles } isComplete={ false }/>, {
+      //   position: 'bottom-right'
+      // });
+      // setTimeout(() => {
+      //   toast.success(<Uploader files={ acceptedFiles } isComplete={ true }/>, {
+      //     id: id,
+      //     duration: 5000
+      //   })
+      // }, 10000);
+      uploadFiles = uploadFiles.concat(acceptedFiles);
+      doUpload(setRefresh, path);
     }
   });
 
@@ -113,7 +177,7 @@ export default function DocumentPage({ previewWidth }) {
       </div>
 
       <div className="left-2 top-11 right-2 bottom-2 absolute">
-        <Content previewWidth={ previewWidth } path={ path } file={ file } listSel={ listSel } setListSel={ setListSel } listCount={ listCount } setListCount={ setListCount } getRootProps={ getRootProps } getInputProps={ getInputProps } isDragActive={ isDragActive } isDragAccept={ isDragAccept } isDragReject={ isDragReject } uploadFunc={ open } pageNum={ pageNum } setPageNum={ setPageNum } />
+        <Content previewWidth={ previewWidth } path={ path } file={ file } refresh={ refresh } listSel={ listSel } setListSel={ setListSel } listCount={ listCount } setListCount={ setListCount } getRootProps={ getRootProps } getInputProps={ getInputProps } isDragActive={ isDragActive } isDragAccept={ isDragAccept } isDragReject={ isDragReject } uploadFunc={ open } pageNum={ pageNum } setPageNum={ setPageNum } />
       </div>
 
     </div>

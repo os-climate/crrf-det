@@ -1,6 +1,8 @@
 import { useRef, useState } from 'react';
 import { Link, useParams, useNavigate } from 'react-router-dom';
 import { scn } from '../shared/styles';
+import { config } from '../shared/config';
+import { auth } from '../shared/auth';
 
 
 function CurrentFolderDropdown({ menuFunc }) {
@@ -96,6 +98,7 @@ export default function DocumentToolstrip({ asPicker, pickerPath, setPickerPath,
   const { path, file } = useParams();
   const refDlgNewFolder = useRef();
   const refDlgConnectS3 = useRef();
+  const [ name, setName ] = useState('');
 
   let folders = [];
   if (asPicker &&
@@ -109,11 +112,33 @@ export default function DocumentToolstrip({ asPicker, pickerPath, setPickerPath,
 
   // Dialog handlers
   function newFolder(e) {
+    setName('');
     document.activeElement.blur();
     refDlgNewFolder.current.checked = true;
   }
   function closeNewFolder(e) {
     refDlgNewFolder.current.checked = false;
+  }
+  function createFolder(e) {
+    let apiPath = '/files/new';
+    if (path)
+      apiPath += '/' + path;
+    fetch(config.endpoint_base + apiPath, {
+      method: 'POST',
+      headers: {
+        'Authorization': 'Bearer ' + auth.getToken(),
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ name: name })
+    })
+    .then(( response ) => response.json())
+    .then(( data ) => {
+      if (data.status == 'ok') {
+        // TODO: refresh listview
+      } else {
+        console.warn('unhandled data', data);
+      }
+    });
   }
 
   function connectS3(e) {
@@ -168,11 +193,11 @@ export default function DocumentToolstrip({ asPicker, pickerPath, setPickerPath,
           <h3 className="font-bold text-lg">New Folder</h3>
           <div className="form-control w-full">
             <p className="py-3">Enter a name to create a new folder</p>
-            <input type="text" placeholder="Name of the Folder" className={ scn.input } />
+            <input type="text" placeholder="Name of the Folder" className={ scn.input } onChange={ e => setName(e.target.value) } value={ name }/>
           </div>
           <div className="modal-action">
             <button className="btn bg-slate-50 text-slate-500 border-slate-300 hover:bg-slate-200 hover:border-slate-400" onClick={ closeNewFolder }>Cancel</button>
-            <label htmlFor="dialog-new-folder" className="btn bg-teal-300 hover:bg-teal-600 hover:border-teal-700 border-teal-500 text-white">Create</label>
+            <label htmlFor="dialog-new-folder" className="btn bg-teal-300 hover:bg-teal-600 hover:border-teal-700 border-teal-500 text-white" disabled={ name.length == 0 } onClick={ createFolder }>Create</label>
           </div>
         </div>
       </div>
