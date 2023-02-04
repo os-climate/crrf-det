@@ -12,7 +12,7 @@ function Thumbnail({ itemData }) {
 }
 
 
-function HasSelection({ listSel, listCount }) {
+function HasSelection({ listview }) {
 
   const previewData = {
     '2021-tesla-impact-report.pdf': {
@@ -29,8 +29,8 @@ function HasSelection({ listSel, listCount }) {
   let details;
   let thumbs = (null);
 
-  if (listSel.items.length == 1) {
-    var item = listSel.items[0];
+  if (listview.sel.items.length == 1) {
+    var item = listview.sel.items[0];
     if (item.type === 'file') {
       details = (
         <tr>
@@ -58,8 +58,8 @@ function HasSelection({ listSel, listCount }) {
   } else {
     var folders = [];
     var files = [];
-    for (var i = 0; i < listSel.items.length; i++) {
-      var item = listSel.items[i];
+    for (var i = 0; i < listview.sel.items.length; i++) {
+      var item = listview.sel.items[i];
       if (item.type === 'file')
         files.push(item);
       else if (item.type === 'folder')
@@ -103,26 +103,26 @@ function HasSelection({ listSel, listCount }) {
 }
 
 
-function NoSelection({ listSel, listCount }) {
+function NoSelection({ listview }) {
   return (
     <div className="p-3">
-      Showing { listCount } files and folders.
+      Showing { listview.items.length } files and folders.
     </div>
   )
 }
 
 
-export default function DocumentPreview({ listSel, listCount }) {
-  if (listSel.items.length == 0)
+export default function DocumentPreview({ listview }) {
+  if (listview.sel.items.length == 0)
     return (
       <div className="ml-1">
-        <NoSelection listSel={ listSel } listCount={ listCount }/>
+        <NoSelection listview={ listview }/>
       </div>
     )
 
   return (
     <div className="ml-1">
-      <HasSelection listSel={ listSel } listCount={ listCount }/>
+      <HasSelection listview={ listview }/>
     </div>
   )
 }

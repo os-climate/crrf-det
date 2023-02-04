@@ -35,7 +35,7 @@ export default function Login({ setRefresh }) {
             if (targetUrl == '/')
               targetUrl = '/documents'
             navigate(targetUrl);
-            setRefresh(Math.random());
+            auth.statusChanged();
           });
         }
         setWorking(false);

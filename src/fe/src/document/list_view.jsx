@@ -40,7 +40,7 @@ function ItemInfo({ info }) {
 }
 
 
-function Item({ asPicker, listSel, setListSel, index, path, setPath, item, items, setLoaded }) {
+function Item({ asPicker, listview, index, path, setPath, item }) {
   let navigate = useNavigate();
 
   function itemClick(e) {
@@ -48,75 +48,75 @@ function Item({ asPicker, listSel, setListSel, index, path, setPath, item, items
       typeof item.info !== 'string')
       return;
     // no selection, select a single one regardless of modifier keys
-    if (listSel.indices.length === 0 ||
+    if (listview.sel.indices.length === 0 ||
       // no modifier keys
       (!(e.ctrlKey || e.metaKey || e.shiftKey) &&
         // 1 selected, not the currently selected one
         // select the new one
-        ((listSel.indices.length === 1 &&
-        listSel.indices[0] !== index) ||
+        ((listview.sel.indices.length === 1 &&
+        listview.sel.indices[0] !== index) ||
         // more than 1 item are selected
-        listSel.indices.length > 1))) {
-      setListSel({
+        listview.sel.indices.length > 1))) {
+      listview.set_sel({
         anchor:   index,
         indices:  [index],
         items:    [item],
       });
     // selected clicked again, remove selection regardless of
     // modifier keys
-    } else if (listSel.indices.length === 1 &&
-      listSel.indices[0] == index) {
-      setListSel({
+    } else if (listview.sel.indices.length === 1 &&
+      listview.sel.indices[0] == index) {
+      listview.set_sel({
         anchor:   -1,
         indices:  [],
         items:    [],
       });
     // shift pressed, calculate the new selection according
     // to the anchor
-    } else if (listSel.anchor !== -1 &&
+    } else if (listview.sel.anchor !== -1 &&
       e.shiftKey) {
       var indices_ = [];
       var items_ = [];
-      for (var i = Math.min(listSel.anchor, index); i <= Math.max(listSel.anchor, index); i++) {
-        if (items[i].type === 's3' ||
-          typeof items[i].info !== 'string')
+      for (var i = Math.min(listview.sel.anchor, index); i <= Math.max(listview.sel.anchor, index); i++) {
+        if (listview.items[i].type === 's3' ||
+          typeof listview.items[i].info !== 'string')
           continue;
         indices_.push(i);
-        items_.push(items[i]);
+        items_.push(listview.items[i]);
       }
-      setListSel({
-        anchor:   listSel.anchor,
+      listview.set_sel({
+        anchor:   listview.sel.anchor,
         indices:  indices_,
         items:    items_,
       });
     // ctrl/cmd pressed, add or remove selection
     } else if (e.ctrlKey || e.metaKey) {
       // remove existing
-      var idx_ = listSel.indices.indexOf(index);
+      var idx_ = listview.sel.indices.indexOf(index);
       if (idx_ >= 0) {
-        var indices_ = listSel.indices.slice();
-        var items_ = listSel.items.slice();
+        var indices_ = listview.sel.indices.slice();
+        var items_ = listview.sel.items.slice();
         indices_.splice(idx_, 1);
         items_.splice(idx_, 1);
-        setListSel({
+        listview.set_sel({
           anchor:   index,
           indices:  indices_,
           items:    items_,
         });
       // add new
       } else {
-        setListSel({
+        listview.set_sel({
           anchor:   index,
-          indices:  listSel.indices.concat([index]),
-          items:    listSel.items.concat([items[index]]),
+          indices:  listview.sel.indices.concat([index]),
+          items:    listview.sel.items.concat([listview.items[index]]),
         });
       }
     }
   }
 
   function folderDblClick(e) {
-    setLoaded(false);
-    setListSel({ anchor: -1, indices: [], items: [] });
+    listview.set_loaded(false);
+    listview.set_sel({ anchor: -1, indices: [], items: [] });
     if (asPicker) {
       setPath(typeof path === 'undefined' ? item.name : (path + '|' + item.name));
       return;
@@ -124,9 +124,9 @@ function Item({ asPicker, listSel, setListSel, index, path, setPath, item, items
     navigate("/documents/" + (typeof path === 'undefined' ? item.name : (path + '|' + item.name)));
   }
   function parentFolderDblClick(e) {
-    setLoaded(false);
+    listview.set_loaded(false);
     if (typeof path !== 'undefined') {
-      setListSel({ anchor: -1, indices: [], items: [] });
+      listview.set_sel({ anchor: -1, indices: [], items: [] });
       let idx = path.lastIndexOf("|");
       if (idx > 0) {
         let newPath = path.substr(0, idx);
@@ -143,7 +143,7 @@ function Item({ asPicker, listSel, setListSel, index, path, setPath, item, items
     }
   }
   function fileDblClick(e) {
-    setLoaded(false);
+    listview.set_loaded(false);
     if (asPicker)
       return;
     navigate("/documents/" + (path ? path : '|') + "/" + item.name);
@@ -151,7 +151,7 @@ function Item({ asPicker, listSel, setListSel, index, path, setPath, item, items
 
   let hoverCls = 'hover:bg-slate-100';
   let selCls = hoverCls + ' border-b-slate-100';
-  if (listSel.indices.indexOf(index) >= 0)
+  if (listview.sel.indices.indexOf(index) >= 0)
     selCls = 'bg-teal-100 border-b-teal-100';
 
   if (item.type == 'folder') {
@@ -206,30 +206,30 @@ function Item({ asPicker, listSel, setListSel, index, path, setPath, item, items
 }
 
 
-function ParentFolderItem({ asPicker, listSel, setListSel, path, setPath, setLoaded }) {
+function ParentFolderItem({ asPicker, listview, path, setPath }) {
   const parentFolder = { type: 'parent_folder' };
 
   if (path &&
     path != 'root') {
     return (
-      <Item asPicker={asPicker} listSel={ listSel } setListSel={ setListSel } index={ -1 } path={ path } setPath={ setPath } item={ parentFolder } setLoaded={setLoaded}/>
+      <Item asPicker={asPicker} listview={ listview } index={ -1 } path={ path } setPath={ setPath } item={ parentFolder } />
     )
   }
   return (null)
 }
 
 
-function AllItems({ asPicker, listSel, setListSel, path, setPath, items, setLoaded }) {
+function AllItems({ asPicker, listview, path, setPath }) {
 
   let renderedItems = (null);
-  if (items)
-    renderedItems = (items.map(( item, idx ) => (
-      <Item asPicker={ asPicker } key={ idx } listSel={ listSel } setListSel={ setListSel } index={ idx } path={ path } setPath={ setPath } item={ item } items={ items } setLoaded={ setLoaded }/>
+  if (listview.items)
+    renderedItems = (listview.items.map(( item, idx ) => (
+      <Item asPicker={ asPicker } key={ idx } listview={ listview } index={ idx } path={ path } setPath={ setPath } item={ item } />
     )))
 
   return (
     <tbody>
-      <ParentFolderItem asPicker={ asPicker } listSel={ listSel } setListSel={ setListSel } path={ path } setPath={ setPath } setLoaded={setLoaded}/>
+      <ParentFolderItem asPicker={ asPicker } listview={ listview } path={ path } setPath={ setPath } />
       { renderedItems }
       { asPicker?(null):(
       <tr>
@@ -243,7 +243,7 @@ function AllItems({ asPicker, listSel, setListSel, path, setPath, items, setLoad
 }
 
 
-export default function DocumentListView({ asPicker, path, setPath, refresh, listSel, setListSel, setListCount, getRootProps, getInputProps, isDragActive, isDragAccept, isDragReject, uploadFunc }) {
+export default function DocumentListView({ asPicker, path, setPath, listview, dropzone }) {
 
   // const allItems = {
   //   root: [
@@ -293,43 +293,13 @@ export default function DocumentListView({ asPicker, path, setPath, refresh, lis
     setScrollTop(refScroll.current.scrollTop);
   };
 
-  const [loaded, setLoaded] = useState(false);
   const [items, setItems] = useState([]);
 
-  function refreshFiles() {
-    let apiPath = '/files';
-    if (path)
-      apiPath += '/' + path;
-    fetch(config.endpoint_base + apiPath, {
-      method: 'GET',
-      headers: {
-        'Authorization': 'Bearer ' + auth.getToken()
-      }
-    })
-    .then(( response ) => response.json())
-    .then(( data ) => {
-      if (data.status == 'ok') {
-        setItems(data.data);
-        setListCount(data.data.length);
-        setLoaded(true);
-      } else {
-        console.warn('unhandled data', data);
-      }
-    });
-    // var items_ = allItems[path ? path : 'root'];
-    // if (items_)
-    //   setListCount(items_.length);
-    // else
-    //   setListCount(0);
-    // setItems(items_);
-    // setLoaded(true);
-  }
-
   useEffect(() => {
-    setTimeout(refreshFiles);
-  }, [path, refresh]);
+    setTimeout(listview.refresh);
+  }, [path]);
 
-  if (!loaded)
+  if (!listview.loaded)
     return (
       <div className="absolute left-0 top-0 right-0 bottom-0 overflow-auto">
         <div className="flex items-center text-teal-600">
@@ -351,21 +321,20 @@ export default function DocumentListView({ asPicker, path, setPath, refresh, lis
             <th className="sticky text-left" style={{ boxShadow: '0 1px #2dd4bf' }}>Info</th>
           </tr>
         </thead>
-        <AllItems asPicker={asPicker} listSel={ listSel } setListSel={ setListSel } path={ path } setPath={setPath} items={ items } setLoaded={setLoaded}/>
+        <AllItems asPicker={asPicker} listview={ listview } path={ path } setPath={setPath} />
       </table>
     </div>
   )
 
   // a listview with dropzone support
-  if (typeof getRootProps !== 'undefined' &&
-    typeof getInputProps !== 'undefined')
+  if (typeof dropzone !== 'undefined')
     return (
       <div className="absolute left-0 top-0 right-0 bottom-0 overflow-auto" ref={refScroll} onScroll={trackRefScroll}>
-        <div {...getRootProps({
-            className: 'absolute left-0 right-0 top-0 bottom-0 dropzone',
+        <div {...dropzone.getRootProps({
+            className: 'absolute left-0 right-0 top-0 bottom-0 outline-none dropzone',
           })}>
-          <input {...getInputProps()} />
-          <div className={`${ isDragActive ? '':'hidden' } z-50 border-2 border-teal-500 bg-teal-200/20 absolute left-0 right-0 h-full dropzone grid place-items-center`} style={{ top: scrollTop + 'px' }}>
+          <input {...dropzone.getInputProps()} />
+          <div className={`${ dropzone.isDragActive ? '':'hidden' } z-50 border-2 border-teal-500 bg-teal-200/20 absolute left-0 right-0 h-full dropzone grid place-items-center`} style={{ top: scrollTop + 'px' }}>
             <div className="bg-white py-5 px-8 rounded-lg">
               <div className="text-2xl text-center text-teal-600"><i className="icon-upload"/></div>
               <div className="text-xl text-center text-teal-700">Drop files to upload</div>

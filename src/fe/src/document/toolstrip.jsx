@@ -19,7 +19,7 @@ function CurrentFolderDropdown({ menuFunc }) {
 }
 
 
-function FolderButton({ asPicker, idx, folders, listSel, listCount, file, menuFunc }) {
+function FolderButton({ asPicker, idx, folders, listview, file, menuFunc }) {
   var folder = folders[idx];
   let navigate = useNavigate();
 
@@ -44,7 +44,7 @@ function FolderButton({ asPicker, idx, folders, listSel, listCount, file, menuFu
         <div className="dropdown">
           <label tabIndex={0} className={`cursor-pointer items-center ${scn.clearButton}`}>
             <i className="icon-folder text-slate-500 pl-1 pr-6"/>
-            {folder} <FolderCount sel={ listSel.indices.length } count={ listCount }/>
+            {folder} <FolderCount sel={ listview.sel.indices.length } count={ listview.items.length }/>
             <i className="icon-down-dir pl-3 pr-2 text-slate-500"/>
           </label>
           <CurrentFolderDropdown menuFunc={ menuFunc }/>
@@ -93,7 +93,7 @@ function DocumentsButton({ asPicker, setPickerPath }) {
 }
 
 
-export default function DocumentToolstrip({ asPicker, pickerPath, setPickerPath, listSel, listCount, uploadFunc }) {
+export default function DocumentToolstrip({ asPicker, pickerPath, setPickerPath, listview, uploadFunc }) {
 
   const { path, file } = useParams();
   const refDlgNewFolder = useRef();
@@ -134,7 +134,7 @@ export default function DocumentToolstrip({ asPicker, pickerPath, setPickerPath,
     .then(( response ) => response.json())
     .then(( data ) => {
       if (data.status == 'ok') {
-        // TODO: refresh listview
+        listview.refresh();
       } else {
         console.warn('unhandled data', data);
       }
@@ -159,7 +159,7 @@ export default function DocumentToolstrip({ asPicker, pickerPath, setPickerPath,
     <div className="dropdown">
       <label tabIndex={0} className={`cursor-pointer items-center ${scn.clearButton}`}>
         <i className="icon-archive text-slate-500 pl-1 pr-6"/>
-        Documents <FolderCount sel={ listSel.indices.length } count={ listCount }/>
+        Documents <FolderCount sel={ listview.sel.indices.length } count={ listview.items.length }/>
         <i className="icon-down-dir pl-3 pr-2 text-slate-500"/>
       </label>
       <CurrentFolderDropdown menuFunc={ { newFolder: newFolder, connectS3: connectS3, upload: upload } }/>
@@ -239,7 +239,7 @@ export default function DocumentToolstrip({ asPicker, pickerPath, setPickerPath,
       { documentsButton }
       {
         folders.map((folder, idx) => (
-          <FolderButton asPicker={asPicker} key={ idx } idx={ idx } folders={ folders } listSel={ listSel } listCount={ listCount } file={ file } menuFunc={ { newFolder: newFolder, connectS3: connectS3, upload: upload } }/>
+          <FolderButton asPicker={asPicker} key={ idx } idx={ idx } folders={ folders } listview={ listview } file={ file } menuFunc={ { newFolder: newFolder, connectS3: connectS3, upload: upload } }/>
         ))
       }
       { fileButton }

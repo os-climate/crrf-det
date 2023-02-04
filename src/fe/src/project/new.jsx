@@ -5,6 +5,8 @@ import { getColor } from '../shared/colors';
 import DocumentListView from '../document/list_view';
 import DocumentPreview from '../document/preview';
 import DocumentToolstrip from '../document/toolstrip';
+import { config } from '../shared/config';
+import { auth } from '../shared/auth';
 
 
 var steps = [
@@ -82,12 +84,12 @@ function StepName({ stepNext, prompt, setPrompt, name, setName }) {
 }
 
 
-function StepChooseFiles({ stepNext, prompt, setPrompt, path, setPath, listSel, setListSel, listCount, setListCount }) {
+function StepChooseFiles({ stepNext, prompt, setPrompt, path, setPath, listview }) {
   useEffect(() => {
     var folders = [];
     var files = [];
-    for (var i = 0; i < listSel.items.length; i++) {
-      var item = listSel.items[i];
+    for (var i = 0; i < listview.sel.items.length; i++) {
+      var item = listview.sel.items[i];
       if (item.type === 'file')
         files.push(item);
       else if (item.type === 'folder')
@@ -97,21 +99,21 @@ function StepChooseFiles({ stepNext, prompt, setPrompt, path, setPath, listSel, 
     setPrompt(
       prompt.map((p, idx) => idx == 1?prompt_:p)
     );
-  }, [listSel]);
+  }, [listview.sel]);
 
   return (
     <div className="text-base text-slate-600 absolute left-1 right-0 bottom-0 top-1">
 
       <div className="left-2 top-1 absolute">
-        <DocumentToolstrip asPicker={ true } pickerPath={path} setPickerPath={setPath} listSel={ listSel } listCount={ listCount }/>
+        <DocumentToolstrip asPicker={ true } pickerPath={path} setPickerPath={setPath} listview={ listview }/>
       </div>
 
       <div className="left-2 top-11 right-2 bottom-2 absolute">
         <div className="absolute left-0 top-0 bottom-0" style={{ right: '14rem' }}>
-          <DocumentListView asPicker={ true } path={ path } setPath={setPath} listSel={ listSel } setListSel={ setListSel } setListCount={ setListCount }/>
+          <DocumentListView asPicker={ true } path={ path } setPath={setPath} listview={ listview }/>
         </div>
         <div className="absolute top-0 right-0 bottom-0" style={{ width: '14rem' }}>
-          <DocumentPreview listSel={ listSel } listCount={ listCount }/>
+          <DocumentPreview listview={ listview }/>
         </div>
       </div>
     </div>
@@ -359,12 +361,12 @@ function StepExports({ stepNext, prompt, setPrompt }) {
 }
 
 
-function StepContent({ step, stepNext, prompt, setPrompt, name, setName, path, setPath, listSel, setListSel, listCount, setListCount, filtersTags, setFiltersTags, resultIndex, setResultIndex }) {
+function StepContent({ step, stepNext, prompt, setPrompt, name, setName, path, setPath, listview, filtersTags, setFiltersTags, resultIndex, setResultIndex }) {
   switch(step) {
   case 0:
     return (<StepName stepNext={ stepNext } prompt={prompt} setPrompt={setPrompt} name={name} setName={setName}/>);
   case 1:
-    return (<StepChooseFiles stepNext={ stepNext } prompt={prompt} setPrompt={setPrompt} path={path} setPath={setPath} listSel={listSel} setListSel={setListSel} listCount={listCount} setListCount={setListCount}/>);
+    return (<StepChooseFiles stepNext={ stepNext } prompt={prompt} setPrompt={setPrompt} path={path} setPath={setPath} listview={ listview }/>);
   case 2:
     return (<StepFiltersTags stepNext={ stepNext } prompt={prompt} setPrompt={setPrompt} filtersTags={filtersTags} setFiltersTags={setFiltersTags}/>)
   case 3:
@@ -380,14 +382,41 @@ export default function ProjectNew() {
   const [name, setName] = useState('');
   const [path, setPath] = useState();
   const [prompt, setPrompt] = useState([null, null, null, null, null]);
-  const [listSel, setListSel] = useState({
+  const [filtersTags, setFiltersTags] = useState({});
+  const [resultIndex, setResultIndex] = useState(0);
+
+  /* file listview support */
+  const [ sel, set_sel ] = useState({
     anchor:   -1,
     indices:  [],
     items:    [],
   });
-  const [listCount, setListCount] = useState(0);
-  const [filtersTags, setFiltersTags] = useState({});
-  const [resultIndex, setResultIndex] = useState(0);
+  const [ items, set_items ] = useState([]);
+  const [ loaded, set_loaded ] = useState(false);
+
+  function refresh() {
+    let apiPath = '/files';
+    if (path)
+      apiPath += '/' + path;
+    auth.fetch(config.endpoint_base + apiPath, {
+      method: 'GET',
+      headers: {
+        'Authorization': 'Bearer ' + auth.getToken()
+      }
+    }, ( data ) => {
+      if (!data)
+        return;
+      if (data.status == 'ok') {
+        set_items(data.data);
+        set_loaded(true);
+      } else {
+        console.warn('unhandled data', data);
+      }
+    });
+  }
+
+  const listview = { items, set_items, sel, set_sel, loaded, set_loaded, refresh };
+
 
   function stepNext() {
     setStep(step + 1);
@@ -413,7 +442,7 @@ export default function ProjectNew() {
         ):(null)}
       </div>
       <div className="absolute left-[16.5rem] px-3 py-2 top-[7rem] right-0 bottom-0">
-        <StepContent step={step} stepNext={stepNext} prompt={prompt} setPrompt={setPrompt} name={name} setName={setName} path={path} setPath={setPath} listSel={listSel} setListSel={setListSel} listCount={listCount} setListCount={setListCount} filtersTags={filtersTags} setFiltersTags={setFiltersTags} resultIndex={resultIndex} setResultIndex={setResultIndex}/>
+        <StepContent step={step} stepNext={stepNext} prompt={prompt} setPrompt={setPrompt} name={name} setName={setName} path={path} setPath={setPath} listview={ listview } filtersTags={filtersTags} setFiltersTags={setFiltersTags} resultIndex={resultIndex} setResultIndex={setResultIndex}/>
       </div>
     </div>
   )

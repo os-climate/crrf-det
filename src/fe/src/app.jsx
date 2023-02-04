@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { HashRouter as Router, Routes, Route, Link } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
 
@@ -12,6 +12,14 @@ import './app.css'
 function App() {
   const [ refresh, setRefresh ] = useState(0);
 
+  function authStatusChanged() {
+    setRefresh(Math.random(0));
+  }
+
+  useEffect(() => {
+    auth.setStatusChangeCallback(authStatusChanged);
+  }, []);
+
   return (
     <Router>
       { auth.getToken() ? (
@@ -21,7 +29,7 @@ function App() {
         </div>
       ):(
         <div>
-          <Login setRefresh={ setRefresh }/>
+          <Login/>
         </div>
       )}
       <Toaster />
