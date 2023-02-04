@@ -2,9 +2,9 @@ import { useState, useEffect } from 'react';
 import { scn } from "../shared/styles";
 import { AutoAvatar, Tag, renderTableStructure, renderTextStructure } from '../shared/widgets';
 import { getColor } from '../shared/colors';
-import DocumentListView from '../document/list_view';
-import DocumentPreview from '../document/preview';
-import DocumentToolstrip from '../document/toolstrip';
+import ListView from '../shared/listview';
+import ListPreview from '../shared/listpreview';
+import ToolStrip from '../shared/toolstrip';
 import { config } from '../shared/config';
 import { auth } from '../shared/auth';
 
@@ -109,15 +109,15 @@ function StepChooseFiles({ stepNext, prompt, setPrompt, listview }) {
     <div className="text-base text-slate-600 absolute left-1 right-0 bottom-0 top-1">
 
       <div className="left-2 top-1 absolute">
-        <DocumentToolstrip listview={ listview }/>
+        <ToolStrip listview={ listview }/>
       </div>
 
       <div className="left-2 top-11 right-2 bottom-2 absolute">
         <div className="absolute left-0 top-0 bottom-0" style={{ right: '14rem' }}>
-          <DocumentListView listview={ listview }/>
+          <ListView listview={ listview }/>
         </div>
         <div className="absolute top-0 right-0 bottom-0" style={{ width: '14rem' }}>
-          <DocumentPreview listview={ listview }/>
+          <ListPreview listview={ listview }/>
         </div>
       </div>
     </div>

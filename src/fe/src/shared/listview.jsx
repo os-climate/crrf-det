@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from "react-router-dom";
-import { config } from '../shared/config';
-import { auth } from '../shared/auth';
+import { config } from './config';
+import { auth } from './auth';
 
 
 function formatBytes(bytes, decimals = 1) {
@@ -243,7 +243,7 @@ function AllItems({ listview }) {
 }
 
 
-export default function DocumentListView({ listview, dropzone }) {
+export default function ListView({ listview, dropzone }) {
 
   // const allItems = {
   //   root: [

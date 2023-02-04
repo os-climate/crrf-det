@@ -112,7 +112,7 @@ function NoSelection({ listview }) {
 }
 
 
-export default function DocumentPreview({ listview }) {
+export default function ListPreview({ listview }) {
   if (listview.sel.items.length == 0)
     return (
       <div className="ml-1">

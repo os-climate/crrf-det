@@ -1,9 +1,9 @@
 import { useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import toast from 'react-hot-toast';
-import DocumentListView from './list_view';
-import DocumentPreview from './preview';
-import DocumentToolstrip from './toolstrip';
+import ListView from '../shared/listview';
+import ListPreview from '../shared/listpreview';
+import ToolStrip from '../shared/toolstrip';
 import DocumentView from './view';
 import DocumentFilterDeck from './filter_deck';
 import DocumentStructure from './structure';
@@ -36,7 +36,7 @@ export default function DocumentPage({ listview, previewWidth }) {
     <div className="text-base">
 
       <div className="left-2 top-1 absolute">
-        <DocumentToolstrip listview={ listview } uploadFunc={ dropzone.open }/>
+        <ToolStrip listview={ listview } uploadFunc={ dropzone.open }/>
       </div>
 
       <div className="left-2 top-11 right-2 bottom-2 absolute">
@@ -57,10 +57,10 @@ export default function DocumentPage({ listview, previewWidth }) {
         // 'list view' mode
         <div>
           <div className="absolute left-0 top-0 bottom-0" style={{ right: previewWidth }}>
-            <DocumentListView listview={ listview } dropzone={ dropzone }/>
+            <ListView listview={ listview } dropzone={ dropzone }/>
           </div>
           <div className="absolute top-0 right-0 bottom-0" style={{ width: previewWidth }}>
-            <DocumentPreview listview={ listview }/>
+            <ListPreview listview={ listview }/>
           </div>
         </div>
       )}

@@ -1,8 +1,8 @@
 import { useRef, useState } from 'react';
 import { Link, useParams, useNavigate } from 'react-router-dom';
-import { scn } from '../shared/styles';
-import { config } from '../shared/config';
-import { auth } from '../shared/auth';
+import { scn } from './styles';
+import { config } from './config';
+import { auth } from './auth';
 
 
 function CurrentFolderDropdown({ menuFunc }) {
@@ -96,7 +96,7 @@ function DocumentsButton({ listview }) {
 }
 
 
-export default function DocumentToolstrip({ listview, uploadFunc }) {
+export default function ToolStrip({ listview, uploadFunc }) {
 
   const { file } = useParams();
   const refDlgNewFolder = useRef();
