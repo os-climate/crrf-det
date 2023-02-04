@@ -40,7 +40,7 @@ function ItemInfo({ info }) {
 }
 
 
-function Item({ asPicker, listview, index, path, setPath, item }) {
+function Item({ listview, index, item }) {
   let navigate = useNavigate();
 
   function itemClick(e) {
@@ -117,36 +117,36 @@ function Item({ asPicker, listview, index, path, setPath, item }) {
   function folderDblClick(e) {
     listview.set_loaded(false);
     listview.set_sel({ anchor: -1, indices: [], items: [] });
-    if (asPicker) {
-      setPath(typeof path === 'undefined' ? item.name : (path + '|' + item.name));
+    if (listview.set_path) {
+      listview.set_path(typeof listview.path === 'undefined' ? item.name : (listview.path + '|' + item.name));
       return;
     }
-    navigate("/documents/" + (typeof path === 'undefined' ? item.name : (path + '|' + item.name)));
+    navigate("/documents/" + (typeof listview.path === 'undefined' ? item.name : (listview.path + '|' + item.name)));
   }
   function parentFolderDblClick(e) {
     listview.set_loaded(false);
-    if (typeof path !== 'undefined') {
+    if (typeof listview.path !== 'undefined') {
       listview.set_sel({ anchor: -1, indices: [], items: [] });
-      let idx = path.lastIndexOf("|");
+      let idx = listview.path.lastIndexOf("|");
       if (idx > 0) {
-        let newPath = path.substr(0, idx);
-        if (asPicker)
-          setPath(newPath);
+        let newPath = listview.path.substr(0, idx);
+        if (listview.set_path)
+          listview.set_path(newPath);
         else
           navigate("/documents/" + newPath);
         return;
       }
-      if (asPicker)
-        setPath(void 0);
+      if (listview.set_path)
+        listview.set_path(void 0);
       else
         navigate("/documents");
     }
   }
   function fileDblClick(e) {
     listview.set_loaded(false);
-    if (asPicker)
+    if (listview.set_path)
       return;
-    navigate("/documents/" + (path ? path : '|') + "/" + item.name);
+    navigate("/documents/" + (listview.path ? listview.path : '|') + "/" + item.name);
   }
 
   let hoverCls = 'hover:bg-slate-100';
@@ -206,32 +206,32 @@ function Item({ asPicker, listview, index, path, setPath, item }) {
 }
 
 
-function ParentFolderItem({ asPicker, listview, path, setPath }) {
+function ParentFolderItem({ listview }) {
   const parentFolder = { type: 'parent_folder' };
 
-  if (path &&
-    path != 'root') {
+  if (listview.path &&
+    listview.path != 'root') {
     return (
-      <Item asPicker={asPicker} listview={ listview } index={ -1 } path={ path } setPath={ setPath } item={ parentFolder } />
+      <Item listview={ listview } index={ -1 } item={ parentFolder } />
     )
   }
   return (null)
 }
 
 
-function AllItems({ asPicker, listview, path, setPath }) {
+function AllItems({ listview }) {
 
   let renderedItems = (null);
   if (listview.items)
     renderedItems = (listview.items.map(( item, idx ) => (
-      <Item asPicker={ asPicker } key={ idx } listview={ listview } index={ idx } path={ path } setPath={ setPath } item={ item } />
+      <Item key={ idx } listview={ listview } index={ idx } item={ item } />
     )))
 
   return (
     <tbody>
-      <ParentFolderItem asPicker={ asPicker } listview={ listview } path={ path } setPath={ setPath } />
+      <ParentFolderItem listview={ listview } />
       { renderedItems }
-      { asPicker?(null):(
+      { listview.set_path?(null):(
       <tr>
         <td colSpan="5">
           <div className="text-center text-slate-400 cursor-default"><i className="icon-docs mr-2"/>Drop files here to upload</div>
@@ -243,7 +243,7 @@ function AllItems({ asPicker, listview, path, setPath }) {
 }
 
 
-export default function DocumentListView({ asPicker, path, setPath, listview, dropzone }) {
+export default function DocumentListView({ listview, dropzone }) {
 
   // const allItems = {
   //   root: [
@@ -293,11 +293,9 @@ export default function DocumentListView({ asPicker, path, setPath, listview, dr
     setScrollTop(refScroll.current.scrollTop);
   };
 
-  const [items, setItems] = useState([]);
-
   useEffect(() => {
-    setTimeout(listview.refresh);
-  }, [path]);
+    setTimeout(() => listview.refresh(listview.path));
+  }, [ listview.path ]);
 
   if (!listview.loaded)
     return (
@@ -321,7 +319,7 @@ export default function DocumentListView({ asPicker, path, setPath, listview, dr
             <th className="sticky text-left" style={{ boxShadow: '0 1px #2dd4bf' }}>Info</th>
           </tr>
         </thead>
-        <AllItems asPicker={asPicker} listview={ listview } path={ path } setPath={setPath} />
+        <AllItems listview={ listview } />
       </table>
     </div>
   )

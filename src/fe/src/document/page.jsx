@@ -7,47 +7,16 @@ import DocumentToolstrip from './toolstrip';
 import DocumentView from './view';
 import DocumentFilterDeck from './filter_deck';
 import DocumentStructure from './structure';
-import { config } from '../shared/config';
-import { auth } from '../shared/auth';
 import { init_dropzone } from './upload';
 
 
-export default function DocumentPage({ previewWidth }) {
+export default function DocumentPage({ listview, previewWidth }) {
 
   const [ mode, setMode ] = useState('text');
 
   /* for 'list view' mode */
   const { path, file } = useParams();
-  const [ sel, set_sel ] = useState({
-    anchor:   -1,
-    indices:  [],
-    items:    [],
-  });
-  const [ items, set_items ] = useState([]);
-  const [ loaded, set_loaded ] = useState(false);
-
-  function refresh() {
-    let apiPath = '/files';
-    if (path)
-      apiPath += '/' + path;
-    auth.fetch(config.endpoint_base + apiPath, {
-      method: 'GET',
-      headers: {
-        'Authorization': 'Bearer ' + auth.getToken()
-      }
-    }, ( data ) => {
-      if (!data)
-        return;
-      if (data.status == 'ok') {
-        set_items(data.data);
-        set_loaded(true);
-      } else {
-        console.warn('unhandled data', data);
-      }
-    });
-  }
-
-  const listview = { items, set_items, sel, set_sel, loaded, set_loaded, refresh };
+  listview.path = path;
 
   /* for 'document view' mode */
   const [ pageNum, setPageNum ] = useState(1);
@@ -61,7 +30,7 @@ export default function DocumentPage({ previewWidth }) {
   if (typeof previewWidth === 'undefined')
     previewWidth = '20rem';
 
-  const dropzone = init_dropzone(path, refresh);
+  const dropzone = init_dropzone(path, listview.refresh);
 
   return (
     <div className="text-base">
@@ -88,7 +57,7 @@ export default function DocumentPage({ previewWidth }) {
         // 'list view' mode
         <div>
           <div className="absolute left-0 top-0 bottom-0" style={{ right: previewWidth }}>
-            <DocumentListView path={ path } listview={ listview } dropzone={ dropzone }/>
+            <DocumentListView listview={ listview } dropzone={ dropzone }/>
           </div>
           <div className="absolute top-0 right-0 bottom-0" style={{ width: previewWidth }}>
             <DocumentPreview listview={ listview }/>

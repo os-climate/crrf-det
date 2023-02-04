@@ -19,12 +19,12 @@ function CurrentFolderDropdown({ menuFunc }) {
 }
 
 
-function FolderButton({ asPicker, idx, folders, listview, file, menuFunc }) {
+function FolderButton({ idx, folders, listview, file, menuFunc }) {
   var folder = folders[idx];
   let navigate = useNavigate();
 
   function buttonClick(e) {
-    let path = "/documents/";
+    let path = "";
     for (var i = 0; i <= idx; i++) {
       if (i == 0) {
         path += folders[i];
@@ -32,12 +32,15 @@ function FolderButton({ asPicker, idx, folders, listview, file, menuFunc }) {
       }
       path += "|" + folders[i];
     }
-    navigate(path);
+    if (listview.set_path)
+      listview.set_path(path);
+    else
+      navigate('/documents/' + path);
   }
 
   if (idx == folders.length - 1 &&
     !file &&
-    !asPicker)
+    !listview.set_path)
     return (
       <span>
         <i className="icon-right-open text-slate-300"/>
@@ -77,12 +80,12 @@ function FolderCount({ sel, count }) {
 }
 
 
-function DocumentsButton({ asPicker, setPickerPath }) {
+function DocumentsButton({ listview }) {
   let navigate = useNavigate();
 
   function goDocuments() {
-    if (asPicker)
-      setPickerPath(null);
+    if (listview.set_path)
+      listview.set_path(undefined);
     else
       navigate("/documents");
   }
@@ -93,22 +96,18 @@ function DocumentsButton({ asPicker, setPickerPath }) {
 }
 
 
-export default function DocumentToolstrip({ asPicker, pickerPath, setPickerPath, listview, uploadFunc }) {
+export default function DocumentToolstrip({ listview, uploadFunc }) {
 
-  const { path, file } = useParams();
+  const { file } = useParams();
   const refDlgNewFolder = useRef();
   const refDlgConnectS3 = useRef();
   const [ name, setName ] = useState('');
 
   let folders = [];
-  if (asPicker &&
-    pickerPath &&
-    pickerPath !== '|')
-    folders = pickerPath.split('|');
-  else if (!asPicker &&
-    typeof path !== 'undefined' &&
-    path !== '|')
-    folders = path.split('|');
+  if (typeof listview.path !== 'undefined' &&
+    listview.path &&
+    listview.path != '|')
+    folders = listview.path.split('|');
 
   // Dialog handlers
   function newFolder(e) {
@@ -121,8 +120,8 @@ export default function DocumentToolstrip({ asPicker, pickerPath, setPickerPath,
   }
   function createFolder(e) {
     let apiPath = '/files/new';
-    if (path)
-      apiPath += '/' + path;
+    if (listview.path)
+      apiPath += '/' + listview.path;
     fetch(config.endpoint_base + apiPath, {
       method: 'POST',
       headers: {
@@ -134,7 +133,7 @@ export default function DocumentToolstrip({ asPicker, pickerPath, setPickerPath,
     .then(( response ) => response.json())
     .then(( data ) => {
       if (data.status == 'ok') {
-        listview.refresh();
+        listview.refresh(listview.path);
       } else {
         console.warn('unhandled data', data);
       }
@@ -169,8 +168,8 @@ export default function DocumentToolstrip({ asPicker, pickerPath, setPickerPath,
   // file or in at least one level folder.
   if (file ||
     folders.length > 0 ||
-    asPicker)
-    documentsButton = (<DocumentsButton asPicker={asPicker} setPickerPath={setPickerPath}/>);
+    listview.set_path)
+    documentsButton = (<DocumentsButton listview={ listview }/>);
 
   // A file button appears only when viewing a file
   let fileButton = (null);
@@ -239,7 +238,7 @@ export default function DocumentToolstrip({ asPicker, pickerPath, setPickerPath,
       { documentsButton }
       {
         folders.map((folder, idx) => (
-          <FolderButton asPicker={asPicker} key={ idx } idx={ idx } folders={ folders } listview={ listview } file={ file } menuFunc={ { newFolder: newFolder, connectS3: connectS3, upload: upload } }/>
+          <FolderButton key={ idx } idx={ idx } folders={ folders } listview={ listview } file={ file } menuFunc={ { newFolder: newFolder, connectS3: connectS3, upload: upload } }/>
         ))
       }
       { fileButton }

@@ -50,7 +50,7 @@ function ProjectAvatar({ index, curPrjIdx, setCurPrjIdx, project }) {
 }
 
 
-export default function ProjectPage() {
+export default function ProjectPage({ listview }) {
   const { name } = useParams();
 
   const [mode, setMode] = useState('objective');
@@ -58,7 +58,7 @@ export default function ProjectPage() {
 
   return (
     <div className="text-base">
-      { name && name === '__new__' ? (<ProjectNew/>):(null) }
+      { name && name === '__new__' ? (<ProjectNew listview={ listview } />):(null) }
       { typeof name === 'undefined'? (
         <div>
           <div className="left-2 top-1 absolute right-0 h-10 flex items-center">

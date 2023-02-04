@@ -84,7 +84,11 @@ function StepName({ stepNext, prompt, setPrompt, name, setName }) {
 }
 
 
-function StepChooseFiles({ stepNext, prompt, setPrompt, path, setPath, listview }) {
+function StepChooseFiles({ stepNext, prompt, setPrompt, listview }) {
+  const [path, set_path] = useState();
+  listview.path = path;
+  listview.set_path = set_path;
+
   useEffect(() => {
     var folders = [];
     var files = [];
@@ -105,12 +109,12 @@ function StepChooseFiles({ stepNext, prompt, setPrompt, path, setPath, listview 
     <div className="text-base text-slate-600 absolute left-1 right-0 bottom-0 top-1">
 
       <div className="left-2 top-1 absolute">
-        <DocumentToolstrip asPicker={ true } pickerPath={path} setPickerPath={setPath} listview={ listview }/>
+        <DocumentToolstrip listview={ listview }/>
       </div>
 
       <div className="left-2 top-11 right-2 bottom-2 absolute">
         <div className="absolute left-0 top-0 bottom-0" style={{ right: '14rem' }}>
-          <DocumentListView asPicker={ true } path={ path } setPath={setPath} listview={ listview }/>
+          <DocumentListView listview={ listview }/>
         </div>
         <div className="absolute top-0 right-0 bottom-0" style={{ width: '14rem' }}>
           <DocumentPreview listview={ listview }/>
@@ -361,12 +365,12 @@ function StepExports({ stepNext, prompt, setPrompt }) {
 }
 
 
-function StepContent({ step, stepNext, prompt, setPrompt, name, setName, path, setPath, listview, filtersTags, setFiltersTags, resultIndex, setResultIndex }) {
+function StepContent({ step, stepNext, prompt, setPrompt, name, setName, listview, filtersTags, setFiltersTags, resultIndex, setResultIndex }) {
   switch(step) {
   case 0:
     return (<StepName stepNext={ stepNext } prompt={prompt} setPrompt={setPrompt} name={name} setName={setName}/>);
   case 1:
-    return (<StepChooseFiles stepNext={ stepNext } prompt={prompt} setPrompt={setPrompt} path={path} setPath={setPath} listview={ listview }/>);
+    return (<StepChooseFiles stepNext={ stepNext } prompt={prompt} setPrompt={setPrompt} listview={ listview }/>);
   case 2:
     return (<StepFiltersTags stepNext={ stepNext } prompt={prompt} setPrompt={setPrompt} filtersTags={filtersTags} setFiltersTags={setFiltersTags}/>)
   case 3:
@@ -377,46 +381,12 @@ function StepContent({ step, stepNext, prompt, setPrompt, name, setName, path, s
 }
 
 
-export default function ProjectNew() {
+export default function ProjectNew({ listview }) {
   const [step, setStep] = useState(0);
   const [name, setName] = useState('');
-  const [path, setPath] = useState();
   const [prompt, setPrompt] = useState([null, null, null, null, null]);
   const [filtersTags, setFiltersTags] = useState({});
   const [resultIndex, setResultIndex] = useState(0);
-
-  /* file listview support */
-  const [ sel, set_sel ] = useState({
-    anchor:   -1,
-    indices:  [],
-    items:    [],
-  });
-  const [ items, set_items ] = useState([]);
-  const [ loaded, set_loaded ] = useState(false);
-
-  function refresh() {
-    let apiPath = '/files';
-    if (path)
-      apiPath += '/' + path;
-    auth.fetch(config.endpoint_base + apiPath, {
-      method: 'GET',
-      headers: {
-        'Authorization': 'Bearer ' + auth.getToken()
-      }
-    }, ( data ) => {
-      if (!data)
-        return;
-      if (data.status == 'ok') {
-        set_items(data.data);
-        set_loaded(true);
-      } else {
-        console.warn('unhandled data', data);
-      }
-    });
-  }
-
-  const listview = { items, set_items, sel, set_sel, loaded, set_loaded, refresh };
-
 
   function stepNext() {
     setStep(step + 1);
@@ -442,7 +412,7 @@ export default function ProjectNew() {
         ):(null)}
       </div>
       <div className="absolute left-[16.5rem] px-3 py-2 top-[7rem] right-0 bottom-0">
-        <StepContent step={step} stepNext={stepNext} prompt={prompt} setPrompt={setPrompt} name={name} setName={setName} path={path} setPath={setPath} listview={ listview } filtersTags={filtersTags} setFiltersTags={setFiltersTags} resultIndex={resultIndex} setResultIndex={setResultIndex}/>
+        <StepContent step={step} stepNext={stepNext} prompt={prompt} setPrompt={setPrompt} name={name} setName={setName} listview={ listview } filtersTags={filtersTags} setFiltersTags={setFiltersTags} resultIndex={resultIndex} setResultIndex={setResultIndex}/>
       </div>
     </div>
   )
