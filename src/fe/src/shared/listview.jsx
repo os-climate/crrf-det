@@ -2,6 +2,8 @@ import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from "react-router-dom";
 import { config } from './config';
 import { auth } from './auth';
+import { scn } from './styles';
+import { useFocus } from '../shared/utils';
 
 
 function formatBytes(bytes, decimals = 1) {
@@ -148,6 +150,23 @@ function Item({ listview, index, item }) {
       return;
     navigate("/documents/" + (listview.path ? listview.path : '|') + "/" + item.name);
   }
+  function showContextMenu(e) {
+    e.preventDefault();
+    var justClicked = false;
+    // if nothing is selected, select something
+    if (listview.sel.indices.length == 0) {
+      itemClick(e);
+      justClicked = true;
+    }
+    // display context menu
+    if (e.target.tagName == 'TD' &&
+      (listview.sel.indices.length > 0 ||
+      justClicked)) {
+      listview.set_ctx_mnsc(justClicked?1:listview.sel.indices.length);
+      var tableBox = e.target.parentElement.parentElement.parentElement.getBoundingClientRect();
+      listview.set_ctx_mnpos([e.clientX - tableBox.x, e.clientY - tableBox.y]);
+    }
+  }
 
   let hoverCls = 'hover:bg-slate-100';
   let selCls = hoverCls + ' border-b-slate-100';
@@ -156,7 +175,7 @@ function Item({ listview, index, item }) {
 
   if (item.type == 'folder') {
     return (
-      <tr className={`${ selCls } cursor-default border-b`} onDoubleClick={folderDblClick} onClick={ itemClick }>
+      <tr className={`${ selCls } cursor-default border-b`} onDoubleClick={folderDblClick} onClick={ itemClick }  onContextMenu={ showContextMenu }>
         <td className="bg-transparent"><i className="icon-folder text-slate-500"/></td>
         <td className="bg-transparent">{item.name}</td> 
         <td className="bg-transparent"></td> 
@@ -166,7 +185,7 @@ function Item({ listview, index, item }) {
     )
   } else if (item.type == 'parent_folder') {
     return (
-      <tr className={`${ hoverCls } cursor-default border-b border-b-slate-100`} onDoubleClick={parentFolderDblClick}>
+      <tr className={`${ hoverCls } cursor-default border-b border-b-slate-100`} onDoubleClick={ parentFolderDblClick }>
         <td className="bg-transparent"><i className="icon-folder text-slate-500"/></td>
         <td className="bg-transparent">.. (Parent Folder)</td> 
         <td className="bg-transparent"></td> 
@@ -195,7 +214,7 @@ function Item({ listview, index, item }) {
     selCls = 'border-b-slate-100';
   }
   return (
-    <tr className={`${ trCls } ${ selCls } border-b cursor-default`} onClick={ itemClick } onDoubleClick={ fileDblClick }>
+    <tr className={`${ trCls } ${ selCls } border-b cursor-default`} onClick={ itemClick } onDoubleClick={ fileDblClick }onContextMenu={ showContextMenu }>
       <td className="bg-transparent"><i className={`${ iconCls }`}/></td>
       <td className="bg-transparent">{item.name}</td>
       <td className="bg-transparent text-xs">{formatBytes(item.size)}</td>
@@ -239,6 +258,41 @@ function AllItems({ listview }) {
       </tr>
       )}
     </tbody>
+  )
+}
+
+
+function ContextMenu({ listview }) {
+  let style = { display: 'none' };
+  if (listview.ctx_mnpos[0] >= 0 &&
+    listview.ctx_mnpos[1] >= 0)
+    style = { left: listview.ctx_mnpos[0], top: listview.ctx_mnpos[1] };
+
+  function open(e) {
+    console.log('open', e);
+  }
+
+  function rename(e) {
+    listview.set_name(listview.sel.items[0].name);
+    listview.set_dlg_rename(true);
+    setTimeout(() => {
+      listview.set_focus();
+    }, 250);
+  }
+
+  function delete_(e) {
+    listview.set_dlg_delete(true);
+  }
+
+  return (
+    <ul className="menu menu-compact shadow-md bg-base-100 w-40 p-2 rounded-md border border-slate-100 absolute z-50" style={ style }>
+      <li className="menu-title">
+        <span>{ listview.ctx_mnsc } selected</span>
+      </li>
+      { listview.ctx_mnsc == 1?(<li><a onClick={ open }><i className="icon-up"/> Open</a></li>):(null) }
+      { listview.ctx_mnsc == 1?(<li><a onClick={ rename }><i className="icon-pencil"/>Rename</a></li>):(null) }
+      <li><a onClick={ delete_ }><i className="icon-trash"/>Delete</a></li>
+    </ul>
   )
 }
 
@@ -293,9 +347,97 @@ export default function ListView({ listview, dropzone }) {
     setScrollTop(refScroll.current.scrollTop);
   };
 
+  /* context menu support */
+  const [ name, set_name ] = useState('');
+  const [ ctx_mnpos, set_ctx_mnpos ] = useState([-1, -1]);
+  const [ ctx_mnsc, set_ctx_mnsc ] = useState(-1);
+  const [ dlg_delete, set_dlg_delete ] = useState(false);
+  const [ dlg_rename, set_dlg_rename ] = useState(false);
+  const [ focus_ref, set_focus ] = useFocus();
+  listview.name = name;
+  listview.set_name = set_name;
+  listview.ctx_mnpos = ctx_mnpos;
+  listview.set_ctx_mnpos = set_ctx_mnpos;
+  listview.ctx_mnsc = ctx_mnsc;
+  listview.set_ctx_mnsc = set_ctx_mnsc;
+  listview.dlg_delete = dlg_delete;
+  listview.set_dlg_delete = set_dlg_delete;
+  listview.dlg_rename = dlg_rename;
+  listview.set_dlg_rename = set_dlg_rename;
+  listview.set_focus = set_focus;
+  /* dialogs */
+  const [ dlg_is_working, set_dlg_is_working ] = useState(false);
+
   useEffect(() => {
     setTimeout(() => listview.refresh(listview.path));
   }, [ listview.path ]);
+
+  function onClick(e) {
+    set_ctx_mnpos([-1, -1]);
+  }
+
+  function cancelDlgs(e) {
+    listview.set_dlg_delete(false);
+    listview.set_dlg_rename(false);
+  }
+  function doDeleteSelected(e) {
+    set_dlg_is_working(true);
+    let apiPath = '/files/delete';
+    if (listview.path)
+      apiPath += '/' + listview.path;
+    setTimeout(() => {
+      var filenames = [];
+      for (let item of listview.sel.items)
+        filenames.push(item.name);
+      auth.fetch(config.endpoint_base + apiPath, {
+        method: 'POST',
+        headers: {
+          'Authorization': 'Bearer ' + auth.getToken()
+        },
+        body: JSON.stringify({'name': filenames})
+      }, ( data ) => {
+        if (!data) {
+          console.warn('returned data is null');
+          return;
+        }
+        if (data.status == 'ok') {
+          set_dlg_is_working(false);
+          listview.set_dlg_delete(false);
+          listview.refresh(listview.path);
+        } else {
+          console.warn('unhandled data', data);
+        }
+      });
+    });
+  }
+  function doRenameSelected(e) {
+    set_dlg_is_working(true);
+    let apiPath = '/files/change';
+    if (listview.path)
+      apiPath += '/' + listview.path;
+    setTimeout(() => {
+      var oldName = listview.sel.items[0].name;
+      auth.fetch(config.endpoint_base + apiPath, {
+        method: 'POST',
+        headers: {
+          'Authorization': 'Bearer ' + auth.getToken()
+        },
+        body: JSON.stringify({'old_name': oldName, 'new_name': name})
+      }, ( data ) => {
+        if (!data) {
+          console.warn('returned data is null');
+          return;
+        }
+        if (data.status == 'ok') {
+          set_dlg_is_working(false);
+          listview.set_dlg_rename(false);
+          listview.refresh(listview.path);
+        } else {
+          console.warn('unhandled data', data);
+        }
+      });
+    });
+  }
 
   if (!listview.loaded)
     return (
@@ -327,7 +469,8 @@ export default function ListView({ listview, dropzone }) {
   // a listview with dropzone support
   if (typeof dropzone !== 'undefined')
     return (
-      <div className="absolute left-0 top-0 right-0 bottom-0 overflow-auto" ref={refScroll} onScroll={trackRefScroll}>
+      <div className="absolute left-0 top-0 right-0 bottom-0 overflow-auto" ref={refScroll} onScroll={trackRefScroll} onClick={ onClick }>
+        <ContextMenu listview={ listview }/>
         <div {...dropzone.getRootProps({
             className: 'absolute left-0 right-0 top-0 bottom-0 outline-none dropzone',
           })}>
@@ -339,6 +482,34 @@ export default function ListView({ listview, dropzone }) {
             </div>
           </div>
           {table}
+        </div>
+        {/* dialogs */}
+        <input type="checkbox" id="dlg-delete" className="modal-toggle"  />
+        <div className={ (dlg_delete?'modal-open ':'') + "modal"}>
+          <div className="modal-box">
+            <h3 className="font-bold text-lg"><i className="icon-trash mr-3"/>Deleting { listview.sel.indices.length } selected files (folders)</h3>
+            <p className="py-4">Deleted files cannot be recovered. Please proceed with caution!</p>
+            <div className="modal-action">
+              <button className="btn btn-outline" onClick={ cancelDlgs } disabled={ dlg_is_working }>Cancel</button>
+              <button className={ (dlg_is_working?'loading':'') + " btn btn-error" } disabled={ dlg_is_working } onClick={ doDeleteSelected }>Delete</button>
+            </div>
+          </div>
+        </div>
+        <input type="checkbox" id="dlg-rename" className="modal-toggle"  />
+        <div className={ (dlg_rename?'modal-open ':'') + "modal"}>
+          <div className="modal-box">
+            <h3 className="font-bold text-lg"><i className="icon-trash mr-3"/>Rename</h3>
+            <p className="pt-4">
+            { listview.sel.items.length > 0 && listview.sel.items[0].type == 'folder' ? (<span>Rename a folder</span>):(<span>Rename a file</span>) }
+            </p>
+            <p className="py-4">
+              <input ref={ focus_ref } type="text" placeholder="Name" onChange={ e => set_name(e.target.value) } className={ scn.input } onFocus={ e => e.target.select() } value={ name } />
+            </p>
+            <div className="modal-action">
+              <button className="btn btn-outline" onClick={ cancelDlgs } disabled={ dlg_is_working }>Cancel</button>
+              <button className={ (dlg_is_working?'loading':'') + " btn btn-error" } disabled={ dlg_is_working || name.length == 0 } onClick={ doRenameSelected }>Rename</button>
+            </div>
+          </div>
         </div>
       </div>
     )

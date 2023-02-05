@@ -65,10 +65,23 @@ async def new(request, token, folder=None):
 @protected
 async def change(request, token, folder=None):
     folder = fix_folder(folder)
-    return response.json({
-        'status': 'ok',
-        'data': []
-    })
+    userid = token['id']
+    old_name = request.json.get('old_name', '')
+    new_name = request.json.get('new_name', '')
+    if (not old_name or
+        not new_name):
+        return response.json({
+            'status': 'fail'
+        })
+    ret = data.file.mv(userid, folder, old_name, new_name)
+    if ret:
+        return response.json({
+            'status': 'ok'
+        })
+    else:
+        return response.json({
+            'status': 'fail'
+        })
 
 
 @bp.post('/delete', name='delete')
@@ -76,7 +89,13 @@ async def change(request, token, folder=None):
 @protected
 async def delete(request, token, folder=None):
     folder = fix_folder(folder)
+    userid = token['id']
+    names = request.json.get('name', [])
+    for name in names:
+        if not data.file.rm(userid, folder, name):
+            return response.json({
+                'status': 'fail'
+            })
     return response.json({
-        'status': 'ok',
-        'data': []
+        'status': 'ok'
     })

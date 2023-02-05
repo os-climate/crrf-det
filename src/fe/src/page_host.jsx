@@ -25,6 +25,7 @@ export default function PageHost() {
   const [ loaded, set_loaded ] = useState(false);
 
   function refresh(path) {
+    var old_item_count = items.length;
     let apiPath = '/files';
     if (path)
       apiPath += '/' + path;
@@ -39,6 +40,9 @@ export default function PageHost() {
       if (data.status == 'ok') {
         set_items(data.data);
         set_loaded(true);
+        // clear selection if item count becomes smaller
+        if (data.data.length < old_item_count)
+          set_sel({ anchor: -1, indices: [], items: [] });
       } else {
         console.warn('unhandled data', data);
       }
