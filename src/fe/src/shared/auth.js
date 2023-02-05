@@ -20,12 +20,24 @@ const auth = {
   statusChanged: function() {
     authStatusChangeCallback();
   },
+  get: function(endpoint, params, data_func) {
+    return auth.fetch('GET', endpoint, params, data_func);
+  },
+  post: function(endpoint, params, data_func) {
+    return auth.fetch('POST', endpoint, params, data_func);
+  },
   /*
   auth.fetch provides re-login form display upon http
   401 error of any fetch action.
    */
-  fetch: function(endpoint, params, data_func) {
-    fetch(endpoint, params)
+  fetch: function(verb, endpoint, params, data_func) {
+    fetch(endpoint, {
+      method: verb,
+      headers: {
+        'Authorization': 'Bearer ' + auth.getToken()
+      },
+      ...params
+    })
     .then(( response ) => {
       // reauth?
       if (response.status == 401) {

@@ -389,11 +389,7 @@ export default function ListView({ listview, dropzone }) {
       var filenames = [];
       for (let item of listview.sel.items)
         filenames.push(item.name);
-      auth.fetch(config.endpoint_base + apiPath, {
-        method: 'POST',
-        headers: {
-          'Authorization': 'Bearer ' + auth.getToken()
-        },
+      auth.post(config.endpoint_base + apiPath, {
         body: JSON.stringify({'name': filenames})
       }, ( data ) => {
         if (!data) {
@@ -417,11 +413,7 @@ export default function ListView({ listview, dropzone }) {
       apiPath += '/' + listview.path;
     setTimeout(() => {
       var oldName = listview.sel.items[0].name;
-      auth.fetch(config.endpoint_base + apiPath, {
-        method: 'POST',
-        headers: {
-          'Authorization': 'Bearer ' + auth.getToken()
-        },
+      auth.post(config.endpoint_base + apiPath, {
         body: JSON.stringify({'old_name': oldName, 'new_name': name})
       }, ( data ) => {
         if (!data) {

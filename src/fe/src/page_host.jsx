@@ -29,12 +29,7 @@ export default function PageHost() {
     let apiPath = '/files';
     if (path)
       apiPath += '/' + path;
-    auth.fetch(config.endpoint_base + apiPath, {
-      method: 'GET',
-      headers: {
-        'Authorization': 'Bearer ' + auth.getToken()
-      }
-    }, ( data ) => {
+    auth.get(config.endpoint_base + apiPath, {}, ( data ) => {
       if (!data)
         return;
       if (data.status == 'ok') {
