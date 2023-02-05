@@ -276,7 +276,7 @@ function ContextMenu({ listview }) {
     listview.set_name(listview.sel.items[0].name);
     listview.set_dlg_rename(true);
     setTimeout(() => {
-      listview.set_focus();
+      listview.set_input_focus();
     }, 250);
   }
 
@@ -353,7 +353,7 @@ export default function ListView({ listview, dropzone }) {
   const [ ctx_mnsc, set_ctx_mnsc ] = useState(-1);
   const [ dlg_delete, set_dlg_delete ] = useState(false);
   const [ dlg_rename, set_dlg_rename ] = useState(false);
-  const [ focus_ref, set_focus ] = useFocus();
+  const [ input_focus_ref, set_input_focus ] = useFocus();
   listview.name = name;
   listview.set_name = set_name;
   listview.ctx_mnpos = ctx_mnpos;
@@ -364,7 +364,7 @@ export default function ListView({ listview, dropzone }) {
   listview.set_dlg_delete = set_dlg_delete;
   listview.dlg_rename = dlg_rename;
   listview.set_dlg_rename = set_dlg_rename;
-  listview.set_focus = set_focus;
+  listview.set_input_focus = set_input_focus;
   /* dialogs */
   const [ dlg_is_working, set_dlg_is_working ] = useState(false);
 
@@ -495,11 +495,11 @@ export default function ListView({ listview, dropzone }) {
             { listview.sel.items.length > 0 && listview.sel.items[0].type == 'folder' ? (<span>Rename a folder</span>):(<span>Rename a file</span>) }
             </p>
             <p className="py-4">
-              <input ref={ focus_ref } type="text" placeholder="Name" onChange={ e => set_name(e.target.value) } className={ scn.input } onFocus={ e => e.target.select() } value={ name } />
+              <input ref={ input_focus_ref } type="text" placeholder="Name" onChange={ e => set_name(e.target.value) } className={ scn.input } onFocus={ e => e.target.select() } value={ name } />
             </p>
             <div className="modal-action">
               <button className="btn btn-outline" onClick={ cancelDlgs } disabled={ dlg_is_working }>Cancel</button>
-              <button className={ (dlg_is_working?'loading':'') + " btn btn-error" } disabled={ dlg_is_working || name.length == 0 } onClick={ doRenameSelected }>Rename</button>
+              <button className={ (dlg_is_working?'loading':'') + " btn btn-error" } disabled={ dlg_is_working || name.length == 0 || (listview.sel.indices.length == 1 && listview.sel.items[0].type == 'file' && !name.toLowerCase().endsWith('.pdf')) } onClick={ doRenameSelected }>Rename</button>
             </div>
           </div>
         </div>

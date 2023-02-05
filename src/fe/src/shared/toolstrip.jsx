@@ -3,6 +3,7 @@ import { Link, useParams, useNavigate } from 'react-router-dom';
 import { scn } from './styles';
 import { config } from './config';
 import { auth } from './auth';
+import { useFocus } from './utils';
 
 
 function CurrentFolderDropdown({ menuFunc }) {
@@ -102,6 +103,7 @@ export default function ToolStrip({ listview, uploadFunc }) {
   const refDlgNewFolder = useRef();
   const refDlgConnectS3 = useRef();
   const [ name, setName ] = useState('');
+  const [ input_focus_ref, set_input_focus ] = useFocus();
 
   let folders = [];
   if (typeof listview.path !== 'undefined' &&
@@ -114,6 +116,9 @@ export default function ToolStrip({ listview, uploadFunc }) {
     setName('');
     document.activeElement.blur();
     refDlgNewFolder.current.checked = true;
+    setTimeout(() => {
+      set_input_focus();
+    }, 250);
   }
   function closeNewFolder(e) {
     refDlgNewFolder.current.checked = false;
@@ -192,7 +197,7 @@ export default function ToolStrip({ listview, uploadFunc }) {
           <h3 className="font-bold text-lg">New Folder</h3>
           <div className="form-control w-full">
             <p className="py-3">Enter a name to create a new folder</p>
-            <input type="text" placeholder="Name of the Folder" className={ scn.input } onChange={ e => setName(e.target.value) } value={ name }/>
+            <input ref={ input_focus_ref } type="text" placeholder="Name of the Folder" className={ scn.input } onChange={ e => setName(e.target.value) } value={ name }/>
           </div>
           <div className="modal-action">
             <button className="btn bg-slate-50 text-slate-500 border-slate-300 hover:bg-slate-200 hover:border-slate-400" onClick={ closeNewFolder }>Cancel</button>
