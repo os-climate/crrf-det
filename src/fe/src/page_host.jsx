@@ -40,6 +40,10 @@ export default function PageHost() {
   }
 
   function refresh(path) {
+    if (window.listview_refresh_timer) {
+      clearTimeout(window.listview_refresh_timer);
+      window.listview_refresh_timer = null;
+    }
     var old_item_count = items.length;
     let apiPath = '/files';
     if (path)
@@ -60,9 +64,9 @@ export default function PageHost() {
         for (const f of data.data) {
           if (f.info &&
             f.info.status) {
-            setTimeout(() => {
+            window.listview_refresh_timer = setTimeout(() => {
               refresh(path);
-            }, 5000);
+            }, 10000);
             break;
           }
         }
