@@ -44,11 +44,11 @@ void document::print_essentials() {
     }
 }
 
-void document::run_command(std::string command, std::string output_base_name, int image_ppi, std::string render_format, bool anti_aliased, std::string margin, bool text_only) {
+void document::run_command(std::string command, std::string output_base_name, int narrow_side_px, std::string render_format, bool anti_aliased, std::string margin, bool text_only) {
     if (command == "preview") {
         command_preview(pdf_, pages_);
     } else if (command == "render") {
-        command_render(pdf_, pages_, output_base_name, image_ppi, render_format, anti_aliased, text_only);
+        command_render(pdf_, pages_, output_base_name, narrow_side_px, render_format, anti_aliased, text_only);
     } else if (command == "section") {
         command_section(pdf_);
     } else if (command == "page") {

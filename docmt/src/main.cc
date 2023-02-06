@@ -16,7 +16,7 @@ void print_usage() {
     printf("document multi-tool (docmt)\n");
     printf("usage: docmt -i <file> \n");
     printf("             [-p <page_desc>] [-o <base>]\n");
-    printf("             [-P <image_ppi>] [-F jpg/png] [-M normal/narrow] [-A] [-T]\n");
+    printf("             [-P <narrow_side_px>] [-F jpg/png] [-M normal/narrow] [-A] [-T]\n");
     printf("             <command>\n");
 }
 
@@ -64,7 +64,7 @@ int main(int argc, char *argv[]) {
     string margin = "normal";
     vector<string> commands;
     vector<int> pages;
-    int image_ppi = 72;
+    int narrow_side_px = 400;
     bool anti_aliased = true;
     bool text_only = false;
 
@@ -81,11 +81,7 @@ int main(int argc, char *argv[]) {
                 output_base_name = optarg;
                 break;
             case 'P':
-                image_ppi = atoi(optarg);
-                if (image_ppi == 0 ||
-                    image_ppi > 800) {
-                    image_ppi = 72;
-                }
+                narrow_side_px = atoi(optarg);
                 break;
             case 'F':
                 render_format = optarg;
@@ -120,7 +116,7 @@ int main(int argc, char *argv[]) {
     document doc(input_file_name, pages);
     doc.print_essentials();
     for (size_t i = 0; i < commands.size(); i++) {
-        doc.run_command(commands[i], output_base_name, image_ppi, render_format, anti_aliased, margin, text_only);
+        doc.run_command(commands[i], output_base_name, narrow_side_px, render_format, anti_aliased, margin, text_only);
     }
 
     exit(EXIT_SUCCESS);

@@ -27,7 +27,7 @@ public:
 };
 
 
-image cpage_renderer::render_page(const page *p, bool text_only, double xres, double yres, int x, int y, int w, int h, rotation_enum rotate) const
+image cpage_renderer::render_page(const page *p, bool text_only, int narrow_side_px, rotation_enum rotate) const
 {
     if (!p) {
         return image();
@@ -38,6 +38,19 @@ image cpage_renderer::render_page(const page *p, bool text_only, double xres, do
 
     SplashColorMode colorMode;
     SplashThinLineMode lineMode;
+
+    rectf cropbox = p->page_rect();
+    int w, h;
+    double dpi;
+    if (cropbox.width() > cropbox.height()) {
+        w = int(400.0 * cropbox.width() / cropbox.height());
+        h = 400;
+        dpi = 72. * 400 / cropbox.height();
+    } else {
+        w = 400;
+        h = int(400.0 * cropbox.height() / cropbox.width());
+        dpi = 72. * 400 / cropbox.width();
+    }
 
     if (!d->conv_color_mode(d->image_format, colorMode) || !d->conv_line_mode(d->line_mode, lineMode)) {
         return image();
@@ -52,7 +65,7 @@ image cpage_renderer::render_page(const page *p, bool text_only, double xres, do
     splashOutputDev.setVectorAntialias(d->hints & antialiasing ? true : false);
     splashOutputDev.setFreeTypeHinting(d->hints & text_hinting ? true : false, false);
     splashOutputDev.startDoc(pdfdoc);
-    pdfdoc->displayPageSlice(&splashOutputDev, pp->index + 1, xres, yres, int(rotate) * 90, false, true, false, x, y, w, h, nullptr, nullptr, nullptr, nullptr, true);
+    pdfdoc->displayPageSlice(&splashOutputDev, pp->index + 1, dpi, dpi, int(rotate) * 90, false, true, false, 0, 0, w, h, nullptr, nullptr, nullptr, nullptr, true);
 
     SplashBitmap *bitmap = splashOutputDev.getBitmap();
     const int bw = bitmap->getWidth();
