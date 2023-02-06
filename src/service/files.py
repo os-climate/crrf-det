@@ -4,6 +4,7 @@ from sanic import response, Blueprint
 from sanic.exceptions import SanicException
 
 import data.file
+import task.file
 from .auth import protected
 
 
@@ -24,7 +25,6 @@ async def index(request, token, folder=None):
     folder = fix_folder(folder)
     userid = token['id']
     ret = data.file.listdir(userid, folder)
-    print('files.index', folder, token, ret)
     return response.json({
         'status': 'ok',
         'data': ret
@@ -44,6 +44,9 @@ async def new(request, token, folder=None):
         # a file upload
         for k, v in request.files.items():
             ret = data.file.write(userid, folder, v[0].name, v[0].body)
+            if ret is not None:
+                r = task.file.translate_pdf.schedule((userid, folder, ret), delay=0)
+                data.file.set_working_task(userid, folder, ret, 'translate_pdf', r.id)
     elif request.json:
         # create a dir
         name = request.json['name']

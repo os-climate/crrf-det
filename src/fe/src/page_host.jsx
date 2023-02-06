@@ -49,11 +49,23 @@ export default function PageHost() {
         return;
       if (data.status == 'ok') {
         data.data.sort(sort_compare);
+        if (JSON.stringify(data.data) == JSON.stringify(items))
+          return;
         set_items(data.data);
         set_loaded(true);
         // clear selection if item count becomes smaller
         if (data.data.length < old_item_count)
           set_sel({ anchor: -1, indices: [], items: [] });
+        // check 'status', auto refresh if found
+        for (const f of data.data) {
+          if (f.info &&
+            f.info.status) {
+            setTimeout(() => {
+              refresh(path);
+            }, 5000);
+            break;
+          }
+        }
       } else {
         console.warn('unhandled data', data);
       }

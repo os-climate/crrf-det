@@ -21,22 +21,21 @@ function formatBytes(bytes, decimals = 1) {
 
 function ItemInfo({ info }) {
 
-  if (typeof info === 'string' ||
-    typeof info === 'undefined') {
+  if (info &&
+    info.status)
     return (
       <td className="text-xs bg-transparent">
-        {info}
-      </td> 
+        <div className="flex items-center text-teal-600">
+          <span className="w-4 h-4 mr-2 rounded-full animate-spin border border-solid border-[2px] border-slate-200 border-t-teal-500"></span>
+          {info.status}
+        </div>
+      </td>
     )
-  }
 
   return (
     <td className="text-xs bg-transparent">
-      <div className="flex items-center text-teal-600">
-        <span className="w-4 h-4 mr-2 rounded-full animate-spin border border-solid border-[2px] border-slate-200 border-t-teal-500"></span>
-        {info.status}
-      </div>
-    </td> 
+      {info}
+    </td>
   )
 
 }

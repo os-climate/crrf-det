@@ -8,12 +8,14 @@ services:
     build:
       context: ./
       dockerfile: dockerfile
-    command: sanic det.app --dev --host=0.0.0.0 --port=8000
+    command: sanic det.app --dev --host=0.0.0.0 --port=8000 --workers=2
     volumes:
       - ./src:/det
       - ./dev-data/data:/data
     ports:
       - 8000:8000
+    depends_on:
+      - redis
   redis:
     image: redis
     container_name: det-redis
