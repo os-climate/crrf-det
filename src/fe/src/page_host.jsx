@@ -24,6 +24,21 @@ export default function PageHost() {
   const [ items, set_items ] = useState([]);
   const [ loaded, set_loaded ] = useState(false);
 
+  function sort_compare(a, b) {
+    if (a.type != b.type) {
+      if (a.type == 'folder')
+        return -1;
+      if (b.type == 'folder')
+        return 1;
+      return 0;
+    }
+    if (a.name < b.name)
+      return -1;
+    if (a.name > b.name)
+      return 1;
+    return 0;
+  }
+
   function refresh(path) {
     var old_item_count = items.length;
     let apiPath = '/files';
@@ -33,6 +48,7 @@ export default function PageHost() {
       if (!data)
         return;
       if (data.status == 'ok') {
+        data.data.sort(sort_compare);
         set_items(data.data);
         set_loaded(true);
         // clear selection if item count becomes smaller
