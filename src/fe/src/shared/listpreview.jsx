@@ -1,3 +1,6 @@
+import { formatBytes, formatDate } from './utils';
+
+
 function Thumbnail({ itemData }) {
   if (!itemData)
     return (null)
@@ -36,8 +39,8 @@ function HasSelection({ listview }) {
         <tr>
           <td className="align-top"><i className="icon-doc-text mx-2 text-teal-500 text-lg"/></td><td className="align-top text-slate-700">
             <div className="text-lg">{ item.name }</div>
-            <div className="text-sm text-slate-400">{ item.size } / { item.info }</div>
-            <div className="text-sm text-slate-400">{ item.date }</div>
+            <div className="text-sm text-slate-400">{ formatBytes(item.size) } / { item.info }</div>
+            <div className="text-sm text-slate-400">{ formatDate(item.date) }</div>
           </td>
         </tr>
       )

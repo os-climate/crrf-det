@@ -3,20 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { config } from './config';
 import { auth } from './auth';
 import { scn } from './styles';
-import { useFocus } from '../shared/utils';
-
-
-function formatBytes(bytes, decimals = 1) {
-  if (!+bytes) return '0 Bytes'
-
-  const k = 1024
-  const dm = decimals < 0 ? 0 : decimals
-  const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB', 'PB', 'EB', 'ZB', 'YB']
-
-  const i = Math.floor(Math.log(bytes) / Math.log(k))
-
-  return `${parseFloat((bytes / Math.pow(k, i)).toFixed(dm))} ${sizes[i]}`
-}
+import { useFocus, formatBytes, formatDate } from './utils';
 
 
 function ItemInfo({ info }) {
@@ -217,7 +204,7 @@ function Item({ listview, index, item }) {
       <td className="bg-transparent"><i className={`${ iconCls }`}/></td>
       <td className="bg-transparent">{item.name}</td>
       <td className="bg-transparent text-xs">{formatBytes(item.size)}</td>
-      <td className="bg-transparent text-xs">{(new Date(item.date)).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric'})}</td>
+      <td className="bg-transparent text-xs">{formatDate(item.date)}</td>
       <ItemInfo info={ item.info }/>
     </tr>
   )
@@ -298,48 +285,6 @@ function ContextMenu({ listview }) {
 
 export default function ListView({ listview, dropzone }) {
 
-  // const allItems = {
-  //   root: [
-  //     { type: 'folder', name: '2021 Sustainability Reports', info: '52 files'},
-  //     { type: 'folder', name: '2022 Sustainability Reports', info: '67 files'},
-  //     { type: 'folder', name: '2023 Sustainability Reports', info: '67 files'},
-  //     { type: 's3', name: 'Demo S3 Bucket', info: '17 files'},
-  //     { type: 'file', name: '2021-tesla-impact-report.pdf', id: 1, size: '2.1MB', date: 'Aug 31, 2021' , info: {
-  //       status: 'Analyzing (53 of 150 pages) ...'
-  //     }},
-  //     { type: 'file', name: '2021-tesla-impact-report.pdf', id: 1, size: '2.1MB', date: 'Aug 31, 2021' , info: {
-  //       status: 'Analyzing (63 of 150 pages) ...'
-  //     }},
-  //     { type: 'file', name: '2021-tesla-impact-report.pdf', id: 1, size: '2.1MB', date: 'Aug 31, 2021' , info: {
-  //       status: 'Analyzing (73 of 150 pages) ...'
-  //     }},
-  //     { type: 'file', name: '2021-tesla-impact-report.pdf', id: 2, size: '2.1MB', date: 'Aug 31, 2021' , info: '144 pages'},
-  //     { type: 'file', name: '2021-tesla-impact-report.pdf', id: 2, size: '2.1MB', date: 'Aug 31, 2021' , info: '144 pages'},
-  //     { type: 'file', name: '2021-tesla-impact-report.pdf', id: 2, size: '2.1MB', date: 'Aug 31, 2021' , info: '144 pages'},
-  //     { type: 'file', name: '2021-tesla-impact-report.pdf', id: 2, size: '2.1MB', date: 'Aug 31, 2021' , info: '144 pages'},
-  //     { type: 'file', name: '2021-tesla-impact-report.pdf', id: 2, size: '2.1MB', date: 'Aug 31, 2021' , info: '144 pages'},
-  //     { type: 'file', name: '2021-tesla-impact-report.pdf', id: 3, size: '2.1MB', date: 'Aug 31, 2021' , info: '144 pages'},
-  //     { type: 'file', name: '2021-tesla-impact-report.pdf', id: 3, size: '2.1MB', date: 'Aug 31, 2021' , info: '144 pages'},
-  //     { type: 'file', name: '2021-tesla-impact-report.pdf', id: 3, size: '2.1MB', date: 'Aug 31, 2021' , info: '144 pages'},
-  //     { type: 'file', name: '2021-tesla-impact-report.pdf', id: 3, size: '2.1MB', date: 'Aug 31, 2021' , info: '144 pages'},
-  //     { type: 'file', name: '2021-tesla-impact-report.pdf', id: 3, size: '2.1MB', date: 'Aug 31, 2021' , info: '144 pages'},
-  //     { type: 'file', name: '2021-tesla-impact-report.pdf', id: 3, size: '2.1MB', date: 'Aug 31, 2021' , info: '144 pages'},
-  //   ],
-  //   '2021 Sustainability Reports': [
-  //     { type: 'folder', name: 'Another sub folder', info: '2 files'},
-  //   ],
-  //   '2021 Sustainability Reports|Another sub folder': [
-  //     { type: 'folder', name: 'empty folder', info: '2 files'},
-  //     { type: 'file', name: '2021-tesla-impact-report.pdf', id: 3, size: '2.1MB', date: 'Aug 31, 2021' , info: '144 pages'},
-  //     { type: 'file', name: '2021-tesla-impact-report.pdf', id: 3, size: '2.1MB', date: 'Aug 31, 2021' , info: '144 pages'},
-  //   ],
-  //   '2022 Sustainability Reports': [
-  //     { type: 'folder', name: 'Another sub folder', info: '2 files'},
-  //   ],
-  //   '2023 Sustainability Reports': [
-  //     { type: 'folder', name: 'Another sub folder', info: '2 files'},
-  //   ],
-  // };
   const refScroll = useRef();
   const [scrollTop, setScrollTop] = useState(0);
   function trackRefScroll(e) {
