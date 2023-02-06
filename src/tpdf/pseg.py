@@ -195,11 +195,15 @@ def prepare_images_for_segmentation(source_image):
     height = image.shape[0]
     width = image.shape[1]
 
-    target_scale = calc_target_scale(width, height)
+    # target_scale = calc_target_scale(width, height)
 
-    twidth = int(width / target_scale)
-    theight = int(height / target_scale)
-    thumb_image = skimage.transform.resize_local_mean(image, (theight, twidth))
+    # twidth = int(width / target_scale)
+    # theight = int(height / target_scale)
+    # thumb_image = skimage.transform.resize_local_mean(image, (theight, twidth))
+    target_scale = 1
+    thumb_image = skimage.color.rgb2gray(source_image)
+    theight = thumb_image.shape[0]
+    twidth = thumb_image.shape[1]
     thumb_image[thumb_image > 1] = 1
 
     # before even doing anything else, turn 4.5% from the top of the page

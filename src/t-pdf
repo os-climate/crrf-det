@@ -133,7 +133,7 @@ def main(args):
                         table_.add_rows(e['content'])
                         print('\n'.join([indent + x for x in table_.draw().split('\n')]))
             else:
-                if time.time() - checkpoint > 5:
+                if time.time() - checkpoint > 10:
                     print('- {} of {} pages processed'.format(page_idx + 1, len(pages)), flush=True)
                     checkpoint = time.time()
         if args.output:

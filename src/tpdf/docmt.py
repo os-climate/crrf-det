@@ -33,11 +33,11 @@ def search_for_docmt_bin():
 def load_page_image(filename, page, text_only=True):
     global DOCMT_BIN
     with tempfile.TemporaryDirectory() as tmp_dir:
-        cmd = ['-i', filename, '-o', '{}/p'.format(tmp_dir), '-F', 'jpg', '-p', str(page)]
+        cmd = ['-i', filename, '-o', '{}/p'.format(tmp_dir), '-F', 'png', '-P', '400', '-p', str(page)]
         if text_only:
             cmd.append('-T')
         r = subprocess.run([DOCMT_BIN, *cmd, 'render'], capture_output=True)
-        img_filename = os.path.join(tmp_dir, 'p.{}.jpg'.format(page))
+        img_filename = os.path.join(tmp_dir, 'p.{}.png'.format(page))
         ret = skimage.io.imread(img_filename)
     return ret
 
