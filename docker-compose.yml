@@ -9,6 +9,9 @@ services:
       context: ./
       dockerfile: dockerfile
     command: sanic det.app --dev --host=0.0.0.0 --port=8000 --workers=2
+    environment:
+      - JWT_SECRET=crrf-det-jwt-SECRET!!!501015
+      - URL_SIGN_SECRET=86c935bc079ba1fef55809e2f575426c
     volumes:
       - ./src:/det
       - ./dev-data/data:/data
