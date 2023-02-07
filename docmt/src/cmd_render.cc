@@ -26,6 +26,8 @@ void command_render(poppler::document* doc, std::vector<int>& pages, std::string
     char filename[512];
     for (size_t page_idx = 0; page_idx < pages.size(); page_idx++) {
         page* page_ = doc->create_page(pages[page_idx] - 1);
+        if (!page_)
+            continue;
         image img = renderer.render_page(page_, text_only, narrow_side_px);
         snprintf(filename, 512, "%s.%d.%s", output_base_name.c_str(), pages[page_idx], render_format.c_str());
         bool success = false;
