@@ -32,7 +32,7 @@ function do_upload(refresh, path) {
       setTimeout(() => {
         uploading = false;
         do_upload(refresh, path);
-        refresh();
+        refresh(path);
       });
     };
     let apiPath = '/files/new';
@@ -58,7 +58,7 @@ function do_upload(refresh, path) {
     toast.success(<Uploader/>, {
       id: upload_toast_id
     });
-    refresh();
+    refresh(path);
     upload_toast_id = null;
   }
 }

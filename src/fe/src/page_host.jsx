@@ -53,11 +53,11 @@ export default function PageHost() {
         return;
       if (data.status == 'ok') {
         data.data.items.sort(sort_compare);
+        set_loaded(true);
         if (JSON.stringify(data.data.items) == JSON.stringify(items))
           return;
         window.image_signature = data.data.signature;
         set_items(data.data.items);
-        set_loaded(true);
         // clear selection if item count becomes smaller
         if (data.data.items.length < old_item_count)
           set_sel({ anchor: -1, indices: [], items: [] });
