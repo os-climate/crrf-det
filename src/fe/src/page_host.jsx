@@ -52,16 +52,17 @@ export default function PageHost() {
       if (!data)
         return;
       if (data.status == 'ok') {
-        data.data.sort(sort_compare);
-        if (JSON.stringify(data.data) == JSON.stringify(items))
+        data.data.items.sort(sort_compare);
+        if (JSON.stringify(data.data.items) == JSON.stringify(items))
           return;
-        set_items(data.data);
+        window.image_signature = data.data.signature;
+        set_items(data.data.items);
         set_loaded(true);
         // clear selection if item count becomes smaller
-        if (data.data.length < old_item_count)
+        if (data.data.items.length < old_item_count)
           set_sel({ anchor: -1, indices: [], items: [] });
         // check 'status', auto refresh if found
-        for (const f of data.data) {
+        for (const f of data.data.items) {
           if (f.info &&
             f.info.status) {
             window.listview_refresh_timer = setTimeout(() => {

@@ -1,33 +1,29 @@
 import { formatBytes, formatDate } from './utils';
+import { config } from './config';
 
 
-function Thumbnail({ itemData }) {
-  if (!itemData)
+function Thumbnail({ listview, item }) {
+  if (!item.thumbs)
     return (null)
+
+  let folder = '';
+  if (typeof listview.path !== 'undefined')
+    folder = listview.path;
+  let urlBase = config.endpoint_base + '/docs/' + folder + '/' + item.name;
 
   return (
     <div className="relative">
-    { itemData.thumbs.slice().reverse().map((url, idx) => (
-      <img key={ idx } className="absolute rounded border border-slate-500/50 right-0 hover:z-20" style={{top: (idx * 20) + 'px', width: (100 - (itemData.thumbs.length - idx) * 5) + '%'}} src={ url }/>
-    ))}
+    {
+      Array(item.thumbs).fill(0).map((_, i) => (
+        <img key={ i } className="absolute rounded border border-slate-500/50 right-0 hover:z-20" style={{top: (i * 20) + 'px', maxWidth: (100 - (item.thumbs - i) * 5) + '%', maxHeight: '250px'}} src={ urlBase + '/thumb.' + (i + 1) + '.jpg?s=' + window.image_signature }/>
+      ))
+    }
     </div>
   )
 }
 
 
 function HasSelection({ listview }) {
-
-  const previewData = {
-    '2021-tesla-impact-report.pdf': {
-      'thumbs': [
-        '/2021-tesla-impact-report.thumb.1.jpg',
-        '/2021-tesla-impact-report.thumb.2.jpg',
-        '/2021-tesla-impact-report.thumb.3.jpg',
-        '/2021-tesla-impact-report.thumb.4.jpg',
-        '/2021-tesla-impact-report.thumb.5.jpg',
-      ]
-    }
-  }
 
   let details;
   let thumbs = (null);
@@ -46,7 +42,7 @@ function HasSelection({ listview }) {
       )
       thumbs = (
         <div className="ml-1 mr-1 mt-2">
-          <Thumbnail itemData={ previewData[item.name] }/>
+          <Thumbnail listview={ listview } item={ item }/>
         </div>
       )
     } else

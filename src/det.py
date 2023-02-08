@@ -1,3 +1,4 @@
+import os
 import subprocess
 import multiprocessing
 
@@ -12,7 +13,7 @@ from task.shared import huey
 
 
 app = Sanic("crrf-det")
-app.config.SECRET = 'crrf-det-jwt-SECRET!!!501015'
+app.config.SECRET = os.environ['JWT_SECRET']
 app.config.CORS_ORIGINS = 'http://localhost,http://127.0.0.1'
 Extend(app)
 

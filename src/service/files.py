@@ -1,20 +1,14 @@
-import urllib.parse
-
 from sanic import response, Blueprint
 from sanic.exceptions import SanicException
 
 import data.file
 import task.file
+from . import utils
 from .auth import protected
+from .sign import generate_url_signature
 
 
 bp = Blueprint('files', url_prefix='/files')
-
-
-def fix_folder(folder):
-    if folder is None:
-        return None
-    return urllib.parse.unquote(folder)
 
 
 @bp.get('/', name='index')
@@ -22,12 +16,15 @@ def fix_folder(folder):
 @protected
 async def index(request, token, folder=None):
     # curl -v -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjRjYmJmNWMzMTYwMjI0YzZmMjEyIiwidXNlcm5hbWUiOiJhZG1pbiIsImxldmVsIjowLCJleHAiOjE2NzU0Nzk2NTl9.Azef1fMmbAkchum7rVePi5458eN6Z6Oo_SSQkVYlLq0" http://localhost:8000/files
-    folder = fix_folder(folder)
+    folder = utils.fix_folder(folder)
     userid = token['id']
     ret = data.file.listdir(userid, folder)
     return response.json({
         'status': 'ok',
-        'data': ret
+        'data': {
+            'items': ret,
+            'signature': generate_url_signature(userid)
+        }
     })
 
 
@@ -35,7 +32,7 @@ async def index(request, token, folder=None):
 @bp.post('/new/<folder>', name='new_folder')
 @protected
 async def new(request, token, folder=None):
-    folder = fix_folder(folder)
+    folder = utils.fix_folder(folder)
     userid = token['id']
     ret = False
     print('files.new', folder, token)
@@ -45,8 +42,8 @@ async def new(request, token, folder=None):
         for k, v in request.files.items():
             ret = data.file.write(userid, folder, v[0].name, v[0].body)
             if ret is not None:
-                r = task.file.translate_pdf.schedule((userid, folder, ret), delay=0)
-                data.file.set_working_task(userid, folder, ret, 'translate_pdf', r.id)
+                r = task.file.initialize_pdf.schedule((userid, folder, ret), delay=0)
+                # data.file.set_working_task(userid, folder, ret, 'initialize_pdf', r.id)
     elif request.json:
         # create a dir
         name = request.json['name']
@@ -67,7 +64,7 @@ async def new(request, token, folder=None):
 @bp.post('/change/<folder>', name='change_folder')
 @protected
 async def change(request, token, folder=None):
-    folder = fix_folder(folder)
+    folder = utils.fix_folder(folder)
     userid = token['id']
     old_name = request.json.get('old_name', '')
     new_name = request.json.get('new_name', '')
@@ -91,7 +88,7 @@ async def change(request, token, folder=None):
 @bp.post('/delete/<folder>', name='delete_folder')
 @protected
 async def delete(request, token, folder=None):
-    folder = fix_folder(folder)
+    folder = utils.fix_folder(folder)
     userid = token['id']
     names = request.json.get('name', [])
     for name in names:
@@ -102,3 +99,4 @@ async def delete(request, token, folder=None):
     return response.json({
         'status': 'ok'
     })
+
