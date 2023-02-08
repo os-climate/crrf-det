@@ -30,35 +30,59 @@ def search_for_docmt_bin():
     raise Exception('docmt is not found')
 
 
-def load_page_image(filename, page, text_only=True):
+def prepare_all_pages(tmp_dir, filename, text_only=True):
     global DOCMT_BIN
-    with tempfile.TemporaryDirectory() as tmp_dir:
-        cmd = ['-i', filename, '-o', '{}/p'.format(tmp_dir), '-F', 'png', '-P', '400', '-p', str(page)]
-        if text_only:
-            cmd.append('-T')
-        r = subprocess.run([DOCMT_BIN, *cmd, 'render'], capture_output=True)
-        img_filename = os.path.join(tmp_dir, 'p.{}.png'.format(page))
-        ret = skimage.io.imread(img_filename)
+    global PDFTOTEXT_BIN
+    cmd = ['-i', filename, '-o', '{}/p'.format(tmp_dir), '-F', 'png', '-P', '400']
+    if text_only:
+        cmd.append('-T')
+    r = subprocess.run([DOCMT_BIN, *cmd, 'render'], capture_output=True)
+    txt_filename = '{}/all_pages.txt'.format(tmp_dir)
+    cmd = ['-bbox', filename, txt_filename]
+    r = subprocess.run([PDFTOTEXT_BIN, *cmd], capture_output=True)
+    page = 1
+    p_page = re.compile(r'(<page .+?</page>)', re.DOTALL)
+    with open(txt_filename) as f:
+        all_text = f.read()
+    for m in p_page.finditer(all_text):
+        txt_filename = '{}/p{}.txt'.format(tmp_dir, page)
+        with open(txt_filename, 'w') as f:
+            f.write('<doc>{}</doc>'.format(m.group(1)))
+        page += 1
+
+
+def load_page_image(tmp_dir, filename, page, text_only=True):
+    img_filename = os.path.join(tmp_dir, 'p.{}.png'.format(page))
+    if os.path.isfile(img_filename):
+        return skimage.io.imread(img_filename)
+    global DOCMT_BIN
+    cmd = ['-i', filename, '-o', '{}/p'.format(tmp_dir), '-F', 'png', '-P', '400', '-p', str(page)]
+    if text_only:
+        cmd.append('-T')
+    r = subprocess.run([DOCMT_BIN, *cmd, 'render'], capture_output=True)
+    ret = skimage.io.imread(img_filename)
     return ret
 
 
-def load_page_text(filename, page):
-    global PDFTOTEXT_BIN
-    with tempfile.TemporaryDirectory() as tmp_dir:
-        text_p = re.compile(r'<doc>(.+)</doc>', re.DOTALL)
-        txt_filename = '{}/p.txt'.format(tmp_dir)
-        cmd = ['-bbox', '-f', str(page), '-l', str(page), filename, '{}/p.txt'.format(tmp_dir)]
-        r = subprocess.run([PDFTOTEXT_BIN, *cmd], capture_output=True)
+def load_page_text(tmp_dir, filename, page):
+    txt_filename = '{}/p{}.txt'.format(tmp_dir, page)
+    if os.path.isfile(txt_filename):
         with open(txt_filename) as f:
-            ret = f.read()
-            m = text_p.search(ret)
-            if m:
-                return m.group(1)
+            return f.read()
+    global PDFTOTEXT_BIN
+    text_p = re.compile(r'<doc>(.+)</doc>', re.DOTALL)
+    cmd = ['-bbox', '-f', str(page), '-l', str(page), filename, txt_filename]
+    r = subprocess.run([PDFTOTEXT_BIN, *cmd], capture_output=True)
+    with open(txt_filename) as f:
+        ret = f.read()
+        m = text_p.search(ret)
+        if m:
+            return m.group(1)
     return ''
 
 
-def load_page_content(filename, page):
-    text = load_page_text(filename, page)
+def load_page_content(tmp_dir, filename, page):
+    text = load_page_text(tmp_dir, filename, page)
     ret = {}
     page_attrs = {
         'number': page

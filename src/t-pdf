@@ -7,6 +7,7 @@ import numpy
 import orjson
 import skimage
 import argparse
+import tempfile
 
 from tpdf import pseg, docmt, helper, aggr
 
@@ -88,62 +89,65 @@ def _run_page(debug_dir, image, content, page, doc_meta={}):
 
 
 def main(args):
-    if args.input.lower().endswith('.pdf'):
-        doc_meta = docmt.get_info(args.input)
-        if args.page:
-            if ',' in args.page:
-                pages = [int(x) for x in args.page.split(',')]
-            elif '-' in args.page:
-                (page_left, page_right) = args.page.split('-')
-                pages = range(int(page_left), int(page_right) + 1)
+    with tempfile.TemporaryDirectory() as tmp_dir:
+        if args.input.lower().endswith('.pdf'):
+            doc_meta = docmt.get_info(args.input)
+            if args.page:
+                if ',' in args.page:
+                    pages = [int(x) for x in args.page.split(',')]
+                elif '-' in args.page:
+                    (page_left, page_right) = args.page.split('-')
+                    pages = range(int(page_left), int(page_right) + 1)
+                else:
+                    pages = [int(args.page)]
             else:
-                pages = [int(args.page)]
-        else:
-            pages = range(1, doc_meta['pages'] + 1)
-        print('processing document {}, {} pages ...'.format(os.path.basename(args.input), len(pages)), flush=True)
-        doc = {
-            'meta': {},
-            'pages': []
-        }
-        doc['meta'].update(doc_meta)
-        checkpoint = time.time()
-        for page_idx, page in enumerate(pages):
-            image = docmt.load_page_image(args.input, page)
-            content = docmt.load_page_content(args.input, page)
-            rpage = _run_page(args.debug, image, content, page, doc_meta)
+                pages = range(1, doc_meta['pages'] + 1)
+                print('preparing all pages for document {} ...'.format(os.path.basename(args.input)))
+                docmt.prepare_all_pages(tmp_dir, args.input)
+            print('processing document {}, {} pages ...'.format(os.path.basename(args.input), len(pages)), flush=True)
+            doc = {
+                'meta': {},
+                'pages': []
+            }
+            doc['meta'].update(doc_meta)
+            checkpoint = time.time()
+            for page_idx, page in enumerate(pages):
+                image = docmt.load_page_image(tmp_dir, args.input, page)
+                content = docmt.load_page_content(tmp_dir, args.input, page)
+                rpage = _run_page(args.debug, image, content, page, doc_meta)
+                if args.output:
+                    os.makedirs(args.output, exist_ok=True)
+                    json_fn = os.path.join(args.output, 'page.{}.json'.format(page))
+                    with open(json_fn, 'wb') as f:
+                        f.write(orjson.dumps(rpage, option=orjson.OPT_SERIALIZE_NUMPY))
+                doc['pages'].append(rpage)
+                if args.verbose:
+                    from colorama import Fore, Back, Style
+                    from texttable import Texttable
+                    indent = ' ' * 2
+                    print(Fore.WHITE + Style.BRIGHT + '--------------- page {} ---------------'.format(rpage['page']) + Style.RESET_ALL)
+                    for e in rpage['content']:
+                        if e['type'] == 'text':
+                            print(Fore.GREEN + Style.BRIGHT + 'text' + Style.DIM, 'at', e['box'], Style.RESET_ALL)
+                            print('{}{}'.format(indent, e['content']))
+                        elif e['type'] == 'table':
+                            print(Fore.CYAN + Style.BRIGHT + 'table' + Style.DIM, 'at', e['box'], Style.RESET_ALL)
+                            table_ = Texttable(max_width=(os.get_terminal_size()[0] - len(indent)))
+                            table_.set_deco(Texttable.BORDER | Texttable.VLINES)
+                            table_.add_rows(e['content'])
+                            print('\n'.join([indent + x for x in table_.draw().split('\n')]))
+                else:
+                    if time.time() - checkpoint > 10:
+                        print('- {} of {} pages processed'.format(page_idx + 1, len(pages)), flush=True)
+                        checkpoint = time.time()
             if args.output:
                 os.makedirs(args.output, exist_ok=True)
-                json_fn = os.path.join(args.output, 'page.{}.json'.format(page))
+                json_fn = os.path.join(args.output, 'pdf.json')
                 with open(json_fn, 'wb') as f:
-                    f.write(orjson.dumps(rpage, option=orjson.OPT_SERIALIZE_NUMPY))
-            doc['pages'].append(rpage)
-            if args.verbose:
-                from colorama import Fore, Back, Style
-                from texttable import Texttable
-                indent = ' ' * 2
-                print(Fore.WHITE + Style.BRIGHT + '--------------- page {} ---------------'.format(rpage['page']) + Style.RESET_ALL)
-                for e in rpage['content']:
-                    if e['type'] == 'text':
-                        print(Fore.GREEN + Style.BRIGHT + 'text' + Style.DIM, 'at', e['box'], Style.RESET_ALL)
-                        print('{}{}'.format(indent, e['content']))
-                    elif e['type'] == 'table':
-                        print(Fore.CYAN + Style.BRIGHT + 'table' + Style.DIM, 'at', e['box'], Style.RESET_ALL)
-                        table_ = Texttable(max_width=(os.get_terminal_size()[0] - len(indent)))
-                        table_.set_deco(Texttable.BORDER | Texttable.VLINES)
-                        table_.add_rows(e['content'])
-                        print('\n'.join([indent + x for x in table_.draw().split('\n')]))
-            else:
-                if time.time() - checkpoint > 10:
-                    print('- {} of {} pages processed'.format(page_idx + 1, len(pages)), flush=True)
-                    checkpoint = time.time()
-        if args.output:
-            os.makedirs(args.output, exist_ok=True)
-            json_fn = os.path.join(args.output, 'pdf.json')
-            with open(json_fn, 'wb') as f:
-                f.write(orjson.dumps(doc, option=orjson.OPT_SERIALIZE_NUMPY))
-    else:
-        image = skimage.io.imread(args.input)
-        _run_page(args.debug, image, {}, '_')
+                    f.write(orjson.dumps(doc, option=orjson.OPT_SERIALIZE_NUMPY))
+        else:
+            image = skimage.io.imread(args.input)
+            _run_page(args.debug, image, {}, '_')
 
 
 if __name__ == "__main__":
