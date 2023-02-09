@@ -1,0 +1,74 @@
+#!/usr/bin/env python3
+
+import os
+import re
+import orjson
+import pickle
+import argparse
+
+
+def main(args):
+    meta_filename = os.path.join(args.input, 'meta.json')
+    try:
+        with open(meta_filename) as f:
+            meta = orjson.loads(f.read())
+    except Exception as e:
+        return False
+    pages = len(meta['pages'])
+    # results
+    results = {}
+    # build terms
+    terms = []
+    for term in args.terms:
+        if not term.strip():
+            continue
+        t = {
+            'match': 'any'
+        }
+        if term.startswith('table:'):
+            t['match'] = 'table'
+            term = term[6:]
+        elif term.startswith('text:'):
+            t['match'] = 'text'
+            term = term[5:]
+        t['pattern'] = re.compile(term)
+        terms.append(t)
+    # search each page individually
+    for page_num in range(1, pages + 1):
+        try:
+            with open(os.path.join(args.input, 'page.{}.json'.format(page_num))) as f:
+                page = orjson.loads(f.read())
+        except Exception as e:
+            continue
+        for idx, e in enumerate(page.get('content', [])):
+            hs_type = 'text'
+            haystack = e.get('content', '')
+            if type(haystack) is not str:
+                # table
+                hs_type = 'table'
+                flattened = ''
+                for row in haystack:
+                    flattened += '\t'.join(row) + '\n'
+                haystack = flattened
+            for term in terms:
+                if (term['match'] != hs_type and
+                    term['match'] != 'any'):
+                    continue
+                if term['pattern'].search(haystack):
+                    if page_num not in results:
+                        results[page_num] = {}
+                    results[page_num][idx] = results[page_num].get(idx, 0) + 1
+    if args.output:
+        with open(args.output, 'wb') as f:
+            pickle.dump(results, f, protocol=pickle.HIGHEST_PROTOCOL)
+    else:
+        print(results)
+
+
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description='s-pdf searches structured output from t-pdf for text boxes and tables')
+    parser.add_argument('-i', '--input', type=str, required=True, help='input path to t-pdf output, must contain page.#.json files')
+    parser.add_argument('-o', '--output', type=str, help='output file name for the pickled result')
+    parser.add_argument('terms', metavar='TERM', type=str, nargs='+', help='search term (in regular expression)')
+    args = parser.parse_args()
+    main(args)
