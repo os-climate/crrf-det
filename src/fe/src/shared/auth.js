@@ -39,13 +39,19 @@ const auth = {
       ...params
     })
     .then(( response ) => {
+      if (response.status == 200) {
+        return response.json();
+      }
       // reauth?
-      if (response.status == 401) {
+      else if (response.status == 401) {
         auth.saveToken(null);
         authStatusChangeCallback();
         //console.log('response', response);
-      } else
-        return response.json();
+      }
+      return {
+        'status': 'fetch_error',
+        'response': response
+      }
     })
     .then(data_func);
   }

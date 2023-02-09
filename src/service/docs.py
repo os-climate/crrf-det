@@ -1,9 +1,12 @@
+import os
+import pickle
 import urllib.parse
 
 from sanic import response, Blueprint
 from sanic.exceptions import SanicException
 
 import data.file
+import task.file
 
 from .auth import protected
 from . import sign, utils
@@ -59,3 +62,39 @@ async def view_image(request, folder, file, image_name):
         print('/docs/view_image {} is not found'.format(filename))
         raise SanicException('File Not Found', status_code=404)
     return await response.file(filename)
+
+
+@bp.post('/<folder:strorempty>/<file>', name='search')
+@protected
+async def search(request, token, folder, file):
+    folder = utils.fix_folder(folder)
+    file = urllib.parse.unquote(file)
+    userid = token['id']
+    terms = request.json.get('terms', '')
+    if not terms:
+        raise SanicException('Bad Request', status_code=400)
+    r = task.file.search_pdf.schedule((userid, folder, file, terms), delay=0)
+    return response.json({
+        'status': 'ok',
+        'data': r.id
+    })
+
+
+@bp.get('/<folder:strorempty>/<file>/search/<result_id>', name='search_result')
+@protected
+async def search_result(request, token, folder, file, result_id):
+    folder = utils.fix_folder(folder)
+    file = urllib.parse.unquote(file)
+    userid = token['id']
+    filename = data.file.get_user_file(userid, folder, file, 'search_pdf_{}'.format(result_id))
+    if filename is None:
+        return response.json({
+            'status': 'fail'
+        })
+    with open(filename, 'rb') as f:
+        r = pickle.load(f)
+    os.remove(filename)
+    return response.json({
+        'status': 'ok',
+        'data': r
+    })

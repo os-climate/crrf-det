@@ -26,6 +26,9 @@ export default function DocumentPage({ listview, previewWidth }) {
   const [ tableBoxHL, setTableBoxHL ] = useState(-1);
   const [ textBoxes, setTextBoxes ] = useState([]);
   const [ textBoxHL, setTextBoxHL ] = useState(-1);
+  const [ working, set_working ] = useState(false);
+  const [ result, set_result ] = useState({});
+  const filterstatus = { working, set_working, result, set_result };
 
   if (typeof previewWidth === 'undefined')
     previewWidth = '20rem';
@@ -50,7 +53,7 @@ export default function DocumentPage({ listview, previewWidth }) {
             <DocumentStructure path={ path } file={ file } pageNum={ pageNum } mode={ mode } setMode={ setMode } tables={ tables } setTables={ setTables } setTableBoxes={ setTableBoxes } tableBoxHL={ tableBoxHL } setTableBoxHL={ setTableBoxHL } text={ text } setText={ setText } setTextBoxes={ setTextBoxes } textBoxHL={ textBoxHL } setTextBoxHL={ setTextBoxHL }/>
           </div>
           <div className="absolute right-0 w-96 h-40 bottom-0">
-            <DocumentFilterDeck/>
+            <DocumentFilterDeck path={ path } file={ file } filterstatus = { filterstatus } />
           </div>
         </div>
       ) : (

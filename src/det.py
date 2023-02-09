@@ -27,7 +27,7 @@ def launch_huey_consumer():
     cpus = multiprocessing.cpu_count()
     workers = max(1, cpus - 1)
     logger.info('initialize {} huey consumers ...'.format(workers))
-    return subprocess.Popen(['huey_consumer.py', 'det.huey', '-k', 'process', '-w', str(workers)])
+    return subprocess.Popen(['huey_consumer.py', 'det.huey', '-n', '-m', '2', '-b', '1.05', '-k', 'process', '-w', str(workers)])
 
 
 @app.route('/')

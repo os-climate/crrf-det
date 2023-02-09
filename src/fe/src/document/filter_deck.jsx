@@ -6,6 +6,8 @@ import 'prismjs/themes/prism.css';
 import { scn } from '../shared/styles';
 import { AutoAvatar, Tag } from '../shared/widgets';
 import { getColor } from '../shared/colors';
+import { config } from '../shared/config';
+import { auth } from '../shared/auth';
 
 
 function FilterDropdown({ filters, setFilters, current, setCurrent, setCode, menuFunc }) {
@@ -76,7 +78,7 @@ function TagView({ filters, current, menuFunc }) {
 }
 
 
-export default function DocumentFilterDeck() {
+export default function DocumentFilterDeck({ path, file, filterstatus }) {
 
   const [filters, setFilters] = useState({
     'Scope 1/2/3 Emissions': { code: 'table:GHG.*', labels: ['Scope 1', 'Scope 2', 'Scope 3', 'Scope 1+2+3'] },
@@ -108,6 +110,7 @@ export default function DocumentFilterDeck() {
   const [filterName, setFilterName] = useState('');
   const [filterNameMode, setFilterNameMode] = useState('');
   const [tags, setTags] = useState('');
+  const [ working, setWorking ] = useState(false);
   const refDlgFilterName = useRef();
   const refDlgTags = useRef();
 
@@ -151,6 +154,50 @@ export default function DocumentFilterDeck() {
   }
   function tagsChange(e) {
     setTags(e.target.value.split(','));
+  }
+
+  function runFilter(e) {
+    filterstatus.set_working(true);
+    let apiPath = '/docs/';
+    if (path &&
+      path !== '|')
+      apiPath += path;
+    apiPath += '/' + file;
+    auth.post(config.endpoint_base + apiPath, {
+      body: JSON.stringify({'terms': code})
+    }, ( data ) => {
+      if (!data) {
+        console.warn('returned data is null');
+        return;
+      }
+      var id = data.data;
+      if (window.run_filter_timer)
+        clearTimeout(window.run_filter_timer)
+      window.run_filter_timer = setTimeout(() => {
+        pollFilter(id);
+      }, 1000);
+    });
+  }
+  function pollFilter(id) {
+    let apiPath = '/docs/';
+    if (path &&
+      path !== '|')
+      apiPath += path;
+    apiPath += '/' + file + '/search/' + id;
+    auth.get(config.endpoint_base + apiPath, {}, ( data ) => {
+      if (!data) {
+        console.warn('returned data is null');
+        return;
+      }
+      if (data.status !== 'ok') {
+        window.run_filter_timer = setTimeout(() => {
+          pollFilter(id);
+        }, 1000);
+        return;
+      }
+      filterstatus.set_result(data.data);
+      console.log('pollFilter received data', data);
+    });
   }
 
   // Dialogs
@@ -212,7 +259,7 @@ export default function DocumentFilterDeck() {
     <div className="ml-2">
       <div className="h-10 bg-slate-100 items-center w-full">
         <FilterDropdown filters={ filters } setFilters={ setFilters } current={ current } setCurrent={ setCurrent } setCode={ setCode } menuFunc={{ newFilter: newFilter }}/>
-        <button className={`w-[60px] absolute top-0 right-9 ${scn.primaryButton}`}>Go</button>
+        <button className={`w-[60px] absolute top-0 right-9 ${scn.primaryButton}`} onClick={ runFilter } disabled={ filterstatus.working }>Go</button>
         <OptionDropdown menuFunc={{ renameFilter: renameFilter, manageTags: manageTags }}/>
       </div>
       <div className="absolute bottom-0 top-10 left-2 right-0 border border-slate-100 overflow-auto">
