@@ -17,15 +17,15 @@ function isElementVisible(el) {
 }
 
 
-function TextStructure({ text, pageNum, textBoxHL, setTextBoxHL }) {
+function TextStructure({ pagecontent }) {
 
   const refHL = useRef();
 
   function highlightTextBox(e) {
-    setTextBoxHL(parseInt(e.currentTarget.getAttribute('data-textbox-index')));
+    pagecontent.set_texthl(parseInt(e.currentTarget.getAttribute('data-textbox-index')));
   }
   function resetHighlightTextBox(e) {
-    setTextBoxHL(-1);
+    pagecontent.set_texthl(-1);
   }
 
   useEffect(() => {
@@ -33,25 +33,25 @@ function TextStructure({ text, pageNum, textBoxHL, setTextBoxHL }) {
       if (!isElementVisible(refHL.current))
         refHL.current.scrollIntoView({behavior: 'smooth'});
     }
-  }, [ textBoxHL ]);
+  }, [ pagecontent.texthl ]);
 
   return (
     <div>
-    { text.map((p, idx) => renderTextStructure(p.content, idx, textBoxHL, highlightTextBox, resetHighlightTextBox, refHL)) }
+    { pagecontent.text.map((p, idx) => renderTextStructure(p.content, idx, pagecontent.texthl, highlightTextBox, resetHighlightTextBox, refHL)) }
     </div>
   )
 }
 
 
-function TablesStructure({ tables, pageNum, tableBoxHL, setTableBoxHL }) {
+function TablesStructure({ pagecontent }) {
 
   const refHL = useRef();
 
   function highlightTableBox(e) {
-    setTableBoxHL(parseInt(e.currentTarget.getAttribute('data-tablebox-index')));
+    pagecontent.set_tablehl(parseInt(e.currentTarget.getAttribute('data-tablebox-index')));
   }
   function resetHighlightTableBox(e) {
-    setTableBoxHL(-1);
+    pagecontent.set_tablehl(-1);
   }
 
   useEffect(() => {
@@ -59,15 +59,15 @@ function TablesStructure({ tables, pageNum, tableBoxHL, setTableBoxHL }) {
       if (!isElementVisible(refHL.current))
         refHL.current.scrollIntoView({behavior: 'smooth'});
     }
-  }, [ tableBoxHL ]);
+  }, [ pagecontent.tablehl ]);
 
   let rendered = [];
-  for (var i = 0; i < tables.length; i++) {
-    rendered.push(renderTableStructure(tables[i].content, i, tableBoxHL, highlightTableBox, resetHighlightTableBox, refHL));
+  for (var i = 0; i < pagecontent.table.length; i++) {
+    rendered.push(renderTableStructure(pagecontent.table[i].content, i, pagecontent.tablehl, highlightTableBox, resetHighlightTableBox, refHL));
   }
 
   if (rendered.length === 0) {
-    rendered.push(<div key="none" className="italic text-slate-500 text-base text-center mt-2">No tables on page {pageNum}</div>)
+    rendered.push(<div key="none" className="italic text-slate-500 text-base text-center mt-2">No tables on page {pagecontent.page}</div>)
   }
 
   return (
@@ -78,10 +78,10 @@ function TablesStructure({ tables, pageNum, tableBoxHL, setTableBoxHL }) {
 }
 
 
-export default function DocumentStructure({ path, file, pageNum, mode, setMode, tables, setTables, setTableBoxes, tableBoxHL, setTableBoxHL, text, setText, setTextBoxes, textBoxHL, setTextBoxHL }) {
+export default function DocumentStructure({ path, file, pagecontent }) {
 
   const pageChange = async () => {
-    auth.get({base: '/docs', folder: path, rest: '/' + file + '/page/' + pageNum}, {}, ( data ) => {
+    auth.get({base: '/docs', folder: path, rest: '/' + file + '/page/' + pagecontent.page}, {}, ( data ) => {
       var c = data;
       var tables_ = [];
       var text_ = [];
@@ -98,24 +98,24 @@ export default function DocumentStructure({ path, file, pageNum, mode, setMode, 
           tableBoxes_.push(box_);
         }
       }
-      setText(text_);
-      setTextBoxes(textBoxes_);
-      setTables(tables_);
-      setTableBoxes(tableBoxes_);
+      pagecontent.set_text(text_);
+      pagecontent.set_textbox(textBoxes_);
+      pagecontent.set_table(tables_);
+      pagecontent.set_tablebox(tableBoxes_);
     });
 
   };
 
   useEffect(() => {
     pageChange();
-  }, [ pageNum ]);
+  }, [ pagecontent.page ]);
 
   return (
     <div className="ml-2">
-      <ModeTab modes={{ 'text': 'Text', 'table': 'Tables' }} mode={ mode } setMode={ setMode }/>
+      <ModeTab modes={{ 'text': 'Text', 'table': 'Tables' }} mode={ pagecontent.mode } setMode={ pagecontent.set_mode }/>
       <div className="absolute bottom-0 top-10 left-2 right-0 border border-slate-100 overflow-auto p-2 text-xs">
-        { mode == 'table'?(<TablesStructure tables={ tables } pageNum={ pageNum } tableBoxHL={ tableBoxHL } setTableBoxHL={ setTableBoxHL }/>):(null) }
-        { mode == 'text'?(<TextStructure text={ text } pageNum={ pageNum } textBoxHL={ textBoxHL } setTextBoxHL={ setTextBoxHL }/>):(null) }
+        { pagecontent.mode == 'table'?(<TablesStructure pagecontent={ pagecontent }/>):(null) }
+        { pagecontent.mode == 'text'?(<TextStructure pagecontent={ pagecontent }/>):(null) }
      </div>
     </div>
   )

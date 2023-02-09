@@ -12,20 +12,22 @@ import { init_dropzone } from './upload';
 
 export default function DocumentPage({ listview, previewWidth }) {
 
-  const [ mode, setMode ] = useState('text');
-
   /* for 'list view' mode */
   const { path, file } = useParams();
   listview.path = path;
 
   /* for 'document view' mode */
-  const [ pageNum, setPageNum ] = useState(1);
-  const [ text, setText ] = useState([]);
-  const [ tables, setTables ] = useState([]);
-  const [ tableBoxes, setTableBoxes ] = useState([]);
-  const [ tableBoxHL, setTableBoxHL ] = useState(-1);
-  const [ textBoxes, setTextBoxes ] = useState([]);
-  const [ textBoxHL, setTextBoxHL ] = useState(-1);
+  const [ page, set_page ] = useState(1);
+  const [ mode, set_mode ] = useState('text');
+  const [ text, set_text ] = useState([]);
+  const [ table, set_table ] = useState([]);
+  const [ textbox, set_textbox ] = useState([]);
+  const [ texthl, set_texthl ] = useState(-1);
+  const [ tablebox, set_tablebox ] = useState([]);
+  const [ tablehl, set_tablehl ] = useState(-1);
+  const pagecontent = { page, set_page, mode, set_mode, text, set_text, table, set_table, textbox, set_textbox, texthl, set_texthl, tablebox, set_tablebox, tablehl, set_tablehl };
+
+  /* for filters in 'document view' mode */
   const [ working, set_working ] = useState(false);
   const [ result, set_result ] = useState({});
   const filterstatus = { working, set_working, result, set_result };
@@ -47,13 +49,13 @@ export default function DocumentPage({ listview, previewWidth }) {
         // 'document view' mode
         <div>
           <div className="absolute left-0 right-96 top-0 bottom-0">
-            <DocumentView path={ path } file={ file } pageNum={ pageNum } setPageNum={ setPageNum } mode={ mode } setMode={ setMode } tables={ tables } tableBoxes={ tableBoxes } tableBoxHL={ tableBoxHL } setTableBoxHL={ setTableBoxHL } text={ text } textBoxes={ textBoxes } textBoxHL={ textBoxHL } setTextBoxHL={ setTextBoxHL }/>
+            <DocumentView path={ path } file={ file } pagecontent={ pagecontent }/>
           </div>
           <div className="absolute right-0 w-96 top-0 bottom-40">
-            <DocumentStructure path={ path } file={ file } pageNum={ pageNum } mode={ mode } setMode={ setMode } tables={ tables } setTables={ setTables } setTableBoxes={ setTableBoxes } tableBoxHL={ tableBoxHL } setTableBoxHL={ setTableBoxHL } text={ text } setText={ setText } setTextBoxes={ setTextBoxes } textBoxHL={ textBoxHL } setTextBoxHL={ setTextBoxHL }/>
+            <DocumentStructure path={ path } file={ file } pagecontent={ pagecontent }/>
           </div>
           <div className="absolute right-0 w-96 h-40 bottom-0">
-            <DocumentFilterDeck path={ path } file={ file } filterstatus = { filterstatus } />
+            <DocumentFilterDeck path={ path } file={ file } filterstatus={ filterstatus } />
           </div>
         </div>
       ) : (

@@ -7,17 +7,17 @@ import { config } from '../shared/config';
 import { auth } from '../shared/auth';
 
 
-const MemoImage = memo(({ isScrolling, width, height, url, displayPageNum, pageNum, mode, setMode, tables, tableBoxes, tableBoxHL, setTableBoxHL, text, textBoxes, textBoxHL, setTextBoxHL, ...rest }) => {
+const MemoImage = memo(({ isScrolling, width, height, url, displayPageNum, pagecontent, ...rest }) => {
   var heightNP = height - 10;
 
   function highlightTextBox(e) {
-    if (mode === 'table')
-      setMode('text');
+    if (pagecontent.mode === 'table')
+      pagecontent.set_mode('text');
     var idx = parseInt(e.currentTarget.getAttribute('data-textbox-index'));
-    setTextBoxHL(idx);
+    pagecontent.set_texthl(idx);
   }
   function resetHighlightTextBox(e) {
-    setTextBoxHL(-1);
+    pagecontent.set_texthl(-1);
   }
   function copyTextBox(e) {
     var idx = parseInt(e.currentTarget.getAttribute('data-textbox-index'));
@@ -27,13 +27,13 @@ const MemoImage = memo(({ isScrolling, width, height, url, displayPageNum, pageN
     });
   }
   function highlightTableBox(e) {
-    if (mode === 'text')
-      setMode('table');
+    if (pagecontent.mode === 'text')
+      pagecontent.set_mode('table');
     var idx = parseInt(e.currentTarget.getAttribute('data-tablebox-index'));
-    setTableBoxHL(idx);
+    pagecontent.set_tablehl(idx);
   }
   function resetHighlightTableBox(e) {
-    setTableBoxHL(-1);
+    pagecontent.set_tablehl(-1);
   }
   function copyTableBox(e) {
     var idx = parseInt(e.currentTarget.getAttribute('data-tablebox-index'));
@@ -64,13 +64,13 @@ const MemoImage = memo(({ isScrolling, width, height, url, displayPageNum, pageN
   return (
     <div {...rest} style={{ width: `${width}`, height: `${heightNP}px` }} className="mb-[10px] shadow-md relative">
       <img src={url} style={{ width: `${width}`, height: `${heightNP}px` }}/>
-      { !isScrolling && displayPageNum == pageNum && (tableBoxes.length > 0 || textBoxes.length > 0) ? (
+      { !isScrolling && displayPageNum == pagecontent.page && (pagecontent.tablebox.length > 0 || pagecontent.textbox.length > 0) ? (
         <svg width={width - 2} height={heightNP} className="absolute left-0 top-0">
-        { tableBoxes.map((box, idx) => (
-          <rect key={ url + '_ta' + idx } className="cursor-copy" x={ box[1] * width } y={ box[0] * heightNP } width={ (box[3] - box[1]) * width } height={ (box[2] - box[0]) * heightNP } style={{ opacity: idx === tableBoxHL?1.0:0.25, fill: getColor(idx, 0.25), strokeWidth: 1, stroke: getColor(idx, 0.65)}} onMouseEnter={ highlightTableBox } onMouseLeave={ resetHighlightTableBox } onClick={ copyTableBox } data-tablebox-index={ idx }/>
+        { pagecontent.tablebox.map((box, idx) => (
+          <rect key={ url + '_ta' + idx } className="cursor-copy" x={ box[1] * width } y={ box[0] * heightNP } width={ (box[3] - box[1]) * width } height={ (box[2] - box[0]) * heightNP } style={{ opacity: idx === pagecontent.tablehl?1.0:0.25, fill: getColor(idx, 0.25), strokeWidth: 1, stroke: getColor(idx, 0.65)}} onMouseEnter={ highlightTableBox } onMouseLeave={ resetHighlightTableBox } onClick={ copyTableBox } data-tablebox-index={ idx }/>
         ))}
-        { textBoxes.map((box, idx) => (
-          <rect key={ url + '_te' + idx } className="cursor-copy" x={ box[1] * width } y={ box[0] * heightNP } width={ (box[3] - box[1]) * width } height={ (box[2] - box[0]) * heightNP } style={{ opacity: idx === textBoxHL?1.0:0.25, fill: getColor(idx, 0.25), strokeWidth: 1, stroke: getColor(idx, 0.65)}} onMouseEnter={ highlightTextBox } onMouseLeave={ resetHighlightTextBox } onClick={ copyTextBox } data-textbox-index={ idx }/>
+        { pagecontent.textbox.map((box, idx) => (
+          <rect key={ url + '_te' + idx } className="cursor-copy" x={ box[1] * width } y={ box[0] * heightNP } width={ (box[3] - box[1]) * width } height={ (box[2] - box[0]) * heightNP } style={{ opacity: idx === pagecontent.texthl?1.0:0.25, fill: getColor(idx, 0.25), strokeWidth: 1, stroke: getColor(idx, 0.65)}} onMouseEnter={ highlightTextBox } onMouseLeave={ resetHighlightTextBox } onClick={ copyTextBox } data-textbox-index={ idx }/>
         ))}
         </svg>
       ):(null)}
@@ -79,7 +79,7 @@ const MemoImage = memo(({ isScrolling, width, height, url, displayPageNum, pageN
 });
 
 
-const PageImages = forwardRef(({ doc, path, file, width, height, pageNum, setPageNum, mode, setMode, tables, tableBoxes, tableBoxHL, setTableBoxHL, text, textBoxes, textBoxHL, setTextBoxHL }, ref) => {
+const PageImages = forwardRef(({ doc, path, file, width, height, pagecontent }, ref) => {
 
   var page = doc.pages[0];
   var pageHeight = parseInt(page.h / page.w * width) + 10;
@@ -95,7 +95,7 @@ const PageImages = forwardRef(({ doc, path, file, width, height, pageNum, setPag
   }) => {
     var viewportTopDiff = (pageHeight - height) / 2;
     var targetPageNum = Math.max(1, Math.round((scrollOffset - viewportTopDiff) / pageHeight) + 1);
-    setPageNum(targetPageNum);
+    pagecontent.set_page(targetPageNum);
   };
 
   const { outerRef, innerRef, items, scrollToItem } = useVirtual({
@@ -126,7 +126,7 @@ const PageImages = forwardRef(({ doc, path, file, width, height, pageNum, setPag
     <div ref={outerRef} className="absolute left-0 top-0 right-0 bottom-0 overflow-auto">
       <div ref={innerRef}>
         { items.map(({index, size, start, isScrolling}) => (
-          <MemoImage key={ index } isScrolling={ isScrolling } width={ width } height={ size } url={ buildPageImageUrl(index) } displayPageNum={ index + 1 } pageNum={ pageNum } mode={ mode } setMode={ setMode } tables={ tables } tableBoxes={ tableBoxes } tableBoxHL={ tableBoxHL } setTableBoxHL={ setTableBoxHL } text={ text } textBoxes={ textBoxes } textBoxHL={ textBoxHL } setTextBoxHL={ setTextBoxHL }/>
+          <MemoImage key={ index } isScrolling={ isScrolling } width={ width } height={ size } url={ buildPageImageUrl(index) } displayPageNum={ index + 1 } pagecontent={ pagecontent }/>
         ))}
       </div>
     </div>
@@ -135,22 +135,22 @@ const PageImages = forwardRef(({ doc, path, file, width, height, pageNum, setPag
 })
 
 
-function PageNavigation({ doc, pageNum, setPageNum, pageCount, pageImages }) {
+function PageNavigation({ doc, pagecontent, pageCount, pageImages }) {
 
   function pageClick(e) {
     var page = parseInt(e.currentTarget.innerHTML);
     pageImages.current.scrollToItem({ index: page - 1, align: page == 1?'auto':'center' });
   }
   function pageLeft(e) {
-    if (pageNum >= 2) {
-      pageImages.current.scrollToItem({ index: pageNum - 2, align: 'start' });
-      setPageNum(pageNum - 1);
+    if (pagecontent.page >= 2) {
+      pageImages.current.scrollToItem({ index: pagecontent.page - 2, align: 'start' });
+      setPageNum(pagecontent.page - 1);
     }
   }
   function pageRight(e) {
-    if (pageNum <= pageCount - 1) {
-      pageImages.current.scrollToItem({ index: pageNum, align: 'start' });
-      setPageNum(pageNum + 1);
+    if (pagecontent.page <= pageCount - 1) {
+      pageImages.current.scrollToItem({ index: pagecontent.page, align: 'start' });
+      setPageNum(pagecontent.page + 1);
     }
   }
 
@@ -162,17 +162,17 @@ function PageNavigation({ doc, pageNum, setPageNum, pageCount, pageImages }) {
 
   return (
     <div>
-      <button className="btn px-2 min-h-fit h-9 bg-slate-100 border-slate-100 text-slate-500 hover:bg-white hover:border-slate-200 disabled:bg-transparent disabled:hover:bg-transparent" onClick={ pageLeft } disabled={ pageNum < 2 }>
+      <button className="btn px-2 min-h-fit h-9 bg-slate-100 border-slate-100 text-slate-500 hover:bg-white hover:border-slate-200 disabled:bg-transparent disabled:hover:bg-transparent" onClick={ pageLeft } disabled={ pagecontent.page < 2 }>
         <i className="icon-left-dir"/>
       </button>
       <div className="dropdown">
-        <label tabIndex="0" className="btn normal-case min-h-fit h-9 bg-slate-100 border-slate-100 text-slate-500 hover:bg-white hover:border-slate-200">Page { pageNum } of { pageCount }</label>
+        <label tabIndex="0" className="btn normal-case min-h-fit h-9 bg-slate-100 border-slate-100 text-slate-500 hover:bg-white hover:border-slate-200">Page { pagecontent.page } of { pageCount }</label>
         <ul tabIndex="0" className="dropdown-content block menu menu-compact shadow-md border border-slate-200 bg-base-100 rounded max-h-96 overflow-auto">
           <li className="block px-3 py-1 whitespace-nowrap text-xs uppercase font-bold text-slate-400">Go to Page</li>
           { dropContent }
         </ul>
       </div>
-      <button className="btn px-2 min-h-fit h-9 bg-slate-100 border-slate-100 text-slate-500 hover:bg-white hover:border-slate-200 disabled:bg-transparent disabled:hover:bg-transparent" onClick={ pageRight } disabled={ pageNum > pageCount - 1 }>
+      <button className="btn px-2 min-h-fit h-9 bg-slate-100 border-slate-100 text-slate-500 hover:bg-white hover:border-slate-200 disabled:bg-transparent disabled:hover:bg-transparent" onClick={ pageRight } disabled={ pagecontent.page > pageCount - 1 }>
         <i className="icon-right-dir"/>
       </button>
     </div>
@@ -180,7 +180,7 @@ function PageNavigation({ doc, pageNum, setPageNum, pageCount, pageImages }) {
 }
 
 
-export default function DocumentView({ path, file, pageNum, setPageNum, mode, setMode, tables, tableBoxes, tableBoxHL, setTableBoxHL, text, textBoxes, textBoxHL, setTextBoxHL }) {
+export default function DocumentView({ path, file, pagecontent }) {
 
   const [ doc, setDoc ] = useState({});
 
@@ -188,7 +188,7 @@ export default function DocumentView({ path, file, pageNum, setPageNum, mode, se
     auth.get({base: '/docs', folder: path, rest: '/' + file}, {}, ( data ) => {
       if (data.status == 'ok') {
         setDoc(data.data);
-        setPageNum(1);
+        pagecontent.set_page(1);
       } else {
         console.warn('unhandled data', data);
       }
@@ -202,11 +202,11 @@ export default function DocumentView({ path, file, pageNum, setPageNum, mode, se
   return (
     <div>
       <div className="absolute left-0 top-0 right-0 h-10 bg-slate-100 rounded-t-md items-center inline-flex">
-        <PageNavigation doc={ doc } pageNum={ pageNum } setPageNum={ setPageNum } pageCount={ doc.pages ? doc.pages.length : 0 } pageImages={ pageImagesRef }/>
+        <PageNavigation doc={ doc } pagecontent={ pagecontent } pageCount={ doc.pages ? doc.pages.length : 0 } pageImages={ pageImagesRef }/>
       </div>
       <div ref={ ref } className="absolute border border-slate-100 left-0 top-10 right-0 bottom-0">
       { (width > 0 && doc.pages) ? (
-        <PageImages doc={ doc } path={ path } file={ file } width={ width } height={ height } pageNum={ pageNum } setPageNum={ setPageNum } mode={ mode } setMode={ setMode } tables={ tables } tableBoxes={ tableBoxes } tableBoxHL={ tableBoxHL } setTableBoxHL={ setTableBoxHL } text={ text } textBoxes={ textBoxes } textBoxHL={ textBoxHL } setTextBoxHL={ setTextBoxHL } ref={ pageImagesRef }/>
+        <PageImages doc={ doc } path={ path } file={ file } width={ width } height={ height } pagecontent={ pagecontent } ref={ pageImagesRef }/>
       ):(null) }
       </div>
     </div>
