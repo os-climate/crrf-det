@@ -1,155 +1,10 @@
-import { useState, useRef, forwardRef, useImperativeHandle, memo } from 'react';
+import { useState, useRef, forwardRef, useImperativeHandle, useEffect, memo } from 'react';
 import { useMeasure } from "react-use";
 import useVirtual from 'react-cool-virtual';
-import { getColor } from '../shared/colors';
 import toast from 'react-hot-toast';
-
-var pages = [
-  { url: '/2021-tesla-impact-report.preview.1.jpg', width: 1583, height: 890 },
-  { url: '/2021-tesla-impact-report.preview.2.jpg', width: 1583, height: 890 },
-  { url: '/2021-tesla-impact-report.preview.3.jpg', width: 1583, height: 890 },
-  { url: '/2021-tesla-impact-report.preview.4.jpg', width: 1583, height: 890 },
-  { url: '/2021-tesla-impact-report.preview.5.jpg', width: 1583, height: 890 },
-  { url: '/2021-tesla-impact-report.preview.6.jpg', width: 1583, height: 890 },
-  { url: '/2021-tesla-impact-report.preview.7.jpg', width: 1583, height: 890 },
-  { url: '/2021-tesla-impact-report.preview.8.jpg', width: 1583, height: 890 },
-  { url: '/2021-tesla-impact-report.preview.9.jpg', width: 1583, height: 890 },
-  { url: '/2021-tesla-impact-report.preview.10.jpg', width: 1583, height: 890 },
-  { url: '/2021-tesla-impact-report.preview.11.jpg', width: 1583, height: 890 },
-  { url: '/2021-tesla-impact-report.preview.12.jpg', width: 1583, height: 890 },
-  { url: '/2021-tesla-impact-report.preview.13.jpg', width: 1583, height: 890 },
-  { url: '/2021-tesla-impact-report.preview.14.jpg', width: 1583, height: 890 },
-  { url: '/2021-tesla-impact-report.preview.15.jpg', width: 1583, height: 890 },
-  { url: '/2021-tesla-impact-report.preview.16.jpg', width: 1583, height: 890 },
-  { url: '/2021-tesla-impact-report.preview.17.jpg', width: 1583, height: 890 },
-  { url: '/2021-tesla-impact-report.preview.18.jpg', width: 1583, height: 890 },
-  { url: '/2021-tesla-impact-report.preview.19.jpg', width: 1583, height: 890 },
-  { url: '/2021-tesla-impact-report.preview.20.jpg', width: 1583, height: 890 },
-  { url: '/2021-tesla-impact-report.preview.21.jpg', width: 1583, height: 890 },
-  { url: '/2021-tesla-impact-report.preview.22.jpg', width: 1583, height: 890 },
-  { url: '/2021-tesla-impact-report.preview.23.jpg', width: 1583, height: 890 },
-  { url: '/2021-tesla-impact-report.preview.24.jpg', width: 1583, height: 890 },
-  { url: '/2021-tesla-impact-report.preview.25.jpg', width: 1583, height: 890 },
-  { url: '/2021-tesla-impact-report.preview.26.jpg', width: 1583, height: 890 },
-  { url: '/2021-tesla-impact-report.preview.27.jpg', width: 1583, height: 890 },
-  { url: '/2021-tesla-impact-report.preview.28.jpg', width: 1583, height: 890 },
-  { url: '/2021-tesla-impact-report.preview.29.jpg', width: 1583, height: 890 },
-  { url: '/2021-tesla-impact-report.preview.30.jpg', width: 1583, height: 890 },
-  { url: '/2021-tesla-impact-report.preview.31.jpg', width: 1583, height: 890 },
-  { url: '/2021-tesla-impact-report.preview.32.jpg', width: 1583, height: 890 },
-  { url: '/2021-tesla-impact-report.preview.33.jpg', width: 1583, height: 890 },
-  { url: '/2021-tesla-impact-report.preview.34.jpg', width: 1583, height: 890 },
-  { url: '/2021-tesla-impact-report.preview.35.jpg', width: 1583, height: 890 },
-  { url: '/2021-tesla-impact-report.preview.36.jpg', width: 1583, height: 890 },
-  { url: '/2021-tesla-impact-report.preview.37.jpg', width: 1583, height: 890 },
-  { url: '/2021-tesla-impact-report.preview.38.jpg', width: 1583, height: 890 },
-  { url: '/2021-tesla-impact-report.preview.39.jpg', width: 1583, height: 890 },
-  { url: '/2021-tesla-impact-report.preview.40.jpg', width: 1583, height: 890 },
-  { url: '/2021-tesla-impact-report.preview.41.jpg', width: 1583, height: 890 },
-  { url: '/2021-tesla-impact-report.preview.42.jpg', width: 1583, height: 890 },
-  { url: '/2021-tesla-impact-report.preview.43.jpg', width: 1583, height: 890 },
-  { url: '/2021-tesla-impact-report.preview.44.jpg', width: 1583, height: 890 },
-  { url: '/2021-tesla-impact-report.preview.45.jpg', width: 1583, height: 890 },
-  { url: '/2021-tesla-impact-report.preview.46.jpg', width: 1583, height: 890 },
-  { url: '/2021-tesla-impact-report.preview.47.jpg', width: 1583, height: 890 },
-  { url: '/2021-tesla-impact-report.preview.48.jpg', width: 1583, height: 890 },
-  { url: '/2021-tesla-impact-report.preview.49.jpg', width: 1583, height: 890 },
-  { url: '/2021-tesla-impact-report.preview.50.jpg', width: 1583, height: 890 },
-  { url: '/2021-tesla-impact-report.preview.51.jpg', width: 1583, height: 890 },
-  { url: '/2021-tesla-impact-report.preview.52.jpg', width: 1583, height: 890 },
-  { url: '/2021-tesla-impact-report.preview.53.jpg', width: 1583, height: 890 },
-  { url: '/2021-tesla-impact-report.preview.54.jpg', width: 1583, height: 890 },
-  { url: '/2021-tesla-impact-report.preview.55.jpg', width: 1583, height: 890 },
-  { url: '/2021-tesla-impact-report.preview.56.jpg', width: 1583, height: 890 },
-  { url: '/2021-tesla-impact-report.preview.57.jpg', width: 1583, height: 890 },
-  { url: '/2021-tesla-impact-report.preview.58.jpg', width: 1583, height: 890 },
-  { url: '/2021-tesla-impact-report.preview.59.jpg', width: 1583, height: 890 },
-  { url: '/2021-tesla-impact-report.preview.60.jpg', width: 1583, height: 890 },
-  { url: '/2021-tesla-impact-report.preview.61.jpg', width: 1583, height: 890 },
-  { url: '/2021-tesla-impact-report.preview.62.jpg', width: 1583, height: 890 },
-  { url: '/2021-tesla-impact-report.preview.63.jpg', width: 1583, height: 890 },
-  { url: '/2021-tesla-impact-report.preview.64.jpg', width: 1583, height: 890 },
-  { url: '/2021-tesla-impact-report.preview.65.jpg', width: 1583, height: 890 },
-  { url: '/2021-tesla-impact-report.preview.66.jpg', width: 1583, height: 890 },
-  { url: '/2021-tesla-impact-report.preview.67.jpg', width: 1583, height: 890 },
-  { url: '/2021-tesla-impact-report.preview.68.jpg', width: 1583, height: 890 },
-  { url: '/2021-tesla-impact-report.preview.69.jpg', width: 1583, height: 890 },
-  { url: '/2021-tesla-impact-report.preview.70.jpg', width: 1583, height: 890 },
-  { url: '/2021-tesla-impact-report.preview.71.jpg', width: 1583, height: 890 },
-  { url: '/2021-tesla-impact-report.preview.72.jpg', width: 1583, height: 890 },
-  { url: '/2021-tesla-impact-report.preview.73.jpg', width: 1583, height: 890 },
-  { url: '/2021-tesla-impact-report.preview.74.jpg', width: 1583, height: 890 },
-  { url: '/2021-tesla-impact-report.preview.75.jpg', width: 1583, height: 890 },
-  { url: '/2021-tesla-impact-report.preview.76.jpg', width: 1583, height: 890 },
-  { url: '/2021-tesla-impact-report.preview.77.jpg', width: 1583, height: 890 },
-  { url: '/2021-tesla-impact-report.preview.78.jpg', width: 1583, height: 890 },
-  { url: '/2021-tesla-impact-report.preview.79.jpg', width: 1583, height: 890 },
-  { url: '/2021-tesla-impact-report.preview.80.jpg', width: 1583, height: 890 },
-  { url: '/2021-tesla-impact-report.preview.81.jpg', width: 1583, height: 890 },
-  { url: '/2021-tesla-impact-report.preview.82.jpg', width: 1583, height: 890 },
-  { url: '/2021-tesla-impact-report.preview.83.jpg', width: 1583, height: 890 },
-  { url: '/2021-tesla-impact-report.preview.84.jpg', width: 1583, height: 890 },
-  { url: '/2021-tesla-impact-report.preview.85.jpg', width: 1583, height: 890 },
-  { url: '/2021-tesla-impact-report.preview.86.jpg', width: 1583, height: 890 },
-  { url: '/2021-tesla-impact-report.preview.87.jpg', width: 1583, height: 890 },
-  { url: '/2021-tesla-impact-report.preview.88.jpg', width: 1583, height: 890 },
-  { url: '/2021-tesla-impact-report.preview.89.jpg', width: 1583, height: 890 },
-  { url: '/2021-tesla-impact-report.preview.90.jpg', width: 1583, height: 890 },
-  { url: '/2021-tesla-impact-report.preview.91.jpg', width: 1583, height: 890 },
-  { url: '/2021-tesla-impact-report.preview.92.jpg', width: 1583, height: 890 },
-  { url: '/2021-tesla-impact-report.preview.93.jpg', width: 1583, height: 890 },
-  { url: '/2021-tesla-impact-report.preview.94.jpg', width: 1583, height: 890 },
-  { url: '/2021-tesla-impact-report.preview.95.jpg', width: 1583, height: 890 },
-  { url: '/2021-tesla-impact-report.preview.96.jpg', width: 1583, height: 890 },
-  { url: '/2021-tesla-impact-report.preview.97.jpg', width: 1583, height: 890 },
-  { url: '/2021-tesla-impact-report.preview.98.jpg', width: 1583, height: 890 },
-  { url: '/2021-tesla-impact-report.preview.99.jpg', width: 1583, height: 890 },
-  { url: '/2021-tesla-impact-report.preview.100.jpg', width: 1583, height: 890 },
-  { url: '/2021-tesla-impact-report.preview.101.jpg', width: 1583, height: 890 },
-  { url: '/2021-tesla-impact-report.preview.102.jpg', width: 1583, height: 890 },
-  { url: '/2021-tesla-impact-report.preview.103.jpg', width: 1583, height: 890 },
-  { url: '/2021-tesla-impact-report.preview.104.jpg', width: 1583, height: 890 },
-  { url: '/2021-tesla-impact-report.preview.105.jpg', width: 1583, height: 890 },
-  { url: '/2021-tesla-impact-report.preview.106.jpg', width: 1583, height: 890 },
-  { url: '/2021-tesla-impact-report.preview.107.jpg', width: 1583, height: 890 },
-  { url: '/2021-tesla-impact-report.preview.108.jpg', width: 1583, height: 890 },
-  { url: '/2021-tesla-impact-report.preview.109.jpg', width: 1583, height: 890 },
-  { url: '/2021-tesla-impact-report.preview.110.jpg', width: 1583, height: 890 },
-  { url: '/2021-tesla-impact-report.preview.111.jpg', width: 1583, height: 890 },
-  { url: '/2021-tesla-impact-report.preview.112.jpg', width: 1583, height: 890 },
-  { url: '/2021-tesla-impact-report.preview.113.jpg', width: 1583, height: 890 },
-  { url: '/2021-tesla-impact-report.preview.114.jpg', width: 1583, height: 890 },
-  { url: '/2021-tesla-impact-report.preview.115.jpg', width: 1583, height: 890 },
-  { url: '/2021-tesla-impact-report.preview.116.jpg', width: 1583, height: 890 },
-  { url: '/2021-tesla-impact-report.preview.117.jpg', width: 1583, height: 890 },
-  { url: '/2021-tesla-impact-report.preview.118.jpg', width: 1583, height: 890 },
-  { url: '/2021-tesla-impact-report.preview.119.jpg', width: 1583, height: 890 },
-  { url: '/2021-tesla-impact-report.preview.120.jpg', width: 1583, height: 890 },
-  { url: '/2021-tesla-impact-report.preview.121.jpg', width: 1583, height: 890 },
-  { url: '/2021-tesla-impact-report.preview.122.jpg', width: 1583, height: 890 },
-  { url: '/2021-tesla-impact-report.preview.123.jpg', width: 1583, height: 890 },
-  { url: '/2021-tesla-impact-report.preview.124.jpg', width: 1583, height: 890 },
-  { url: '/2021-tesla-impact-report.preview.125.jpg', width: 1583, height: 890 },
-  { url: '/2021-tesla-impact-report.preview.126.jpg', width: 1583, height: 890 },
-  { url: '/2021-tesla-impact-report.preview.127.jpg', width: 1583, height: 890 },
-  { url: '/2021-tesla-impact-report.preview.128.jpg', width: 1583, height: 890 },
-  { url: '/2021-tesla-impact-report.preview.129.jpg', width: 1583, height: 890 },
-  { url: '/2021-tesla-impact-report.preview.130.jpg', width: 1583, height: 890 },
-  { url: '/2021-tesla-impact-report.preview.131.jpg', width: 1583, height: 890 },
-  { url: '/2021-tesla-impact-report.preview.132.jpg', width: 1583, height: 890 },
-  { url: '/2021-tesla-impact-report.preview.133.jpg', width: 1583, height: 890 },
-  { url: '/2021-tesla-impact-report.preview.134.jpg', width: 1583, height: 890 },
-  { url: '/2021-tesla-impact-report.preview.135.jpg', width: 1583, height: 890 },
-  { url: '/2021-tesla-impact-report.preview.136.jpg', width: 1583, height: 890 },
-  { url: '/2021-tesla-impact-report.preview.137.jpg', width: 1583, height: 890 },
-  { url: '/2021-tesla-impact-report.preview.138.jpg', width: 1583, height: 890 },
-  { url: '/2021-tesla-impact-report.preview.139.jpg', width: 1583, height: 890 },
-  { url: '/2021-tesla-impact-report.preview.140.jpg', width: 1583, height: 890 },
-  { url: '/2021-tesla-impact-report.preview.141.jpg', width: 1583, height: 890 },
-  { url: '/2021-tesla-impact-report.preview.142.jpg', width: 1583, height: 890 },
-  { url: '/2021-tesla-impact-report.preview.143.jpg', width: 1583, height: 890 },
-  { url: '/2021-tesla-impact-report.preview.144.jpg', width: 1583, height: 890 },
-];
+import { getColor } from '../shared/colors';
+import { config } from '../shared/config';
+import { auth } from '../shared/auth';
 
 
 const MemoImage = memo(({ isScrolling, width, height, url, displayPageNum, pageNum, mode, setMode, tables, tableBoxes, tableBoxHL, setTableBoxHL, text, textBoxes, textBoxHL, setTextBoxHL, ...rest }) => {
@@ -224,10 +79,10 @@ const MemoImage = memo(({ isScrolling, width, height, url, displayPageNum, pageN
 });
 
 
-const PageImages = forwardRef(({ width, height, pageNum, setPageNum, mode, setMode, tables, tableBoxes, tableBoxHL, setTableBoxHL, text, textBoxes, textBoxHL, setTextBoxHL }, ref) => {
+const PageImages = forwardRef(({ doc, path, file, width, height, pageNum, setPageNum, mode, setMode, tables, tableBoxes, tableBoxHL, setTableBoxHL, text, textBoxes, textBoxHL, setTextBoxHL }, ref) => {
 
-  var page = pages[0];
-  var pageHeight = parseInt(page.height / page.width * width) + 10;
+  var page = doc.pages[0];
+  var pageHeight = parseInt(page.h / page.w * width) + 10;
 
   const onScroll = ({
     overscanStartIndex, // (number) The index of the first overscan item
@@ -244,7 +99,7 @@ const PageImages = forwardRef(({ width, height, pageNum, setPageNum, mode, setMo
   };
 
   const { outerRef, innerRef, items, scrollToItem } = useVirtual({
-    itemCount: pages.length,
+    itemCount: doc.pages.length,
     itemSize: pageHeight,
     overscanCount: 1,
     useIsScrolling: true,
@@ -257,11 +112,21 @@ const PageImages = forwardRef(({ width, height, pageNum, setPageNum, mode, setMo
     },
   }))
 
+  function buildPageImageUrl(index) {
+    let apiPath = '/docs/';
+    if (path &&
+      path !== '|')
+      apiPath += path;
+    apiPath += '/' + file;
+    apiPath += '/preview.' + (index + 1) + '.jpg?s=' + doc.signature;
+    return config.endpoint_base + apiPath;
+  }
+
   return (
     <div ref={outerRef} className="absolute left-0 top-0 right-0 bottom-0 overflow-auto">
       <div ref={innerRef}>
         { items.map(({index, size, start, isScrolling}) => (
-          <MemoImage key={ index } isScrolling={ isScrolling } width={ width } height={ size } url={ pages[index].url } displayPageNum={ index + 1 } pageNum={ pageNum } mode={ mode } setMode={ setMode } tables={ tables } tableBoxes={ tableBoxes } tableBoxHL={ tableBoxHL } setTableBoxHL={ setTableBoxHL } text={ text } textBoxes={ textBoxes } textBoxHL={ textBoxHL } setTextBoxHL={ setTextBoxHL }/>
+          <MemoImage key={ index } isScrolling={ isScrolling } width={ width } height={ size } url={ buildPageImageUrl(index) } displayPageNum={ index + 1 } pageNum={ pageNum } mode={ mode } setMode={ setMode } tables={ tables } tableBoxes={ tableBoxes } tableBoxHL={ tableBoxHL } setTableBoxHL={ setTableBoxHL } text={ text } textBoxes={ textBoxes } textBoxHL={ textBoxHL } setTextBoxHL={ setTextBoxHL }/>
         ))}
       </div>
     </div>
@@ -270,7 +135,7 @@ const PageImages = forwardRef(({ width, height, pageNum, setPageNum, mode, setMo
 })
 
 
-function PageNavigation({ pageNum, setPageNum, pageCount, pageImages }) {
+function PageNavigation({ doc, pageNum, setPageNum, pageCount, pageImages }) {
 
   function pageClick(e) {
     var page = parseInt(e.currentTarget.innerHTML);
@@ -290,8 +155,10 @@ function PageNavigation({ pageNum, setPageNum, pageCount, pageImages }) {
   }
 
   let dropContent = [];
-  for (var i = 0; i < pages.length; i++)
-    dropContent.push(<li className="block" key={i}><a className="text-center block border border-white hover:border-slate-200 hover:bg-slate-50 hover:text-slate-500" onClick={ pageClick }>{i + 1}</a></li>);
+  if (doc.pages) {
+    for (var i = 0; i < doc.pages.length; i++)
+      dropContent.push(<li className="block" key={i}><a className="text-center block border border-white hover:border-slate-200 hover:bg-slate-50 hover:text-slate-500" onClick={ pageClick }>{i + 1}</a></li>);
+  }
 
   return (
     <div>
@@ -315,6 +182,29 @@ function PageNavigation({ pageNum, setPageNum, pageCount, pageImages }) {
 
 export default function DocumentView({ path, file, pageNum, setPageNum, mode, setMode, tables, tableBoxes, tableBoxHL, setTableBoxHL, text, textBoxes, textBoxHL, setTextBoxHL }) {
 
+  const [ doc, setDoc ] = useState({});
+
+  useEffect(() => {
+    let apiPath = '/docs/';
+    if (path &&
+      path !== '|')
+      apiPath += path;
+    apiPath += '/' + file;
+    auth.get(config.endpoint_base + apiPath, {
+    }, ( data ) => {
+      if (!data) {
+        console.warn('returned data is null');
+        return;
+      }
+      if (data.status == 'ok') {
+        setDoc(data.data);
+        setPageNum(1);
+      } else {
+        console.warn('unhandled data', data);
+      }
+    });
+  }, [path, file]);
+
   const [ scrollToItem, setScrollToItem ] = useState(null);
   const [ ref, { x, y, width, height, top, right, bottom, left } ] = useMeasure();
   const pageImagesRef = useRef();
@@ -322,11 +212,11 @@ export default function DocumentView({ path, file, pageNum, setPageNum, mode, se
   return (
     <div>
       <div className="absolute left-0 top-0 right-0 h-10 bg-slate-100 rounded-t-md items-center inline-flex">
-        <PageNavigation pageNum={ pageNum } setPageNum={ setPageNum } pageCount={ pages.length } pageImages={ pageImagesRef }/>
+        <PageNavigation doc={ doc } pageNum={ pageNum } setPageNum={ setPageNum } pageCount={ doc.pages ? doc.pages.length : 0 } pageImages={ pageImagesRef }/>
       </div>
       <div ref={ ref } className="absolute border border-slate-100 left-0 top-10 right-0 bottom-0">
-      { width > 0 ? (
-        <PageImages width={ width } height={ height } pageNum={ pageNum } setPageNum={ setPageNum } mode={ mode } setMode={ setMode } tables={ tables } tableBoxes={ tableBoxes } tableBoxHL={ tableBoxHL } setTableBoxHL={ setTableBoxHL } text={ text } textBoxes={ textBoxes } textBoxHL={ textBoxHL } setTextBoxHL={ setTextBoxHL } ref={ pageImagesRef }/>
+      { (width > 0 && doc.pages) ? (
+        <PageImages doc={ doc } path={ path } file={ file } width={ width } height={ height } pageNum={ pageNum } setPageNum={ setPageNum } mode={ mode } setMode={ setMode } tables={ tables } tableBoxes={ tableBoxes } tableBoxHL={ tableBoxHL } setTableBoxHL={ setTableBoxHL } text={ text } textBoxes={ textBoxes } textBoxHL={ textBoxHL } setTextBoxHL={ setTextBoxHL } ref={ pageImagesRef }/>
       ):(null) }
       </div>
     </div>

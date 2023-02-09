@@ -1,6 +1,8 @@
 import { useState, useRef, useEffect } from 'react';
 import { getColor } from '../shared/colors';
 import { ModeTab, renderTableStructure, renderTextStructure } from '../shared/widgets';
+import { config } from '../shared/config';
+import { auth } from '../shared/auth';
 
 
 function isElementVisible(el) {
@@ -76,30 +78,43 @@ function TablesStructure({ tables, pageNum, tableBoxHL, setTableBoxHL }) {
 }
 
 
-export default function DocumentStructure({ pageNum, mode, setMode, tables, setTables, setTableBoxes, tableBoxHL, setTableBoxHL, text, setText, setTextBoxes, textBoxHL, setTextBoxHL }) {
+export default function DocumentStructure({ path, file, pageNum, mode, setMode, tables, setTables, setTableBoxes, tableBoxHL, setTableBoxHL, text, setText, setTextBoxes, textBoxHL, setTextBoxHL }) {
 
   const pageChange = async () => {
-    const res = await fetch('/page.' + pageNum + '.json');
-    const c = await res.json();
-    var tables_ = [];
-    var text_ = [];
-    var tableBoxes_ = [];
-    var textBoxes_ = [];
-    for (var i = 0; i < c.content.length; i++) {
-      var box = c.content[i].box;
-      var box_ = [box[0] / c.height, box[1] / c.width, box[2] / c.height, box[3] / c.width];
-      if (c.content[i].type === 'text') {
-        text_.push(c.content[i]);
-        textBoxes_.push(box_);
-      } else if (c.content[i].type === 'table') {
-        tables_.push(c.content[i]);
-        tableBoxes_.push(box_);
+
+    let apiPath = '/docs/';
+    if (path &&
+      path !== '|')
+      apiPath += path;
+    apiPath += '/' + file + '/page/' + pageNum;
+    auth.get(config.endpoint_base + apiPath, {
+    }, ( data ) => {
+      if (!data) {
+        console.warn('returned data is null');
+        return;
       }
-    }
-    setText(text_);
-    setTextBoxes(textBoxes_);
-    setTables(tables_);
-    setTableBoxes(tableBoxes_);
+      var c = data;
+      var tables_ = [];
+      var text_ = [];
+      var tableBoxes_ = [];
+      var textBoxes_ = [];
+      for (var i = 0; i < c.content.length; i++) {
+        var box = c.content[i].box;
+        var box_ = [box[0] / c.height, box[1] / c.width, box[2] / c.height, box[3] / c.width];
+        if (c.content[i].type === 'text') {
+          text_.push(c.content[i]);
+          textBoxes_.push(box_);
+        } else if (c.content[i].type === 'table') {
+          tables_.push(c.content[i]);
+          tableBoxes_.push(box_);
+        }
+      }
+      setText(text_);
+      setTextBoxes(textBoxes_);
+      setTables(tables_);
+      setTableBoxes(tableBoxes_);
+    });
+
   };
 
   useEffect(() => {

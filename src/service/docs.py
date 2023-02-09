@@ -16,11 +16,16 @@ bp = Blueprint('docs', url_prefix='/docs')
 @protected
 async def view(request, token, folder, file):
     folder = utils.fix_folder(folder)
+    file = urllib.parse.unquote(file)
     userid = token['id']
-    summary = data.file.get_summary(userid, folder, file)
+    meta = data.file.get_meta(userid, folder, file)
+    if not meta:
+        print('/docs/view meta for {} {} {} is not found'.format(userid, folder, file))
+        raise SanicException('File Not Found', status_code=404)
+    meta['signature'] = sign.generate_url_signature(userid)
     return response.json({
         'status': 'ok',
-        'data': summary
+        'data': meta
     })
 
 
@@ -28,9 +33,11 @@ async def view(request, token, folder, file):
 @protected
 async def view_page(request, token, folder, file, page):
     folder = utils.fix_folder(folder)
+    file = urllib.parse.unquote(file)
     userid = token['id']
     filename = data.file.get_user_file(userid, folder, file, 'page.{}.json'.format(page))
     if filename is None:
+        print('/docs/view_page {} is not found'.format(filename))
         raise SanicException('File Not Found', status_code=404)
     return await response.file(filename)
 
@@ -45,7 +52,10 @@ async def view_image(request, folder, file, image_name):
     folder = utils.fix_folder(folder)
     file = urllib.parse.unquote(file)
     userid = sign.userid_from_signature(s)
+    if userid is None:
+        raise SanicException('File Not Found', status_code=404)
     filename = data.file.get_user_file(userid, folder, file, image_name)
     if filename is None:
+        print('/docs/view_image {} is not found'.format(filename))
         raise SanicException('File Not Found', status_code=404)
     return await response.file(filename)
