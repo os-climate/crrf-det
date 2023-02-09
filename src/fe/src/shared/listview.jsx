@@ -326,20 +326,13 @@ export default function ListView({ listview, dropzone }) {
   }
   function doDeleteSelected(e) {
     set_dlg_is_working(true);
-    let apiPath = '/files/delete';
-    if (listview.path)
-      apiPath += '/' + listview.path;
     setTimeout(() => {
       var filenames = [];
       for (let item of listview.sel.items)
         filenames.push(item.name);
-      auth.post(config.endpoint_base + apiPath, {
+      auth.post({base: '/files/delete', folder: listview.path}, {
         body: JSON.stringify({'name': filenames})
       }, ( data ) => {
-        if (!data) {
-          console.warn('returned data is null');
-          return;
-        }
         if (data.status == 'ok') {
           set_dlg_is_working(false);
           listview.set_dlg_delete(false);
@@ -352,18 +345,11 @@ export default function ListView({ listview, dropzone }) {
   }
   function doRenameSelected(e) {
     set_dlg_is_working(true);
-    let apiPath = '/files/change';
-    if (listview.path)
-      apiPath += '/' + listview.path;
     setTimeout(() => {
       var oldName = listview.sel.items[0].name;
-      auth.post(config.endpoint_base + apiPath, {
+      auth.post({base: '/files/change', folder: listview.path}, {
         body: JSON.stringify({'old_name': oldName, 'new_name': name})
       }, ( data ) => {
-        if (!data) {
-          console.warn('returned data is null');
-          return;
-        }
         if (data.status == 'ok') {
           set_dlg_is_working(false);
           listview.set_dlg_rename(false);

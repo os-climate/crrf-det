@@ -124,19 +124,9 @@ export default function ToolStrip({ listview, uploadFunc }) {
     refDlgNewFolder.current.checked = false;
   }
   function createFolder(e) {
-    let apiPath = '/files/new';
-    if (listview.path)
-      apiPath += '/' + listview.path;
-    fetch(config.endpoint_base + apiPath, {
-      method: 'POST',
-      headers: {
-        'Authorization': 'Bearer ' + auth.getToken(),
-        'Content-Type': 'application/json'
-      },
+    auth.post({base: '/files/new', folder: listview.path}, {
       body: JSON.stringify({ name: name })
-    })
-    .then(( response ) => response.json())
-    .then(( data ) => {
+    }, ( data ) => {
       if (data.status == 'ok') {
         listview.refresh(listview.path);
       } else {

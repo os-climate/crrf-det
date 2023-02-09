@@ -158,18 +158,9 @@ export default function DocumentFilterDeck({ path, file, filterstatus }) {
 
   function runFilter(e) {
     filterstatus.set_working(true);
-    let apiPath = '/docs/';
-    if (path &&
-      path !== '|')
-      apiPath += path;
-    apiPath += '/' + file;
-    auth.post(config.endpoint_base + apiPath, {
+    auth.post({base: '/docs', folder: path, rest: '/' + file}, {
       body: JSON.stringify({'terms': code})
     }, ( data ) => {
-      if (!data) {
-        console.warn('returned data is null');
-        return;
-      }
       var id = data.data;
       if (window.run_filter_timer)
         clearTimeout(window.run_filter_timer)
@@ -179,16 +170,7 @@ export default function DocumentFilterDeck({ path, file, filterstatus }) {
     });
   }
   function pollFilter(id) {
-    let apiPath = '/docs/';
-    if (path &&
-      path !== '|')
-      apiPath += path;
-    apiPath += '/' + file + '/search/' + id;
-    auth.get(config.endpoint_base + apiPath, {}, ( data ) => {
-      if (!data) {
-        console.warn('returned data is null');
-        return;
-      }
+    auth.get({base: '/docs', folder: path, rest: '/' + file + '/search/' + id}, {}, ( data ) => {
       if (data.status !== 'ok') {
         window.run_filter_timer = setTimeout(() => {
           pollFilter(id);

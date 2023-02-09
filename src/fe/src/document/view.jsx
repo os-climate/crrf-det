@@ -185,17 +185,7 @@ export default function DocumentView({ path, file, pageNum, setPageNum, mode, se
   const [ doc, setDoc ] = useState({});
 
   useEffect(() => {
-    let apiPath = '/docs/';
-    if (path &&
-      path !== '|')
-      apiPath += path;
-    apiPath += '/' + file;
-    auth.get(config.endpoint_base + apiPath, {
-    }, ( data ) => {
-      if (!data) {
-        console.warn('returned data is null');
-        return;
-      }
+    auth.get({base: '/docs', folder: path, rest: '/' + file}, {}, ( data ) => {
       if (data.status == 'ok') {
         setDoc(data.data);
         setPageNum(1);

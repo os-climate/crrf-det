@@ -31,7 +31,22 @@ const auth = {
   401 error of any fetch action.
    */
   fetch: function(verb, endpoint, params, data_func) {
-    fetch(endpoint, {
+    if (typeof(endpoint) == 'object') {
+      let _ = endpoint.base;
+      var hasFolder = false;
+      if (endpoint.folder &&
+        endpoint.folder !== '|') {
+        _ += '/' + endpoint.folder;
+        hasFolder = true;
+      }
+      if (endpoint.rest) {
+        if (!hasFolder)
+          _ += '/';
+        _ += endpoint.rest;
+      }
+      endpoint = _;
+    }
+    fetch(config.endpoint_base + endpoint, {
       method: verb,
       headers: {
         'Authorization': 'Bearer ' + auth.getToken()
@@ -46,7 +61,6 @@ const auth = {
       else if (response.status == 401) {
         auth.saveToken(null);
         authStatusChangeCallback();
-        //console.log('response', response);
       }
       return {
         'status': 'fetch_error',

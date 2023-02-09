@@ -45,10 +45,7 @@ export default function PageHost() {
       window.listview_refresh_timer = null;
     }
     var old_item_count = items.length;
-    let apiPath = '/files';
-    if (path)
-      apiPath += '/' + path;
-    auth.get(config.endpoint_base + apiPath, {}, ( data ) => {
+    auth.get({base: '/files', folder: path}, {}, ( data ) => {
       if (!data)
         return;
       if (data.status == 'ok') {

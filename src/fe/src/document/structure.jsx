@@ -81,18 +81,7 @@ function TablesStructure({ tables, pageNum, tableBoxHL, setTableBoxHL }) {
 export default function DocumentStructure({ path, file, pageNum, mode, setMode, tables, setTables, setTableBoxes, tableBoxHL, setTableBoxHL, text, setText, setTextBoxes, textBoxHL, setTextBoxHL }) {
 
   const pageChange = async () => {
-
-    let apiPath = '/docs/';
-    if (path &&
-      path !== '|')
-      apiPath += path;
-    apiPath += '/' + file + '/page/' + pageNum;
-    auth.get(config.endpoint_base + apiPath, {
-    }, ( data ) => {
-      if (!data) {
-        console.warn('returned data is null');
-        return;
-      }
+    auth.get({base: '/docs', folder: path, rest: '/' + file + '/page/' + pageNum}, {}, ( data ) => {
       var c = data;
       var tables_ = [];
       var text_ = [];
