@@ -2,4 +2,4 @@ docmt/tmp/
 docmt/debug/
 docmt/release/
 docmt/poppler-*
-
+src/search/node_modules/

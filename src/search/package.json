@@ -1,0 +1,20 @@
+{
+  "name": "det-search",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "ISC",
+  "bin": {
+    "det-search": "./index.js"
+  },
+  "dependencies": {
+    "flexsearch": "^0.7.31",
+    "search-index": "^3.4.0",
+    "yargs": "^17.6.2"
+  },
+  "type": "module"
+}
