@@ -78,7 +78,7 @@ function TagView({ filters, current, menuFunc }) {
 }
 
 
-export default function DocumentFilterDeck({ path, file, filterstatus }) {
+export default function DocumentFilterDeck({ path, file, pagecontent, filterstatus }) {
 
   const [filters, setFilters] = useState({
     'Scope 1/2/3 Emissions': { code: 'table:GHG.*', labels: ['Scope 1', 'Scope 2', 'Scope 3', 'Scope 1+2+3'] },
@@ -178,7 +178,8 @@ export default function DocumentFilterDeck({ path, file, filterstatus }) {
         return;
       }
       filterstatus.set_result(data.data);
-      console.log('pollFilter received data', data);
+      filterstatus.set_working(false);
+      pagecontent.set_page(1);
     });
   }
 

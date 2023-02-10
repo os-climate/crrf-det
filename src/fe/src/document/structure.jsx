@@ -78,10 +78,13 @@ function TablesStructure({ pagecontent }) {
 }
 
 
-export default function DocumentStructure({ path, file, pagecontent }) {
+export default function DocumentStructure({ path, file, pagecontent, filterstatus }) {
 
   const pageChange = async () => {
-    auth.get({base: '/docs', folder: path, rest: '/' + file + '/page/' + pagecontent.page}, {}, ( data ) => {
+    var page = pagecontent.page;
+    if (filterstatus.result)
+      page = Object.keys(filterstatus.result)[page - 1];
+    auth.get({base: '/docs', folder: path, rest: '/' + file + '/page/' + page}, {}, ( data ) => {
       var c = data;
       var tables_ = [];
       var text_ = [];
@@ -108,7 +111,7 @@ export default function DocumentStructure({ path, file, pagecontent }) {
 
   useEffect(() => {
     pageChange();
-  }, [ pagecontent.page ]);
+  }, [ pagecontent.page, filterstatus.result ]);
 
   return (
     <div className="ml-2">

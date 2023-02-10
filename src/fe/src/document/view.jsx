@@ -79,7 +79,7 @@ const MemoImage = memo(({ isScrolling, width, height, url, displayPageNum, pagec
 });
 
 
-const PageImages = forwardRef(({ doc, path, file, width, height, pagecontent }, ref) => {
+const PageImages = forwardRef(({ doc, path, file, width, height, pagecontent, filterstatus }, ref) => {
 
   var page = doc.pages[0];
   var pageHeight = parseInt(page.h / page.w * width) + 10;
@@ -98,11 +98,16 @@ const PageImages = forwardRef(({ doc, path, file, width, height, pagecontent }, 
     pagecontent.set_page(targetPageNum);
   };
 
+  var count = doc.pages.length;
+  if (filterstatus.result)
+    count = Object.keys(filterstatus.result).length;
+
   const { outerRef, innerRef, items, scrollToItem } = useVirtual({
-    itemCount: doc.pages.length,
+    itemCount: count,
     itemSize: pageHeight,
     overscanCount: 1,
     useIsScrolling: true,
+    resetScroll: true,
     onScroll: onScroll
   });
 
@@ -118,15 +123,19 @@ const PageImages = forwardRef(({ doc, path, file, width, height, pagecontent }, 
       path !== '|')
       apiPath += path;
     apiPath += '/' + file;
-    apiPath += '/preview.' + (index + 1) + '.jpg?s=' + doc.signature;
+    apiPath += '/preview.' + index + '.jpg?s=' + doc.signature;
     return config.endpoint_base + apiPath;
   }
 
+  var imageStyles = {};
+  if (filterstatus.working)
+    imageStyles.opacity = 0.2;
+
   return (
     <div ref={outerRef} className="absolute left-0 top-0 right-0 bottom-0 overflow-auto">
-      <div ref={innerRef}>
+      <div ref={innerRef} style={ imageStyles }>
         { items.map(({index, size, start, isScrolling}) => (
-          <MemoImage key={ index } isScrolling={ isScrolling } width={ width } height={ size } url={ buildPageImageUrl(index) } displayPageNum={ index + 1 } pagecontent={ pagecontent }/>
+          <MemoImage key={ index } isScrolling={ isScrolling } width={ width } height={ size } url={ buildPageImageUrl(filterstatus.result?Object.keys(filterstatus.result)[index]:(index + 1)) } displayPageNum={ index + 1 } pagecontent={ pagecontent }/>
         ))}
       </div>
     </div>
@@ -135,29 +144,38 @@ const PageImages = forwardRef(({ doc, path, file, width, height, pagecontent }, 
 })
 
 
-function PageNavigation({ doc, pagecontent, pageCount, pageImages }) {
+function PageNavigation({ doc, pagecontent, filterstatus, pageCount, pageImages }) {
 
   function pageClick(e) {
-    var page = parseInt(e.currentTarget.innerHTML);
+    var page = parseInt(e.currentTarget.getAttribute('data-page-index'));
     pageImages.current.scrollToItem({ index: page - 1, align: page == 1?'auto':'center' });
   }
   function pageLeft(e) {
     if (pagecontent.page >= 2) {
       pageImages.current.scrollToItem({ index: pagecontent.page - 2, align: 'start' });
-      setPageNum(pagecontent.page - 1);
+      pagecontent.set_page(pagecontent.page - 1);
     }
   }
   function pageRight(e) {
     if (pagecontent.page <= pageCount - 1) {
       pageImages.current.scrollToItem({ index: pagecontent.page, align: 'start' });
-      setPageNum(pagecontent.page + 1);
+      pagecontent.set_page(pagecontent.page + 1);
     }
+  }
+  function clearFilter(e) {
+    filterstatus.set_result(null);
+    pagecontent.set_page(1);
   }
 
   let dropContent = [];
-  if (doc.pages) {
+  if (filterstatus.result) {
+    Object.keys(filterstatus.result).map((page, i) => {
+      dropContent.push(<li className="block" key={page}><a className="text-center block border border-white hover:border-slate-200 hover:bg-slate-50 hover:text-slate-500" onClick={ pageClick } data-page-index={ i + 1 }>{page}</a></li>);
+    });
+  }
+  else if (doc.pages) {
     for (var i = 0; i < doc.pages.length; i++)
-      dropContent.push(<li className="block" key={i}><a className="text-center block border border-white hover:border-slate-200 hover:bg-slate-50 hover:text-slate-500" onClick={ pageClick }>{i + 1}</a></li>);
+      dropContent.push(<li className="block" key={i}><a className="text-center block border border-white hover:border-slate-200 hover:bg-slate-50 hover:text-slate-500" onClick={ pageClick } data-page-index={ i + 1 }>{i + 1}</a></li>);
   }
 
   return (
@@ -166,7 +184,7 @@ function PageNavigation({ doc, pagecontent, pageCount, pageImages }) {
         <i className="icon-left-dir"/>
       </button>
       <div className="dropdown">
-        <label tabIndex="0" className="btn normal-case min-h-fit h-9 bg-slate-100 border-slate-100 text-slate-500 hover:bg-white hover:border-slate-200">Page { pagecontent.page } of { pageCount }</label>
+        <label tabIndex="0" className="btn normal-case min-h-fit h-9 bg-slate-100 border-slate-100 text-slate-500 hover:bg-white hover:border-slate-200">Page { pagecontent.page + (filterstatus.result ? (' (' + Object.keys(filterstatus.result)[pagecontent.page - 1] + ')'):'') } of { filterstatus.result ? Object.keys(filterstatus.result).length + ' matched' : pageCount }</label>
         <ul tabIndex="0" className="dropdown-content block menu menu-compact shadow-md border border-slate-200 bg-base-100 rounded max-h-96 overflow-auto">
           <li className="block px-3 py-1 whitespace-nowrap text-xs uppercase font-bold text-slate-400">Go to Page</li>
           { dropContent }
@@ -175,12 +193,15 @@ function PageNavigation({ doc, pagecontent, pageCount, pageImages }) {
       <button className="btn px-2 min-h-fit h-9 bg-slate-100 border-slate-100 text-slate-500 hover:bg-white hover:border-slate-200 disabled:bg-transparent disabled:hover:bg-transparent" onClick={ pageRight } disabled={ pagecontent.page > pageCount - 1 }>
         <i className="icon-right-dir"/>
       </button>
+      { filterstatus.result ? (
+        <button className="btn btn-warning normal-case px-2 min-h-fit h-9 ml-3" onClick={ clearFilter }>Filter matched { Object.keys(filterstatus.result).length } of { pageCount } pages <i className="icon-cancel-circled ml-2"></i></button>
+      ):(null)}
     </div>
   )
 }
 
 
-export default function DocumentView({ path, file, pagecontent }) {
+export default function DocumentView({ path, file, pagecontent, filterstatus }) {
 
   const [ doc, setDoc ] = useState({});
 
@@ -202,11 +223,11 @@ export default function DocumentView({ path, file, pagecontent }) {
   return (
     <div>
       <div className="absolute left-0 top-0 right-0 h-10 bg-slate-100 rounded-t-md items-center inline-flex">
-        <PageNavigation doc={ doc } pagecontent={ pagecontent } pageCount={ doc.pages ? doc.pages.length : 0 } pageImages={ pageImagesRef }/>
+        <PageNavigation doc={ doc } pagecontent={ pagecontent } filterstatus={ filterstatus } pageCount={ doc.pages ? doc.pages.length : 0 } pageImages={ pageImagesRef }/>
       </div>
       <div ref={ ref } className="absolute border border-slate-100 left-0 top-10 right-0 bottom-0">
       { (width > 0 && doc.pages) ? (
-        <PageImages doc={ doc } path={ path } file={ file } width={ width } height={ height } pagecontent={ pagecontent } ref={ pageImagesRef }/>
+        <PageImages doc={ doc } path={ path } file={ file } width={ width } height={ height } pagecontent={ pagecontent } filterstatus={ filterstatus } ref={ pageImagesRef }/>
       ):(null) }
       </div>
     </div>

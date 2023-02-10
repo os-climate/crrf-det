@@ -10,13 +10,28 @@ import DocumentStructure from './structure';
 import { init_dropzone } from './upload';
 
 
-export default function DocumentPage({ listview, previewWidth }) {
+function ListViewMode({ listview, previewWidth, dropzone }) {
 
-  /* for 'list view' mode */
+  if (typeof previewWidth === 'undefined')
+    previewWidth = '20rem';
+
+  return (
+    <div>
+      <div className="absolute left-0 top-0 bottom-0" style={{ right: previewWidth }}>
+        <ListView listview={ listview } dropzone={ dropzone }/>
+      </div>
+      <div className="absolute top-0 right-0 bottom-0" style={{ width: previewWidth }}>
+        <ListPreview listview={ listview }/>
+      </div>
+    </div>
+  )
+}
+
+
+function DocumentMode() {
+
   const { path, file } = useParams();
-  listview.path = path;
 
-  /* for 'document view' mode */
   const [ page, set_page ] = useState(1);
   const [ mode, set_mode ] = useState('text');
   const [ text, set_text ] = useState([]);
@@ -29,11 +44,37 @@ export default function DocumentPage({ listview, previewWidth }) {
 
   /* for filters in 'document view' mode */
   const [ working, set_working ] = useState(false);
-  const [ result, set_result ] = useState({});
+  const [ result, set_result ] = useState(null);
   const filterstatus = { working, set_working, result, set_result };
 
-  if (typeof previewWidth === 'undefined')
-    previewWidth = '20rem';
+  return (
+    <div>
+      <div className="absolute left-0 right-96 top-0 bottom-0">
+        { working ? (
+        <div className="absolute left-0 right-0 top-0 bottom-0 z-50 flex justify-center items-center">
+          <div>
+            <div className="text-center">Running filter ...</div>
+            <progress className="progress progress-primary w-56"></progress>
+          </div>
+        </div>
+        ):(null)}
+        <DocumentView path={ path } file={ file } pagecontent={ pagecontent } filterstatus={ filterstatus }/>
+      </div>
+      <div className="absolute right-0 w-96 top-0 bottom-40">
+        <DocumentStructure path={ path } file={ file } pagecontent={ pagecontent } filterstatus={ filterstatus }/>
+      </div>
+      <div className="absolute right-0 w-96 h-40 bottom-0">
+        <DocumentFilterDeck path={ path } file={ file } pagecontent={ pagecontent } filterstatus={ filterstatus } />
+      </div>
+    </div>
+  )
+}
+
+
+export default function DocumentPage({ listview, previewWidth }) {
+
+  const { path, file } = useParams();
+  listview.path = path;
 
   const dropzone = init_dropzone(path, listview.refresh);
 
@@ -47,27 +88,10 @@ export default function DocumentPage({ listview, previewWidth }) {
       <div className="left-2 top-11 right-2 bottom-2 absolute">
       { file ? (
         // 'document view' mode
-        <div>
-          <div className="absolute left-0 right-96 top-0 bottom-0">
-            <DocumentView path={ path } file={ file } pagecontent={ pagecontent }/>
-          </div>
-          <div className="absolute right-0 w-96 top-0 bottom-40">
-            <DocumentStructure path={ path } file={ file } pagecontent={ pagecontent }/>
-          </div>
-          <div className="absolute right-0 w-96 h-40 bottom-0">
-            <DocumentFilterDeck path={ path } file={ file } filterstatus={ filterstatus } />
-          </div>
-        </div>
+        <DocumentMode/>
       ) : (
         // 'list view' mode
-        <div>
-          <div className="absolute left-0 top-0 bottom-0" style={{ right: previewWidth }}>
-            <ListView listview={ listview } dropzone={ dropzone }/>
-          </div>
-          <div className="absolute top-0 right-0 bottom-0" style={{ width: previewWidth }}>
-            <ListPreview listview={ listview }/>
-          </div>
-        </div>
+        <ListViewMode listview={ listview } previewWidth={ previewWidth } dropzone={ dropzone }/>
       )}
       </div>
 
