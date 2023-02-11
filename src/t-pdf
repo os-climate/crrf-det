@@ -14,7 +14,6 @@ from tpdf import pseg, docmt, helper, aggr
 
 def _run_page(debug_dir, image, content, page, doc_meta={}):
     results = pseg.parse(image)
-    target_scale = results['target_scale']
     columns = results['columns']
     spacings = results['spacings']
     column_row_groups = results['column_row_groups']
@@ -71,13 +70,9 @@ def _run_page(debug_dir, image, content, page, doc_meta={}):
         skimage.io.imsave(ofn, test_img)
         # final result
         for (ymin, xmin, ymax, xmax) in results.get('text_boxes', []):
-            ymin *= target_scale
-            xmin *= target_scale
-            ymax *= target_scale
-            xmax *= target_scale
             rr, cc = skimage.draw.rectangle((int(ymin), int(xmin)), (int(ymax), int(xmax)))
             skimage.draw.set_color(image, (rr, cc), helper.get_color_cycle_rgb(), 0.3)
-        ofn = os.path.join(debug_dir, '{}.{}.debug.parse.jpg'.format(os.path.basename(args.input), page))
+        ofn = os.path.join(debug_dir, '{}.{}.debug.parse.png'.format(os.path.basename(args.input), page))
         skimage.io.imsave(ofn, image)
 
     return {

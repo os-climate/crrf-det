@@ -15,7 +15,7 @@ from . import helper
 
 
 def parse(input_image):
-    (target_scale, im_bin_clear, im_bin_blurred) = prepare_images_for_segmentation(input_image)
+    (im_bin_clear, im_bin_blurred) = prepare_images_for_segmentation(input_image)
     # page-level column detection
     (columns, spacings) = columns_from_image(im_bin_clear)
     # clear `blurred` and `im_bin_blurred` to avoid blurring bleeding edges to
@@ -95,7 +95,6 @@ def parse(input_image):
     text_boxes = text_boxes_from_image(im_bin_clear, im_bin_blurred)
 
     return {
-        'target_scale':         target_scale,
         'text_boxes':           text_boxes,
         'im_bin_clear':         im_bin_clear,
         'width':                im_bin_clear.shape[1],
@@ -169,9 +168,7 @@ def prepare_images_for_segmentation(source_image):
                   typically returned from skimage.io.imread .
 
     returns:
-    (target_scale, im_bin_clear, im_bin_blurred)
-    target_scale:   The scale of the resulting image size to the original
-                    one: original_size / target_scale = result_size
+    (im_bin_clear, im_bin_blurred)
     im_bin_clear:   Binarized result image (clear version),
                     format: numpy.array(nrows, ncols), 1-channel ubyte (0-255)
     im_bin_blurred: Binarized result image (blurred version),
@@ -184,51 +181,29 @@ def prepare_images_for_segmentation(source_image):
     # connected to the next paragraph. Higher value means more blur (more
     # likely to connect to other paragraphs)
     BLUR_SIGMA = 1.3
-    # Gaussian blur sigma for the "clear_bin" version, used primarily to
-    # isolate table cell texts. For it to work properly, a slight bit of
-    # blur is still needed so that the characters inside one cell are
-    # stiched together, but not to the adjacent cells.
-    BLUR_SIGMA_CLEAR = 1
 
     # size down the image
     image = skimage.color.rgb2gray(source_image)
     height = image.shape[0]
     width = image.shape[1]
 
-    # target_scale = calc_target_scale(width, height)
-
-    # twidth = int(width / target_scale)
-    # theight = int(height / target_scale)
-    # thumb_image = skimage.transform.resize_local_mean(image, (theight, twidth))
-    target_scale = 1
-    thumb_image = skimage.color.rgb2gray(source_image)
-    theight = thumb_image.shape[0]
-    twidth = thumb_image.shape[1]
-    thumb_image[thumb_image > 1] = 1
-
     # before even doing anything else, turn 4.5% from the top of the page
     # to white to avoid any weird navigation bars or headers like the us
     # steel report situation
     # plus 3.5% on the side
-    ref_side = min(twidth, theight)
-    thumb_image[0:int(ref_side * 0.045), :] = 1
-    # thumb_image[thumb_image.shape[0] - int(ref_side * 0.05):, :] = 1
-    thumb_image[:, 0:int(ref_side * 0.035)] = 1
-    thumb_image[:, thumb_image.shape[1] - int(ref_side * 0.035):] = 1
+    ref_side = min(width, height)
+    image[0:int(ref_side * 0.045), :] = 1
+    image[:, 0:int(ref_side * 0.035)] = 1
+    image[:, image.shape[1] - int(ref_side * 0.035):] = 1
 
-    # im_bin = kmean_binarize(3, skimage.util.img_as_ubyte(thumb_image))
-    # skimage.io.imsave(filename.replace('test', 'bin'), skimage.util.img_as_ubyte(im_bin))
-    # hd_threshold = skimage.filters.threshold_otsu(thumb_image)
-    clear_threshold = skimage.filters.threshold_otsu(skimage.filters.gaussian(thumb_image, sigma=(BLUR_SIGMA_CLEAR, BLUR_SIGMA_CLEAR)))
-    im_bin_clear = skimage.util.img_as_ubyte(thumb_image >= clear_threshold)
+    im_bin_clear = skimage.util.img_as_ubyte(image >= 0.87843137254902)
 
-    blurred = skimage.filters.gaussian(thumb_image, sigma=(BLUR_SIGMA, BLUR_SIGMA))
+    blurred = skimage.filters.gaussian(image, sigma=(BLUR_SIGMA, BLUR_SIGMA))
     blurred[blurred > 1] = 1
     blurred = skimage.util.img_as_ubyte(blurred)
-    # skimage.io.imsave(filename.replace('test', 'blurred'), blurred)
 
-    im_bin_blurred = kmean_binarize(3, blurred)
-    return (target_scale, im_bin_clear, im_bin_blurred)
+    im_bin_blurred = skimage.util.img_as_ubyte(blurred >= 240)
+    return (im_bin_clear, im_bin_blurred)
 
 
 def columns_from_image(im_bin_clear):
