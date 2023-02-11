@@ -89,6 +89,7 @@ def search_pdf(userid, folder, name, terms, task=None):
     doc_path = os.path.join(base_path, '.' + name)
     search_index_path = os.path.join(doc_path, 'search-index')
     terms = shlex.split(terms)
+    terms = ['_' + term[1:] if term.startswith('-') else term for term in terms]
     if not os.path.isdir(search_index_path):
         # build search index
         cmd = ['det-search', 'build', doc_path]
