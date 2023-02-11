@@ -100,7 +100,7 @@ const PageImages = forwardRef(({ doc, path, file, width, height, pagecontent, fi
 
   var count = doc.pages.length;
   if (filterstatus.result)
-    count = Object.keys(filterstatus.result).length;
+    count = filterstatus.result.length;
 
   const { outerRef, innerRef, items, scrollToItem } = useVirtual({
     itemCount: count,
@@ -135,7 +135,7 @@ const PageImages = forwardRef(({ doc, path, file, width, height, pagecontent, fi
     <div ref={outerRef} className="absolute left-0 top-0 right-0 bottom-0 overflow-auto">
       <div ref={innerRef} style={ imageStyles }>
         { items.map(({index, size, start, isScrolling}) => (
-          <MemoImage key={ index } isScrolling={ isScrolling } width={ width } height={ size } url={ buildPageImageUrl(filterstatus.result?filterstatus.result[index].page:(index + 1)) } displayPageNum={ index + 1 } pagecontent={ pagecontent }/>
+          <MemoImage key={ index } isScrolling={ isScrolling } width={ width } height={ size } url={ buildPageImageUrl((filterstatus.result && filterstatus.result.length > index)?filterstatus.result[index].page:(index + 1)) } displayPageNum={ index + 1 } pagecontent={ pagecontent }/>
         ))}
       </div>
     </div>

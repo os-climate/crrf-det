@@ -81,9 +81,10 @@ function TablesStructure({ pagecontent }) {
 export default function DocumentStructure({ path, file, pagecontent, filterstatus }) {
 
   const pageChange = async () => {
+    var pageIdx = pagecontent.page;
     var page = pagecontent.page;
     if (filterstatus.result)
-      page = filterstatus.result[page - 1].page;
+      page = filterstatus.result[pageIdx - 1].page;
     auth.get({base: '/docs', folder: path, rest: '/' + file + '/page/' + page}, {}, ( data ) => {
       var c = data;
       var tables_ = [];
@@ -91,6 +92,9 @@ export default function DocumentStructure({ path, file, pagecontent, filterstatu
       var tableBoxes_ = [];
       var textBoxes_ = [];
       for (var i = 0; i < c.content.length; i++) {
+        if (filterstatus.result &&
+          filterstatus.result[pageIdx - 1].cindex.indexOf(i) < 0)
+          continue;
         var box = c.content[i].box;
         var box_ = [box[0] / c.height, box[1] / c.width, box[2] / c.height, box[3] / c.width];
         if (c.content[i].type === 'text') {
