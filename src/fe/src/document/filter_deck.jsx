@@ -81,7 +81,7 @@ function TagView({ filters, current, menuFunc }) {
 export default function DocumentFilterDeck({ path, file, pagecontent, filterstatus }) {
 
   const [filters, setFilters] = useState({
-    'Scope 1/2/3 Emissions': { code: 'table:GHG.*', labels: ['Scope 1', 'Scope 2', 'Scope 3', 'Scope 1+2+3'] },
+    'Scope 1/2/3 Emissions': { code: 'table:GHG', labels: ['Scope 1', 'Scope 2', 'Scope 3', 'Scope 1+2+3'] },
     'Emissions reduction target': { code: 'emission reduction target', labels: ['Relative emissions reduction target', 'Absolute emissions reduction target']},
     'Intensity reduction target': { labels: ['Relative intensity reduction target', 'Absolute intensity reduction target']},
     'SBTi certification of target': { labels: ['SBTi certification of target']},

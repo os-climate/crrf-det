@@ -83,7 +83,7 @@ export default function DocumentStructure({ path, file, pagecontent, filterstatu
   const pageChange = async () => {
     var page = pagecontent.page;
     if (filterstatus.result)
-      page = Object.keys(filterstatus.result)[page - 1];
+      page = filterstatus.result[page - 1].page;
     auth.get({base: '/docs', folder: path, rest: '/' + file + '/page/' + page}, {}, ( data ) => {
       var c = data;
       var tables_ = [];

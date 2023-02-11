@@ -42,6 +42,15 @@ async function build(argv) {
 }
 
 
+function search_result_compare(a, b) {
+    if (a.score < b.score)
+      return 1;
+    if (a.score > b.score)
+      return -1;
+    return 0;
+}
+
+
 async function search(argv) {
     // initialize an index
     const { QUERY } = await si({ name: argv.path + '/search-index' });
@@ -76,21 +85,25 @@ async function search(argv) {
         SORT: true
     })
     .then(results => {
-        var translated = {};
+        var group = {};
         for (var i = 0; i < results.RESULT.length; i++) {
             var idp = results.RESULT[i]._id.split('-');
-            if (idp[0] in translated) {
-                translated[idp[0]].cindex.push(parseInt(idp[1]));
-                translated[idp[0]].score += results.RESULT[i]._score;
+            if (idp[0] in group) {
+                group[idp[0]].cindex.push(parseInt(idp[1]));
+                group[idp[0]].score += results.RESULT[i]._score;
             }
             else {
-                translated[idp[0]] = {
+                group[idp[0]] = {
                     cindex: [parseInt(idp[1])],
                     score: results.RESULT[i]._score
                 }
             }
         }
-        console.log('%s', JSON.stringify(translated));
+        var pages = [];
+        for (const page in group)
+            pages.push({page: parseInt(page), ...group[page]})
+        pages.sort(search_result_compare);
+        console.log('%s', JSON.stringify(pages));
     });
 }
 

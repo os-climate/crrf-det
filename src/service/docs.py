@@ -1,5 +1,5 @@
 import os
-import pickle
+import orjson
 import urllib.parse
 
 from sanic import response, Blueprint
@@ -91,8 +91,14 @@ async def search_result(request, token, folder, file, result_id):
         return response.json({
             'status': 'fail'
         })
-    with open(filename, 'rb') as f:
-        r = pickle.load(f)
+    try:
+        with open(filename, 'rb') as f:
+            c = f.read()
+            r = orjson.loads(c)
+    except Exception as e:
+        print('search_result parsing exception', e)
+        print(c)
+        r = None
     os.remove(filename)
     return response.json({
         'status': 'ok',

@@ -135,7 +135,7 @@ const PageImages = forwardRef(({ doc, path, file, width, height, pagecontent, fi
     <div ref={outerRef} className="absolute left-0 top-0 right-0 bottom-0 overflow-auto">
       <div ref={innerRef} style={ imageStyles }>
         { items.map(({index, size, start, isScrolling}) => (
-          <MemoImage key={ index } isScrolling={ isScrolling } width={ width } height={ size } url={ buildPageImageUrl(filterstatus.result?Object.keys(filterstatus.result)[index]:(index + 1)) } displayPageNum={ index + 1 } pagecontent={ pagecontent }/>
+          <MemoImage key={ index } isScrolling={ isScrolling } width={ width } height={ size } url={ buildPageImageUrl(filterstatus.result?filterstatus.result[index].page:(index + 1)) } displayPageNum={ index + 1 } pagecontent={ pagecontent }/>
         ))}
       </div>
     </div>
@@ -169,8 +169,8 @@ function PageNavigation({ doc, pagecontent, filterstatus, pageCount, pageImages 
 
   let dropContent = [];
   if (filterstatus.result) {
-    Object.keys(filterstatus.result).map((page, i) => {
-      dropContent.push(<li className="block" key={page}><a className="text-center block border border-white hover:border-slate-200 hover:bg-slate-50 hover:text-slate-500" onClick={ pageClick } data-page-index={ i + 1 }>{page}</a></li>);
+    filterstatus.result.map((page, i) => {
+      dropContent.push(<li className="block" key={page.page}><a className="text-center block border border-white hover:border-slate-200 hover:bg-slate-50 hover:text-slate-500" onClick={ pageClick } data-page-index={ i + 1 }>{page.page}</a></li>);
     });
   }
   else if (doc.pages) {
@@ -184,7 +184,7 @@ function PageNavigation({ doc, pagecontent, filterstatus, pageCount, pageImages 
         <i className="icon-left-dir"/>
       </button>
       <div className="dropdown">
-        <label tabIndex="0" className="btn normal-case min-h-fit h-9 bg-slate-100 border-slate-100 text-slate-500 hover:bg-white hover:border-slate-200">Page { pagecontent.page + (filterstatus.result ? (' (' + Object.keys(filterstatus.result)[pagecontent.page - 1] + ')'):'') } of { filterstatus.result ? Object.keys(filterstatus.result).length + ' matched' : pageCount }</label>
+        <label tabIndex="0" className="btn normal-case min-h-fit h-9 bg-slate-100 border-slate-100 text-slate-500 hover:bg-white hover:border-slate-200">Page { pagecontent.page + (filterstatus.result ? (' (' + filterstatus.result[pagecontent.page - 1].page + ')'):'') } of { filterstatus.result ? filterstatus.result.length + ' matched' : pageCount }</label>
         <ul tabIndex="0" className="dropdown-content block menu menu-compact shadow-md border border-slate-200 bg-base-100 rounded max-h-96 overflow-auto">
           <li className="block px-3 py-1 whitespace-nowrap text-xs uppercase font-bold text-slate-400">Go to Page</li>
           { dropContent }
@@ -194,7 +194,7 @@ function PageNavigation({ doc, pagecontent, filterstatus, pageCount, pageImages 
         <i className="icon-right-dir"/>
       </button>
       { filterstatus.result ? (
-        <button className="btn btn-warning normal-case px-2 min-h-fit h-9 ml-3" onClick={ clearFilter }>Filter matched { Object.keys(filterstatus.result).length } of { pageCount } pages <i className="icon-cancel-circled ml-2"></i></button>
+        <button className="btn btn-warning normal-case px-2 min-h-fit h-9 ml-3" onClick={ clearFilter }>Filter matched { filterstatus.result.length } of { pageCount } pages <i className="icon-cancel-circled ml-2"></i></button>
       ):(null)}
     </div>
   )
