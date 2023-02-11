@@ -57,28 +57,47 @@ async function search(argv) {
     // toy query builder
     var q_inc_and = [];
     var q_exc_or = [];
+    var field = false;
     for (let kw of argv.keywords) {
-        if (kw.startsWith('_'))
-            q_exc_or.push(kw.substr(1));
-        else
-            q_inc_and.push(kw);
+        if (field == false) {
+            if (kw.startsWith('table:')) {
+                field = 'table';
+                kw = kw.substr(6);
+            }
+            else if (kw.startsWith('text:')) {
+                field = 'text';
+                kw = kw.substr(5);
+            }
+            else
+                field = null;
+        }
+        if (kw.startsWith('_')) {
+            if (field)
+                q_exc_or.push(field + ':' + kw.substr(1));
+            else
+                q_exc_or.push(kw.substr(1));
+        }
+        else {
+            if (field)
+                q_inc_and.push(field + ':' + kw);
+            else
+                q_inc_and.push(kw);
+        }
     }
     if (q_inc_and.length == 0)
         return;
-    var q = {}
+    var q = {};
     if (q_exc_or.length > 0) {
-        q = {
-            NOT: {
-                INCLUDE: {
-                    AND: q_inc_and
-                },
-                EXCLUDE: {
-                    OR: q_exc_or
-                }
+        q.NOT = {
+            INCLUDE: {
+                AND: q_inc_and
+            },
+            EXCLUDE: {
+                OR: q_exc_or
             }
         };
     } else {
-        q = { AND: q_inc_and };
+        q.AND = q_inc_and;
     }
     await QUERY(q, {
         SCORE: 'TFIDF',
