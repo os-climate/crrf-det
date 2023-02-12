@@ -180,7 +180,7 @@ def prepare_images_for_segmentation(source_image):
     # paragraph must be touched together to form a connected shape, but not
     # connected to the next paragraph. Higher value means more blur (more
     # likely to connect to other paragraphs)
-    BLUR_SIGMA = 1.3
+    BLUR_SIGMA = 4
 
     # size down the image
     image = skimage.color.rgb2gray(source_image)
@@ -390,10 +390,27 @@ def row_groups_from_columns(columns, im_bin_clear):
                             with array content 0=text, 1=spacing.
 
     """
-    MAX_ROW_VSPACING = 15
-    MIN_ROW_GROUP_HEIGHT = 50
+    TITLE_MIN_SPACING = 9
+    TITLE_MIN_HEIGHT = 10
+    MINIMUM_TOTAL_HEIGHT_FOR_SOFT_SPLIT = 20
+    MIN_SPACING_SOFT_SPLIT = 10
+    MIN_SPACING_HARD_SPLIT = 25
+    # minimum of the end spacing multiple (vs avg spacing) in a group (for soft split)
+    # for tsla2021.13
+    MIN_SPACING_MULTIPLE = 1.75
+
     column_row_groups = {}
     column_row_vspacings = {}
+
+    # determine the top filled row for later use
+    top_filled_row = 0
+    white_row = im_bin_clear.shape[1] * 255
+    for i in range(0, im_bin_clear.shape[0]):
+        is_filled = numpy.sum(im_bin_clear[i, :]) < white_row
+        if is_filled:
+            top_filled_row = i
+            break
+
     for col_idx, column in enumerate(columns):
         col_crop = im_bin_clear[0:im_bin_clear.shape[0], column[0]:column[1]]
         col_sum = col_crop.shape[1] * 255
@@ -403,41 +420,121 @@ def row_groups_from_columns(columns, im_bin_clear):
             if numpy.sum(col_crop[i, :]) == col_sum:
                 row_vspacings[i] = 1
         column_row_vspacings[col_idx] = row_vspacings
+        # determine all start,ends for content rows, and the content
+        # pattern for each: 0=full, 1=left-sided, 2=right-sided, 3=middle
+        all_rows = [];
+        all_row_patterns = [];
+        half_width = int(col_crop.shape[1] / 2)
+        quar_width = int(half_width / 2)
+        row_start = -1
+        row_end = -1
+        def get_pattern(row_start, row_end):
+            row_height = row_end - row_start + 1
+            psum_half_white = half_width * row_height * 255
+            psum_quar_white = quar_width * row_height * 255
+            if numpy.sum(col_crop[row_start:row_end, 0:half_width]) == psum_half_white:
+                return 2
+            elif numpy.sum(col_crop[row_start:row_end, col_crop.shape[1] - half_width:]) == psum_half_white:
+                return 1
+            elif (numpy.sum(col_crop[row_start:row_end, 0:quar_width]) == psum_quar_white and
+                numpy.sum(col_crop[row_start:row_end, col_crop.shape[1] - quar_width:]) == psum_quar_white):
+                return 3
+            return 0
+        for i in range(0, col_crop.shape[0]):
+            # a row of spacing
+            if row_vspacings[i] == 1:
+                if row_end != -1:
+                    all_rows.append([row_start, row_end])
+                    all_row_patterns.append(get_pattern(row_start, row_end))
+                row_start = -1
+                row_end = -1
+            # a row of content
+            else:
+                if row_start == -1:
+                    row_start = i;
+                row_end = i;
+        if row_end != -1:
+            all_rows.append([row_start, row_end])
+            all_row_patterns.append(get_pattern(row_start, row_end))
         # group rows that have tight spacing, a bet to separate multiple tables
         # in the same column
         row_groups = []
         rows = []
-        cur_row = []    # 2-element list: [0:row begin, 1:row end]
-        last_row_end = 0
-        for i in range(0, col_crop.shape[0]):
-            # encounter a row marker
-            if row_vspacings[i] == 1:
-                if len(cur_row) == 2:
-                    last_row_end = i
-                    rows.append(cur_row)
-                cur_row = []
-            # encounter a text row of pixels
-            elif i > 0:
-                if len(cur_row) == 0:
-                    # begin of a new row
-                    if (i - last_row_end >= MAX_ROW_VSPACING and
-                        rows and
-                        # at least MIN_ROW_GROUP_HEIGHT tall a group of rows
-                        (rows[-1][1] - rows[0][0] >= MIN_ROW_GROUP_HEIGHT or
-                        # or at least MIN_ROW_GROUP_HEIGHT tall vspacing
-                        i - last_row_end >= MIN_ROW_GROUP_HEIGHT or
-                        # first row
-                        not row_groups)):
-                        row_groups.append(rows)
-                        rows = []
-                    cur_row.append(i)
-                elif len(cur_row) == 1:
-                    cur_row.append(i)
-                elif len(cur_row) == 2:
-                    cur_row[1] = i
-        if rows:
-            row_groups.append(rows)
+        rows_spacings = 0
+        last_spacing = 0
+        row_patterns = [False, False, False, False]
+        # bottom-up lookup
+        for i in reversed(range(0, len(all_rows))):
+            (row_start, row_end) = all_rows[i]
+            row_patterns[all_row_patterns[i]] = True
+            if len(rows) == 0:
+                rows.insert(0, [row_start, row_end])
+                last_spacing = 0
+            else:
+                spacing = rows[0][0] - row_end;
+                #
+                # Sometimes a new group is just starting, but the spacing is found
+                # to be larger than the last one. This means hierarchically, the
+                # content row may below to the group just formed, at a outer level.
+                # (ref adbe2021.24, tsla2021.67)
+                #
+                if (spacing >= 5 and
+                    spacing >= last_spacing and
+                    len(rows) == 1 and
+                    len(row_groups) > 0):
+                    row_groups[0].insert(0, rows[0])
+                    rows_spacings = 0
+                    rows = []
+                #
+                # Hard split on tall vertical spacing.
+                #
+                elif (spacing >= MIN_SPACING_HARD_SPLIT or
+                #
+                # Pattern switch (bottom-up) from right to left, a common trait in
+                # Chinese/Japanese document table headers, and English book table
+                # headers.
+                #
+                    (len(rows) >= 2 and
+                    row_patterns[0] and
+                    row_patterns[1] and
+                    row_patterns[2] and
+                    all_row_patterns[i + 1] == 2 and
+                    all_row_patterns[i] == 1) or
+                #
+                # Pattern switch from full to left, a common trait in English
+                # book table headers.
+                #
+                    (len(rows) >= 2 and
+                    row_patterns[0] and
+                    row_patterns[1] and
+                    all_row_patterns[i + 1] == 0 and
+                    all_row_patterns[i] == 1 and
+                    spacing > rows_spacings / (len(rows) - 1) * MIN_SPACING_MULTIPLE) or
+                #
+                # Soft split on spacing getting larger than average.
+                #
+                    (len(rows) >= 2 and
+                    spacing > rows_spacings / (len(rows) - 1) * MIN_SPACING_MULTIPLE and
+                    spacing > MIN_SPACING_SOFT_SPLIT) or
+                #
+                #
+                    (i == 0 and
+                    all_row_patterns[i] != 0 and
+                    ((row_end - row_start >= TITLE_MIN_HEIGHT and
+                    spacing >= TITLE_MIN_SPACING) or
+                    (row_end - row_start <= spacing)))):
+                    row_groups.insert(0, rows)
+                    row_patterns = [False, False, False, False]
+                    rows_spacings = 0
+                    rows = []
+                else:
+                    rows_spacings += spacing
+                rows.insert(0, [row_start, row_end])
+                last_spacing = spacing
+        if len(rows) > 0:
+            row_groups.insert(0, rows)
         column_row_groups[col_idx] = row_groups
+
     return column_row_groups, column_row_vspacings
 
 
