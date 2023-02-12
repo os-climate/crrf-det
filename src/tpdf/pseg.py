@@ -295,28 +295,35 @@ def columns_from_image(im_bin_clear):
             if middle_idx != -1:
                 break
         if middle_idx != -1:
-            # So we have a middle spacing, this could be a two column
-            # layout. This could be determined by spacing length.
-            # For more columns to live inside the two column layout,
-            # these columns must be narrower.
-            mid_spc_width = spacings[middle_idx][1] - spacings[middle_idx][0]
-            # Loop through all spacings except for the first and last
-            rogue_spacings = []
-            for i in range(1, len(spacings) - 1):
-                if i == middle_idx:
-                    continue
-                spacing = spacings[i]
-                if spacing[1] - spacing[0] > mid_spc_width:
-                    rogue_spacings.append(spacing)
-            if rogue_spacings:
-                for spacing in rogue_spacings:
-                    column_begins = [c[0] for c in columns]
-                    column_ends = [c[1] for c in columns]
-                    col_idx_merge_right = column_ends.index(spacing[0])
-                    col_idx_merge_left = column_begins.index(spacing[1])
-                    columns[col_idx_merge_right][1] = columns[col_idx_merge_left][1]
-                    del columns[col_idx_merge_left]
-                    spacings.remove(spacing)
+            # if the first spacing is huge, then the layout might not be
+            # conventional, break it apart
+            if spacings[0][1] > width / 5:
+                # So we have a middle spacing, this could be a two column
+                # layout. This could be determined by spacing length.
+                # For more columns to live inside the two column layout,
+                # these columns must be narrower.
+                mid_spc_width = spacings[middle_idx][1] - spacings[middle_idx][0]
+                # Loop through all spacings except for the first and last
+                rogue_spacings = []
+                for i in range(1, len(spacings) - 1):
+                    if i == middle_idx:
+                        continue
+                    spacing = spacings[i]
+                    if spacing[1] - spacing[0] > mid_spc_width:
+                        rogue_spacings.append(spacing)
+                if rogue_spacings:
+                    for spacing in rogue_spacings:
+                        column_begins = [c[0] for c in columns]
+                        column_ends = [c[1] for c in columns]
+                        col_idx_merge_right = column_ends.index(spacing[0])
+                        col_idx_merge_left = column_begins.index(spacing[1])
+                        columns[col_idx_merge_right][1] = columns[col_idx_merge_left][1]
+                        del columns[col_idx_merge_left]
+                        spacings.remove(spacing)
+            # otherwise just treat it as two-column
+            else:
+                spacings = [spacings[0], spacings[middle_idx], spacings[-1]]
+                columns = [[spacings[0][1], spacings[1][0]], [spacings[1][1], spacings[2][0]]]
         else:
             # Heuristic #2, it is not a two column layout. But it is risky
             # to proceed with so many columns. It is still very likely a
@@ -429,7 +436,7 @@ def row_groups_from_columns(columns, im_bin_clear):
         row_start = -1
         row_end = -1
         def get_pattern(row_start, row_end):
-            row_height = row_end - row_start + 1
+            row_height = row_end - row_start
             psum_half_white = half_width * row_height * 255
             psum_quar_white = quar_width * row_height * 255
             if numpy.sum(col_crop[row_start:row_end, 0:half_width]) == psum_half_white:
