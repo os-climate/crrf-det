@@ -34,7 +34,7 @@ async function build(argv) {
         }
         await PUT(data, {
             ngrams: {
-                lengths: [ 1, 2 ],
+                lengths: [ 1, 2, 3 ],
                 join: ' '
             }
         });
