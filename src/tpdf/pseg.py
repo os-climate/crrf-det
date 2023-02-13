@@ -84,8 +84,8 @@ def parse(input_image):
             rects = tablevspan.remove_busy_column_rectangles(rects, row_hspacings)
             column_row_grp_tablevspan['05_remove_busy_column_rectangles'][col_idx][row_grp_idx] = rects.copy()
 
-            (table_scope, table_rows, table_cols) = tablevspan.build_table(column, rows, row_hspacings, rects, im_bin_blurred)
-            column_row_grp_build_table[col_idx][row_grp_idx] = (table_scope, table_rows, table_cols)
+            (table_rows, table_cols) = tablevspan.build_table(column, rows, row_hspacings, rects, im_bin_blurred)
+            column_row_grp_build_table[col_idx][row_grp_idx] = (table_rows, table_cols)
 
             # cells
             (intersections, intersections_upward, intersections_downward) = tablevspan.find_intersections(column, rows, table_cols, table_rows)
@@ -897,67 +897,6 @@ class tablevspan:
         of tables and stick to the cell text.
 
         """
-        # the left most rect's left side is the first column, use its content
-        # to identify potentially multiple tables
-        table_scope = []
-        if rects:
-            # mechanism for recording the right side (or end) of the first
-            # text column
-            per_row_col1_ends = {}
-            for ((x0, y0), (x1, y1)) in rects:
-                per_row_col1_ends[y0] = min(x0, per_row_col1_ends.get(y0, 100000))
-            # loop through all the "first columns"
-            rect_left = numpy.array([x0 for ((x0, y0), (x1, y1)) in rects], dtype=numpy.uint)
-            for rect_row, col1_end in sorted(per_row_col1_ends.items()):
-                # locate this first column rect, and determine its
-                # top/bottom rows
-                col1_idx = numpy.where(rect_left == col1_end)[0][0]
-                col1_top_row_idx = rects[col1_idx][0][1]
-                col1_bottom_row_idx = rects[col1_idx][1][1]
-                # loop through all the rows primarily to check whether
-                # the first column has content, because generally
-                # speaking, the first column should be filled with text,
-                # or this could be mis-detection
-                cur_table_start = None
-                for row_idx in range(col1_top_row_idx, col1_bottom_row_idx + 1):
-                    # determine the column at least has one pixel black (0)
-                    has_content = numpy.sum(row_hspacings[row_idx, 0:col1_end]) < col1_end
-                    # this row is text
-                    if has_content:
-                        # `cur_table_start=None` means the last row is blank space
-                        if cur_table_start is None:
-                            # except for the top row, all the rest tables can have
-                            # a single row of empty cells, for either a first
-                            # column header, or caption
-                            if row_idx > col1_top_row_idx:
-                                # reduce last "table height"
-                                if table_scope:
-                                    table_scope[-1][1] -= 1
-                                # mark table start as the last row (blank space)
-                                cur_table_start = row_idx - 1
-                            else:
-                                cur_table_start = row_idx
-                        continue
-                    # this row is blank space
-                    else:
-                        # continue expand the previous table if applicable,
-                        # tables are allowed to have blank space rows in
-                        # the bottom
-                        if (table_scope and
-                            table_scope[-1][1] == row_idx - 1):
-                            table_scope[-1][1] = row_idx
-                        # no tables found yet, create the first one
-                        elif cur_table_start is not None:
-                            if (not table_scope or
-                                cur_table_start >= table_scope[-1][1]):
-                                table_scope.append([cur_table_start, row_idx])
-                            cur_table_start = None
-                if cur_table_start is not None:
-                    if (not table_scope or
-                        cur_table_start >= table_scope[-1][1]):
-                        table_scope.append([cur_table_start, row_idx])
-        #
-
         # enumerate all rects for covered row spacings, use them to clear out
         # the blurred version so that table cell texts are no longer sticked
         # together
@@ -1012,7 +951,7 @@ class tablevspan:
             rr, cc = skimage.draw.line(*[int(x) for x in col])
             im_bin_blurred[rr, cc] = 255
 
-        return (table_scope, table_rows, table_cols)
+        return (table_rows, table_cols)
 
     @staticmethod
     def find_intersections(column, rows, table_cols, table_rows):
@@ -1236,7 +1175,7 @@ class debug_painter:
                 if row_grp_idx not in fresult[col_idx]:
                     continue
                 rows = column_row_groups[col_idx][row_grp_idx]
-                (table_scope, table_rows, table_cols) = fresult[col_idx][row_grp_idx]
+                (table_rows, table_cols) = fresult[col_idx][row_grp_idx]
                 for row in table_rows:
                     row = [int(x) for x in row]
                     rr, cc = skimage.draw.line(*row)
@@ -1245,17 +1184,6 @@ class debug_painter:
                     col = [int(x) for x in col]
                     rr, cc = skimage.draw.line(*col)
                     skimage.draw.set_color(test_img, (rr, cc), (255, 0, 0), 1)
-                for (row_top_idx, row_bottom_idx) in table_scope:
-                    if row_top_idx > 0:
-                        table_row_top = (rows[row_top_idx][0] + rows[row_top_idx - 1][1]) / 2
-                    else:
-                        table_row_top = rows[row_top_idx][0]
-                    if row_bottom_idx == len(rows) - 1:
-                        table_row_bottom = rows[row_bottom_idx][1]
-                    else:
-                        table_row_bottom = (rows[row_bottom_idx][1] + rows[row_bottom_idx + 1][0]) / 2
-                    rr, cc = skimage.draw.rectangle((int(table_row_top), column[0] - 5), (int(table_row_bottom), column[0]))
-                    skimage.draw.set_color(test_img, (rr, cc), helper.get_color_cycle_rgb(), 1)
 
     @staticmethod
     def tablevspan_find_intersections_find_cells(test_img, results):

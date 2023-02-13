@@ -115,6 +115,7 @@ class TestPSeg(unittest.TestCase):
             'cargill2022.83.png': {},
             'cargill2022.97.png': {},
             'eog2021.9.png': {},
+            'eog2021.70.png': {},
         }
         self.result_cache['row_hspacings_from_row_groups'] = {}
         for fn in test_list:
@@ -148,6 +149,7 @@ class TestPSeg(unittest.TestCase):
             'cargill2022.83.png': {},
             'cargill2022.97.png': {},
             'eog2021.9.png': {},
+            'eog2021.70.png': {},
         }
         self.result_cache['vertical_lines_from_hspacings'] = {}
         for fn in test_list:
@@ -190,6 +192,7 @@ class TestPSeg(unittest.TestCase):
             'cargill2022.83.png': {},
             'cargill2022.97.png': {},
             'eog2021.9.png': {},
+            'eog2021.70.png': {},
         }
         self.result_cache['tablevspan_group_adjacent_lines'] = {}
         for fn in test_list:
@@ -233,6 +236,7 @@ class TestPSeg(unittest.TestCase):
             'cargill2022.83.png': {},
             'cargill2022.97.png': {},
             'eog2021.9.png': {},
+            'eog2021.70.png': {},
         }
         self.result_cache['tablevspan_remove_smaller_adjacent_rectangles'] = {}
         for fn in test_list:
@@ -276,6 +280,7 @@ class TestPSeg(unittest.TestCase):
             'cargill2022.83.png': {},
             'cargill2022.97.png': {},
             'eog2021.9.png': {},
+            'eog2021.70.png': {},
         }
         self.result_cache['tablevspan_remove_edge_rectangles'] = {}
         for fn in test_list:
@@ -318,6 +323,7 @@ class TestPSeg(unittest.TestCase):
             'cargill2022.83.png': {},
             'cargill2022.97.png': {},
             'eog2021.9.png': {},
+            'eog2021.70.png': {},
         }
         self.result_cache['tablevspan_is_first_rectangle_column_valid'] = {}
         for fn in test_list:
@@ -365,6 +371,7 @@ class TestPSeg(unittest.TestCase):
             'cargill2022.73.png': {},
             'cargill2022.83.png': {},
             'cargill2022.97.png': {},
+            'eog2021.70.png': {},
         }
         self.result_cache['tablevspan_remove_busy_column_rectangles'] = {}
         for fn in test_list:
@@ -401,6 +408,7 @@ class TestPSeg(unittest.TestCase):
             'x2021.87.png': {},
             'cargill2022.73.png': {},
             'cargill2022.83.png': {},
+            'eog2021.70.png': {},
         }
         self.result_cache['tablevspan_build_table'] = {}
         for fn in test_list:
@@ -418,8 +426,8 @@ class TestPSeg(unittest.TestCase):
                 for row_grp_idx, row_hspacings in sorted(column_row_grp_row_spacings[col_idx].items()):
                     rows = column_row_groups[col_idx][row_grp_idx]
                     rects = self.result_cache['tablevspan_remove_busy_column_rectangles'][fn][col_idx][row_grp_idx]
-                    (table_scope, table_rows, table_cols) = pseg.tablevspan.build_table(column, rows, row_hspacings, rects, im_bin_blurred)
-                    fresult[col_idx][row_grp_idx] = (table_scope, table_rows, table_cols)
+                    (table_rows, table_cols) = pseg.tablevspan.build_table(column, rows, row_hspacings, rects, im_bin_blurred)
+                    fresult[col_idx][row_grp_idx] = (table_rows, table_cols)
             pseg.debug_painter.tablevspan_build_table(test_img, (columns, column_row_groups, column_row_grp_row_spacings, fresult))
             self.result_cache['tablevspan_build_table'][fn] = fresult
             skimage.io.imsave(ofn, test_img)
@@ -437,6 +445,7 @@ class TestPSeg(unittest.TestCase):
             'x2021.87.png': {},
             'cargill2022.73.png': {},
             'cargill2022.83.png': {},
+            'eog2021.70.png': {},
         }
         self.result_cache['tablevspan_find_intersections_find_cells'] = {}
         for fn in test_list:
@@ -453,7 +462,7 @@ class TestPSeg(unittest.TestCase):
                 column = columns[col_idx]
                 for row_grp_idx, row_hspacings in sorted(column_row_grp_row_spacings[col_idx].items()):
                     rows = column_row_groups[col_idx][row_grp_idx]
-                    (table_scope, table_rows, table_cols) = self.result_cache['tablevspan_build_table'][fn][col_idx][row_grp_idx]
+                    (table_rows, table_cols) = self.result_cache['tablevspan_build_table'][fn][col_idx][row_grp_idx]
                     (intersections, intersections_upward, intersections_downward) = pseg.tablevspan.find_intersections(column, rows, table_cols, table_rows)
                     cells = pseg.tablevspan.find_cells(intersections, intersections_upward, intersections_downward)
                     fresult[col_idx][row_grp_idx] = (intersections, intersections_upward, intersections_downward, cells)
