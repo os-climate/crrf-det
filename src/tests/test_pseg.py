@@ -13,7 +13,7 @@ class TestPSeg(unittest.TestCase):
         cls.image_cache = {}
         cls.result_cache = {}
         cls.basepath = os.path.dirname(__file__)
-        all_images = ['tsla2021.2.png', 'tsla2021.14.png', 'tsla2021.36.png', 'tsla2021.68.png', 'tsla2021.122.png', 'tsla2021.123.png', 'tsla2021.141.png', 'de2021.63.png', 'de2021.64.png', 'x2021.27.png', 'x2021.64.png', 'x2021.87.png', 'cargill2022.15.png', 'cargill2022.73.png', 'cargill2022.83.png', 'cargill2022.97.png', 'eog2021.9.png', 'eog2021.16.png', 'eog2021.68.png', 'eog2021.70.png']
+        all_images = ['tsla2021.2.png', 'tsla2021.14.png', 'tsla2021.36.png', 'tsla2021.68.png', 'tsla2021.73.png', 'tsla2021.122.png', 'tsla2021.123.png', 'tsla2021.141.png', 'de2021.63.png', 'de2021.64.png', 'x2021.27.png', 'x2021.64.png', 'x2021.87.png', 'cargill2022.15.png', 'cargill2022.73.png', 'cargill2022.83.png', 'cargill2022.97.png', 'eog2021.9.png', 'eog2021.16.png', 'eog2021.68.png', 'eog2021.70.png']
         for fn in all_images:
             fnp = os.path.join(cls.basepath, 'src_imgs', fn)
             img = skimage.io.imread(fnp)
@@ -35,6 +35,7 @@ class TestPSeg(unittest.TestCase):
             'tsla2021.14.png': {},
             'tsla2021.36.png': {},
             'tsla2021.68.png': {},
+            'tsla2021.73.png': {},
             'tsla2021.122.png': {},
             'tsla2021.123.png': {},
             'tsla2021.141.png': {},
@@ -71,6 +72,7 @@ class TestPSeg(unittest.TestCase):
             'tsla2021.14.png': {},
             'tsla2021.36.png': {},
             'tsla2021.68.png': {},
+            'tsla2021.73.png': {},
             'tsla2021.123.png': {},
             'tsla2021.141.png': {},
             'de2021.63.png': {},
@@ -106,6 +108,7 @@ class TestPSeg(unittest.TestCase):
             'tsla2021.2.png': {},
             'tsla2021.14.png': {},
             'tsla2021.36.png': {},
+            'tsla2021.73.png': {},
             'tsla2021.123.png': {},
             'tsla2021.141.png': {},
             'de2021.63.png': {},
@@ -141,6 +144,7 @@ class TestPSeg(unittest.TestCase):
             'tsla2021.2.png': {},
             'tsla2021.14.png': {},
             'tsla2021.36.png': {},
+            'tsla2021.73.png': {},
             'tsla2021.123.png': {},
             'tsla2021.141.png': {},
             'de2021.63.png': {},
@@ -185,6 +189,7 @@ class TestPSeg(unittest.TestCase):
             'tsla2021.2.png': {},
             'tsla2021.14.png': {},
             'tsla2021.36.png': {},
+            'tsla2021.73.png': {},
             'tsla2021.123.png': {},
             'tsla2021.141.png': {},
             'de2021.63.png': {},
@@ -230,6 +235,7 @@ class TestPSeg(unittest.TestCase):
             'tsla2021.2.png': {},
             'tsla2021.14.png': {},
             'tsla2021.36.png': {},
+            'tsla2021.73.png': {},
             'tsla2021.123.png': {},
             'tsla2021.141.png': {},
             'de2021.63.png': {},
@@ -275,6 +281,7 @@ class TestPSeg(unittest.TestCase):
             'tsla2021.2.png': {},
             'tsla2021.14.png': {},
             'tsla2021.36.png': {},
+            'tsla2021.73.png': {},
             'tsla2021.123.png': {},
             'tsla2021.141.png': {},
             'de2021.63.png': {},
@@ -320,6 +327,7 @@ class TestPSeg(unittest.TestCase):
             'tsla2021.2.png': {},
             'tsla2021.14.png': {},
             'tsla2021.36.png': {},
+            'tsla2021.73.png': {},
             'tsla2021.123.png': {},
             'de2021.63.png': {},
             'de2021.64.png': {},
@@ -370,6 +378,7 @@ class TestPSeg(unittest.TestCase):
             'tsla2021.2.png': {},
             'tsla2021.14.png': {},
             'tsla2021.36.png': {},
+            'tsla2021.73.png': {},
             'tsla2021.123.png': {},
             'de2021.63.png': {},
             'de2021.64.png': {},
@@ -412,6 +421,7 @@ class TestPSeg(unittest.TestCase):
         test_list = {
             'tsla2021.14.png': {},
             'tsla2021.36.png': {},
+            'tsla2021.73.png': {},
             'tsla2021.123.png': {},
             'de2021.64.png': {},
             'x2021.87.png': {},
@@ -449,6 +459,7 @@ class TestPSeg(unittest.TestCase):
         test_list = {
             'tsla2021.14.png': {},
             'tsla2021.36.png': {},
+            'tsla2021.73.png': {},
             'tsla2021.123.png': {},
             'de2021.64.png': {},
             'x2021.87.png': {},

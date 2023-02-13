@@ -987,9 +987,15 @@ class tablevspan:
         inters_img_col_shift = int(column[0])
         inters_img_row_shift = int(rows[0][0])
         inters_img = numpy.ones(shape=(inters_img_height + 1, inters_img_width + 1), dtype=numpy.uint8)
+        first_row = 10000
+        last_row = 0
         for row in table_rows:
             inters_img[int(row[0]) - inters_img_row_shift, int(row[1]) - inters_img_col_shift:int(row[3]) - inters_img_col_shift + 1] = 0
         for col in table_cols:
+            if col[0] < first_row:
+                first_row = int(col[0])
+            if col[2] > last_row:
+                last_row = int(col[2])
             inters_img[int(col[0]) - inters_img_row_shift:int(col[2]) - inters_img_row_shift + 1, int(col[1]) - inters_img_col_shift] = 0
         cross_p = numpy.array([[1, 0, 1], [0, 0, 0], [1, 0, 1]], dtype=numpy.uint8)
         cross_dw_p = numpy.array([[1, 1, 1], [0, 0, 0], [1, 0, 1]], dtype=numpy.uint8)
@@ -997,10 +1003,10 @@ class tablevspan:
         cross_lr_p = numpy.array([1, 0, 1], dtype=numpy.uint8)
         cross_tb_p = numpy.array([1, 0, 1], dtype=numpy.uint8)
         intersections = [
-            (0, 0),
-            (0, inters_img.shape[1] - 1),
-            (inters_img.shape[0] - 1, 0),
-            (inters_img.shape[0] - 1, inters_img.shape[1] - 1)
+            (first_row - inters_img_row_shift, 0),
+            (first_row - inters_img_row_shift, inters_img.shape[1] - 1),
+            (last_row - inters_img_row_shift, 0),
+            (last_row - inters_img_row_shift, inters_img.shape[1] - 1)
         ]
         intersections_upward = set()
         intersections_downward = set()
