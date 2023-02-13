@@ -286,7 +286,7 @@ def columns_from_image(im_bin_clear):
         # Two trials to find the middle spacing, first try full page
         # middle (width / 2). If fails, run on max spacing middle
         # (spacings[-1][1] / 2) to account for side binding shift.
-        for middle in [width / 2, spacings[-1][1] / 2, spacings[-1][0] / 2, (spacings[-1][0] + spacings[-1][1]) / 2 / 2]:
+        for middle in [width / 2, spacings[-1][1] / 2, spacings[-1][0] / 2, (spacings[-1][0] + spacings[-1][1]) / 2 / 2, spacings[0][1] + width / 2]:
             for spc_idx, spacing in enumerate(spacings):
                 if (spacing[1] >= middle and
                     spacing[0] <= middle):
@@ -335,23 +335,25 @@ def columns_from_image(im_bin_clear):
                 columns = [[spacing_left[1], spacing_right[0]]]
                 spacings = [spacing_left, spacing_right]
 
-    # merge narrow columns
-    while True:
-        col_changed = False
+    # For common spacing layouts (larger than 1/4 width spacing indicate
+    # a hard, unconventional layout excluded from this trick), if there
+    # is a narrow column, consider the whole page as a single table.
+    # Experiments show the method being superior to narrow column
+    # merging.
+    spacing_widths = [spc[1] - spc[0] for spc in spacings]
+    if max(spacing_widths) < width / 4:
         column_widths = [column[1] - column[0] for column in columns]
+        narrow_col = False
         for col_idx in range(1, len(column_widths)):
             if column_widths[col_idx] >= MIN_COLUMN_WIDTH:
                 continue
-            column = columns[col_idx]
-            del columns[col_idx]
-            spacing_left = columns[col_idx - 1][1]
-            spacing_right = column[0]
-            columns[col_idx - 1][1] = column[1]
-            spacings = [[spl, spr] for (spl, spr) in spacings if not (spl == spacing_left and spr == spacing_right)]
-            col_changed = True
+            narrow_col = True
             break
-        if not col_changed:
-            break
+        if narrow_col:
+            spacing_left = spacings[0]
+            spacing_right = spacings[-1]
+            columns = [[spacing_left[1], spacing_right[0]]]
+            spacings = [spacing_left, spacing_right]
 
     return (columns, spacings)
 
