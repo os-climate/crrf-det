@@ -610,6 +610,26 @@ def row_hspacings_from_row_groups(columns, column_row_groups, im_bin_clear):
                 #             row_spacing[i - spacing_span] == 0 and
                 #             row_spacing[i + spacing_span] == 0):
                 #             row_spacing[i - spacing_span:i + spacing_span + 1] = 0
+                # Left-to-right run-length based noise reduction, bullet points tend to be
+                # small and treated as separate columns in later stage. Below is a mechanism
+                # to merge the bullet (2-px wide) with the right side and skip spacing in
+                # the middle. Only applies to the left 1/4 of the row.
+                c_len = 0
+                to_merge = False
+                for i, x in enumerate(row_spacing):
+                    if i >= len(row_spacing) / 4:
+                        break
+                    if x == 1:
+                        if (c_len <= 2 and
+                            c_len > 0):
+                            # merge spacing into content
+                            to_merge = True
+                        c_len = 0
+                    else:
+                        c_len += 1
+                        to_merge = False
+                    if to_merge:
+                        row_spacing[i] = 0
                 row_hspacings.append(row_spacing)
             # `row_hspacings` 1=spacing, 0=content
             if row_hspacings:
