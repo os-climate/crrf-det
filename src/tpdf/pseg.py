@@ -865,24 +865,44 @@ class tablevspan:
         # find "busyness" of rect neighboring columns, if too busy, the
         # rect is likely a misinterpretation because table texts are likely
         # to be scattered.
-        filtered_rects = []
-        for ((x0, y0), (x1, y1)) in rects:
-            # 0=text, 1=white, for `text_value` and `row_total` below, a
-            # high value indicates white, and a low value indicates text,
-            # calculated on a row-total basis.
-            text_value = numpy.sum(row_hspacings[y0:(y1 + 1), :])
-            row_total = row_hspacings.shape[1] * (y1 - y0)
-            # a very low `text_value`, defined as "< 0.1 * row_total"
-            # indicates that the row looks awful lot like just text, since
-            # table cells should have plenty of spacing
-            if text_value < 0.15 * row_total:
-                filtered_rects.append(((x0, y0), (x1, y1)))
-            # todo: once a busy column is discovered, not only the table
-            # column dividing rectangle should be removed, for the entire
-            # row group, any other rectangles touching the same row should
-            # be broken apart
-        for rect in filtered_rects:
-            rects.remove(rect)
+        BUSY_COLUMN_CONTENT_RUN_LENGTH = 120
+        BUSY_COLUMN_ROW_COUNT = 10
+        # check the left 2 columns, if both are busy, plenty of text, then
+        # it's most definitely not a table
+        if len(rects) >= 1:
+            range_col1 = range(0, rects[0][0][0])
+            if len(rects) >= 2:
+                range_col2 = range(rects[0][1][0], rects[1][0][0])
+            else:
+                range_col2 = range(rects[0][1][0], row_hspacings.shape[1])
+            # TODO: this is a non-vectorized approach, consider improve
+            longest_content_rows_col1 = {}
+            longest_content_rows_col2 = {}
+            for y in range(0, row_hspacings.shape[0]):
+                c_len = 0
+                for x in range_col1:
+                    if row_hspacings[y, x] == 0:
+                        c_len += 1
+                        longest_content_rows_col1[y] = max(longest_content_rows_col1.get(y, 0), c_len)
+                    else:
+                        c_len = 0
+                c_len = 0
+                for x in range_col2:
+                    if row_hspacings[y, x] == 0:
+                        c_len += 1
+                        longest_content_rows_col2[y] = max(longest_content_rows_col2.get(y, 0), c_len)
+                    else:
+                        c_len = 0
+            busy_rows_col1 = sum([1 if v >= BUSY_COLUMN_CONTENT_RUN_LENGTH else 0 for k, v in longest_content_rows_col1.items()])
+            busy_rows_col2 = sum([1 if v >= BUSY_COLUMN_CONTENT_RUN_LENGTH else 0 for k, v in longest_content_rows_col2.items()])
+            # discard all columns if both left 2 columns are busy
+            if ((busy_rows_col1 >= BUSY_COLUMN_ROW_COUNT and
+                busy_rows_col2 >= BUSY_COLUMN_ROW_COUNT) or
+                (busy_rows_col1 >= len(longest_content_rows_col1) and
+                busy_rows_col2 >= len(longest_content_rows_col2))):
+                return []
+            # print('longest_content_rows_col1', busy_rows_col1, longest_content_rows_col1)
+            # print('longest_content_rows_col2', busy_rows_col2, longest_content_rows_col2)
         return rects
 
     @staticmethod
