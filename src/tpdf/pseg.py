@@ -615,21 +615,23 @@ def row_hspacings_from_row_groups(columns, column_row_groups, im_bin_clear):
                 # to merge the bullet (2-px wide) with the right side and skip spacing in
                 # the middle. Only applies to the left 1/4 of the row.
                 c_len = 0
-                to_merge = False
+                merge_start = -1
                 for i, x in enumerate(row_spacing):
-                    if i >= len(row_spacing) / 4:
-                        break
+                    # spacing
                     if x == 1:
                         if (c_len <= 2 and
                             c_len > 0):
                             # merge spacing into content
-                            to_merge = True
+                            merge_start = i
                         c_len = 0
+                    # content
                     else:
+                        # merge a maximum of 20 pixels
+                        if (merge_start >= 0 and
+                            i - merge_start < 20):
+                            row_spacing[merge_start:i] = [0] * (i - merge_start)
                         c_len += 1
-                        to_merge = False
-                    if to_merge:
-                        row_spacing[i] = 0
+                        merge_start = -1
                 row_hspacings.append(row_spacing)
             # `row_hspacings` 1=spacing, 0=content
             if row_hspacings:
@@ -898,8 +900,10 @@ class tablevspan:
             # discard all columns if both left 2 columns are busy
             if ((busy_rows_col1 >= BUSY_COLUMN_ROW_COUNT and
                 busy_rows_col2 >= BUSY_COLUMN_ROW_COUNT) or
-                (busy_rows_col1 >= len(longest_content_rows_col1) and
-                busy_rows_col2 >= len(longest_content_rows_col2))):
+                (busy_rows_col1 >= len(longest_content_rows_col1) - 1 and
+                busy_rows_col2 >= len(longest_content_rows_col2) - 1 and
+                len(longest_content_rows_col1) >= 2 and
+                len(longest_content_rows_col2) >= 2)):
                 return []
             # print('longest_content_rows_col1', busy_rows_col1, longest_content_rows_col1)
             # print('longest_content_rows_col2', busy_rows_col2, longest_content_rows_col2)
