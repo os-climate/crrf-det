@@ -81,7 +81,7 @@ def parse(input_image):
             # find "busyness" of rect neighboring columns, if too busy, the
             # rect is likely a misinterpretation because table texts are likely
             # to be scattered.
-            rects = tablevspan.remove_busy_column_rectangles(rects, row_hspacings)
+            rects = tablevspan.remove_busy_column_rectangles(rects, row_hspacings, im_bin_clear.shape[0] > im_bin_clear.shape[1])
             column_row_grp_tablevspan['05_remove_busy_column_rectangles'][col_idx][row_grp_idx] = rects.copy()
 
             (table_rows, table_cols) = tablevspan.build_table(column, rows, row_hspacings, rects, im_bin_blurred)
@@ -257,6 +257,19 @@ def columns_from_image(im_bin_clear):
         if spacing[0] != spacing[1]:
             spacings.append(spacing)
         spacing = [x0, x0]
+
+    spacing_widths = [spc[1] - spc[0] for spc in spacings]
+    large_spacing_count = sum([1 if sw > MIN_COLUMN_SPACING else 0 for sw in spacing_widths[1:-1]])
+    # for portrait layout directly pass as a single column page if there are at least 4 spacings
+    # (besides edges) and 3 of which are large
+    if (im_bin_clear.shape[0] > im_bin_clear.shape[1] and
+        large_spacing_count >= 3 and
+        len(spacing_widths) >= 6):
+        spacing_left = spacings[0]
+        spacing_right = spacings[-1]
+        columns = [[spacing_left[1], spacing_right[0]]]
+        spacings = [spacing_left, spacing_right]
+        return (columns, spacings)
 
     # merge columns with very narrow spacing
     while True:
@@ -865,11 +878,11 @@ class tablevspan:
         return True
 
     @staticmethod
-    def remove_busy_column_rectangles(rects, row_hspacings):
+    def remove_busy_column_rectangles(rects, row_hspacings, portrait):
         # find "busyness" of rect neighboring columns, if too busy, the
         # rect is likely a misinterpretation because table texts are likely
         # to be scattered.
-        BUSY_COLUMN_CONTENT_RUN_LENGTH = 120
+        BUSY_COLUMN_CONTENT_RUN_LENGTH = 70 if portrait else 120
         BUSY_COLUMN_ROW_COUNT = 10
         # check the left 2 columns, if both are busy, plenty of text, then
         # it's most definitely not a table
