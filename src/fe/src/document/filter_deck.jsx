@@ -1,5 +1,4 @@
 import { useState, useRef } from 'react';
-import Editor from 'react-simple-code-editor';
 import { highlight, languages } from 'prismjs/components/prism-core';
 import 'prismjs/components/prism-regex';
 import 'prismjs/themes/prism.css';
@@ -10,16 +9,16 @@ import { config } from '../shared/config';
 import { auth } from '../shared/auth';
 
 
-function FilterDropdown({ filters, setFilters, current, setCurrent, setCode, menuFunc }) {
+function FilterDropdown({ filters, setFilters, current, setCurrent, setQuery, menuFunc }) {
 
   function filterClick(e) {
     var fname = e.currentTarget.getAttribute('data-filter-name');
     setCurrent(fname);
-    setCode(filters[fname].code?filters[fname].code:'');
+    setQuery(filters[fname].query?filters[fname].query:'');
   };
 
   return (
-    <div className="dropdown dropdown-top dropdown-end absolute left-2 top-0.5 right-[106px]">
+    <div className="dropdown absolute left-3 top-0.5" style={{ maxWidth: 'calc(100% - 3rem)'}}>
       <label tabIndex="0" className="btn normal-case min-h-fit h-9 pt-2.5 pl-2 pr-6 bg-slate-100 border-slate-100 text-slate-500 hover:bg-white hover:border-slate-200 truncate block"><span className="text-slate-400 mr-2">Filter</span><span className="">{ current }</span>
         <i className="icon-down-dir pl-3 pr-2 text-slate-500 absolute right-2 top-3"/>
       </label>
@@ -36,53 +35,11 @@ function FilterDropdown({ filters, setFilters, current, setCurrent, setCode, men
 }
 
 
-function OptionDropdown({ menuFunc }) {
-
-  return (
-    <div className="dropdown dropdown-top dropdown-end absolute w-[32px] absolute top-0.5 right-0">
-      <label tabIndex="0" className="btn normal-case min-h-fit h-9 pt-2.5 pl-2 pr-6 bg-slate-100 border-slate-100 text-slate-500 hover:bg-white hover:border-slate-200 block"><i className="icon-dot-3 rotate-90"/>
-      </label>
-      <ul tabIndex="0" className="dropdown-content block menu menu-compact shadow-md border border-slate-200 bg-base-100 rounded max-h-[65vh] w-60 overflow-auto">
-        <li className="block" key={0}><a className={scn.menuA} onClick={ menuFunc.renameFilter }><i className="icon-pencil mr-1"/> Rename</a></li>
-        <li className="block" key={1}><a className={scn.menuA} onClick={ menuFunc.manageTags }><i className="icon-window mr-1"/> Manage Tags</a></li>
-      </ul>
-    </div>
-  )
-}
-
-
-function renderTags(labels, manageTagsFunc) {
-  let tags = [];
-  if (labels) {
-    for (var i = 0; i < labels.length; i++) {
-      var label = labels[i].trim();
-      if (!label)
-        continue;
-      tags.push(<Tag key={i} label={ label } color={ getColor(i, 1) } onClick={ manageTagsFunc }/>);
-    }
-  }
-  return tags;
-}
-
-
-function TagView({ filters, current, menuFunc }) {
-  let tags = renderTags(filters[current].labels, menuFunc.manageTags);
-
-  return (
-    <div className="absolute left-0 bottom-0 h-10 right-0 border-t border-t-slate-100 p-0.5 overflow-x-auto overflow-y-hidden whitespace-nowrap">
-      { tags.length > 0?(<div className="mt-1">{tags}</div>):(
-      <button className={`btn normal-case h-9 text-slate-500 ${scn.clearButton}`} onClick={ menuFunc.manageTags }><i className="icon-tag mr-1"/>Manage Tags for this Filter</button>
-      )}
-    </div>
-  )
-}
-
-
 export default function DocumentFilterDeck({ path, file, pagecontent, filterstatus }) {
 
   const [filters, setFilters] = useState({
-    'Scope 1/2/3 Emissions': { code: 'table:GHG', labels: ['Scope 1', 'Scope 2', 'Scope 3', 'Scope 1+2+3'] },
-    'Emissions reduction target': { code: 'emission reduction target', labels: ['Relative emissions reduction target', 'Absolute emissions reduction target']},
+    'Scope 1/2/3 Emissions': { query: 'table:GHG', labels: ['Scope 1', 'Scope 2', 'Scope 3', 'Scope 1+2+3'] },
+    'Emissions reduction target': { query: 'emission reduction target', labels: ['Relative emissions reduction target', 'Absolute emissions reduction target']},
     'Intensity reduction target': { labels: ['Relative intensity reduction target', 'Absolute intensity reduction target']},
     'SBTi certification of target': { labels: ['SBTi certification of target']},
     'Climate commitment scenario': {},
@@ -106,7 +63,7 @@ export default function DocumentFilterDeck({ path, file, pagecontent, filterstat
     'Total Capacity Hard Coal': {},
   });
   const [current, setCurrent] = useState(Object.keys(filters)[0]);
-  const [code, setCode] = useState(filters[current].code);
+  const [query, setQuery] = useState(filters[current].query);
   const [filterName, setFilterName] = useState('');
   const [filterNameMode, setFilterNameMode] = useState('');
   const [tags, setTags] = useState('');
@@ -138,16 +95,6 @@ export default function DocumentFilterDeck({ path, file, pagecontent, filterstat
     console.log('doRenameFilter');
     refDlgFilterName.current.checked = false;
   }
-  function manageTags(e) {
-    setTags(filters[current].labels);
-    refDlgTags.current.checked = true;
-  }
-  function closeTags(e) {
-    refDlgTags.current.checked = false;
-  }
-  function doUpdateTags(e) {
-    refDlgTags.current.checked = false;
-  }
 
   function filterNameChange(e) {
     setFilterName(e.target.value);
@@ -159,7 +106,7 @@ export default function DocumentFilterDeck({ path, file, pagecontent, filterstat
   function runFilter(e) {
     filterstatus.set_working(true);
     auth.post({base: '/docs', folder: path, rest: '/' + file}, {
-      body: JSON.stringify({'terms': code})
+      body: JSON.stringify({'terms': query})
     }, ( data ) => {
       var id = data.data;
       if (window.run_filter_timer)
@@ -181,6 +128,9 @@ export default function DocumentFilterDeck({ path, file, pagecontent, filterstat
       filterstatus.set_working(false);
       pagecontent.set_page(1);
     });
+  }
+  function queryChanged(e) {
+    console.log('queryChanged', e);
   }
 
   // Dialogs
@@ -215,49 +165,29 @@ export default function DocumentFilterDeck({ path, file, pagecontent, filterstat
           </div>
         </div>
       </div>
-
-      <input type="checkbox" id="dialog-tags" className="modal-toggle" ref={ refDlgTags } />
-      <div className="modal">
-        <div className="modal-box">
-          <h3 className="font-bold text-lg">Manage Tags</h3>
-          <div className="form-control w-full">
-            <p className="py-3">Enter comma(,)-delimited tags to describe the possible indicators in the content filtered by <span className="font-bold">{current}</span>:</p>
-            <textarea className="border border-slate-200 rounded-md px-2 w-full h-24" placeholder="comma delimited tags" onChange={tagsChange} defaultValue={tags}></textarea>
-          </div>
-          <div className="py-2 w-full">
-            {renderTags(tags)}
-          </div>
-          <div className="modal-action">
-            <button className="btn bg-slate-50 text-slate-500 border-slate-300 hover:bg-slate-200 hover:border-slate-400" onClick={ closeTags }>Cancel</button>
-            <button className="btn bg-teal-300 hover:bg-teal-600 hover:border-teal-700 border-teal-500 text-white" onClick={ doUpdateTags }>
-              Update
-            </button>
-          </div>
-        </div>
-      </div>
     </div>
   )
 
   return (
     <div className="ml-2">
-      <div className="h-10 bg-slate-100 items-center w-full">
-        <FilterDropdown filters={ filters } setFilters={ setFilters } current={ current } setCurrent={ setCurrent } setCode={ setCode } menuFunc={{ newFilter: newFilter }}/>
-        <button className={`w-[60px] absolute top-0 right-9 ${scn.primaryButton}`} onClick={ runFilter } disabled={ filterstatus.working }>Go</button>
-        <OptionDropdown menuFunc={{ renameFilter: renameFilter, manageTags: manageTags }}/>
+      <div className="h-10 bg-slate-100 items-center w-full rounded-t-md">
+        <FilterDropdown filters={ filters } setFilters={ setFilters } current={ current } setCurrent={ setCurrent } setQuery={ setQuery } menuFunc={{ newFilter: newFilter }}/>
+        <button className="absolute right-1 top-0.5 btn px-2 min-h-fit h-9 bg-slate-100 border-slate-100 text-slate-500 hover:bg-white hover:border-slate-200 disabled:bg-transparent disabled:hover:bg-transparent"><i className="icon-pencil" onClick={ renameFilter }/></button>
       </div>
-      <div className="absolute bottom-0 top-10 left-2 right-0 border border-slate-100 overflow-auto">
-        <Editor
-          value={code}
-          onValueChange={code => setCode(code)}
-          highlight={code => highlight(code, languages.regex)}
-          padding={10}
-          style={{
-            fontFamily: '"Fira code", "Fira Mono", monospace',
-            fontSize: 14,
-          }}
-          className="absolute left-0 top-0 right-0 bottom-10"
-        />
-        <TagView filters={ filters } current={ current } menuFunc={{ manageTags: manageTags }}/>
+      <div className="absolute bottom-0 top-10 left-2 right-0 overflow-auto">
+        <div className="form-control border-l border-slate-100 relative">
+          <i className="absolute icon-search left-3 top-3 text-slate-300"/>
+          <div className="flex">
+            <input type="text" placeholder="Search in document" className="pl-10 input input-bordered w-full rounded-none border-0 hover:outline-0 focus:outline-0 focus:bg-slate-100 border-slate-100 border-b" value={ query } onChange={ e => setQuery(e.target.value) }/>
+            <button className={`btn rounded-none px-8 py-0 text-lg ${scn.primaryButton}`} onClick={ runFilter } disabled={ filterstatus.working }>Go</button>
+          </div>
+        </div>
+        <div className="form-control border-l border-r border-slate-100 relative">
+          <i className="absolute icon-tag left-3 top-3 text-slate-300"/>
+          <div className="flex">
+            <input type="text" placeholder="Comma-delimited tags" className="pl-10 input input-bordered w-full rounded-none border-0 hover:outline-0 focus:outline-0 focus:bg-slate-100 border-slate-100 border-b" value={ filters[current].labels ? filters[current].labels.join(", "):'' }/>
+          </div>
+        </div>
      </div>
      { dialogs }
     </div>

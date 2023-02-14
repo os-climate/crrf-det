@@ -6,6 +6,21 @@ import { readdirSync, readFileSync, rmSync } from 'fs';
 import si from 'search-index';
 
 
+function processNumbers(input) {
+    var r = [];
+    for (let e of input.split(' ')) {
+        var p = parseFloat(e.replace(/,/g, '').replace(/\$/g, '').replace(/€/g, '').replace(/£/g, ''));
+        if (isNaN(p) ||
+            (p < 5 && p >= 0 && parseInt(p) == parseFloat(p)) ||
+            (p >= 1900 && p <= 2100 && parseInt(p) == parseFloat(p)))
+            r.push(e);
+        else
+            r.push('NUMERICVALUE');
+    }
+    return r.join(' ');
+}
+
+
 async function build(argv) {
     // initialize an index
     var files = readdirSync(argv.path);
@@ -24,11 +39,11 @@ async function build(argv) {
             var c = page.content[i];
             var doc = { _id: pageNum + '-' + i };
             if (c.type == 'text')
-                doc.text = c.content;
+                doc.text = processNumbers(c.content);
             else if (c.type == 'table') {
                 doc.table = '';
                 for (var j = 0; j < c.content.length; j++)
-                    doc.table += c.content[j].join('\t') + '\n';
+                    doc.table += processNumbers(c.content[j].join(' ')) + '\n';
             }
             data.push(doc);
         }
@@ -86,6 +101,7 @@ async function search(argv) {
     }
     if (q_inc_and.length == 0)
         return;
+    q_inc_and.push('NUMERICVALUE');
     var q = {};
     if (q_exc_or.length > 0) {
         q.NOT = {

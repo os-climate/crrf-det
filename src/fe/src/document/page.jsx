@@ -60,11 +60,11 @@ function DocumentMode() {
         ):(null)}
         <DocumentView path={ path } file={ file } pagecontent={ pagecontent } filterstatus={ filterstatus }/>
       </div>
-      <div className="absolute right-0 w-96 top-0 bottom-40">
-        <DocumentStructure path={ path } file={ file } pagecontent={ pagecontent } filterstatus={ filterstatus }/>
-      </div>
-      <div className="absolute right-0 w-96 h-40 bottom-0">
+      <div className="absolute right-0 w-96 top-0" style={{ height: '9.5rem'}}>
         <DocumentFilterDeck path={ path } file={ file } pagecontent={ pagecontent } filterstatus={ filterstatus } />
+      </div>
+      <div className="absolute right-0 w-96 bottom-0" style={{ top: '9.5rem'}}>
+        <DocumentStructure path={ path } file={ file } pagecontent={ pagecontent } filterstatus={ filterstatus }/>
       </div>
     </div>
   )
