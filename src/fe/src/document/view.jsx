@@ -178,23 +178,31 @@ function PageNavigation({ doc, pagecontent, filterstatus, pageCount, pageImages 
       dropContent.push(<li className="block" key={i}><a className="text-center block border border-white hover:border-slate-200 hover:bg-slate-50 hover:text-slate-500" onClick={ pageClick } data-page-index={ i + 1 }>{i + 1}</a></li>);
   }
 
+  var actualPageNum = '';
+  var actualPageCount = pageCount;
+  if (filterstatus.result) {
+    actualPageCount = filterstatus.result.length;
+    if (filterstatus.result.length > 0)
+      actualPageNum = ' (' + filterstatus.result[pagecontent.page -1].page + ')';
+  }
+
   return (
     <div>
       <button className="btn px-2 min-h-fit h-9 bg-slate-100 border-slate-100 text-slate-500 hover:bg-white hover:border-slate-200 disabled:bg-transparent disabled:hover:bg-transparent" onClick={ pageLeft } disabled={ pagecontent.page < 2 }>
         <i className="icon-left-dir"/>
       </button>
       <div className="dropdown">
-        <label tabIndex="0" className="btn normal-case min-h-fit h-9 bg-slate-100 border-slate-100 text-slate-500 hover:bg-white hover:border-slate-200">Page { pagecontent.page + (filterstatus.result ? (' (' + filterstatus.result[pagecontent.page - 1].page + ')'):'') } of { filterstatus.result ? filterstatus.result.length + ' matched' : pageCount }</label>
+        <label tabIndex="0" className="btn normal-case min-h-fit h-9 bg-slate-100 border-slate-100 text-slate-500 hover:bg-white hover:border-slate-200">Page { pagecontent.page + actualPageNum } of { filterstatus.result ? filterstatus.result.length + ' matched' : pageCount }</label>
         <ul tabIndex="0" className="dropdown-content block menu menu-compact shadow-md border border-slate-200 bg-base-100 rounded max-h-96 overflow-auto">
           <li className="block px-3 py-1 whitespace-nowrap text-xs uppercase font-bold text-slate-400">Go to Page</li>
           { dropContent }
         </ul>
       </div>
-      <button className="btn px-2 min-h-fit h-9 bg-slate-100 border-slate-100 text-slate-500 hover:bg-white hover:border-slate-200 disabled:bg-transparent disabled:hover:bg-transparent" onClick={ pageRight } disabled={ pagecontent.page > pageCount - 1 }>
+      <button className="btn px-2 min-h-fit h-9 bg-slate-100 border-slate-100 text-slate-500 hover:bg-white hover:border-slate-200 disabled:bg-transparent disabled:hover:bg-transparent" onClick={ pageRight } disabled={ pagecontent.page > actualPageCount - 1 }>
         <i className="icon-right-dir"/>
       </button>
       { filterstatus.result ? (
-        <button className="btn btn-warning normal-case px-2 min-h-fit h-9 ml-3" onClick={ clearFilter }>Filter matched { filterstatus.result.length } of { pageCount } pages <i className="icon-cancel-circled ml-2"></i></button>
+        <button className="btn btn-warning normal-case px-2 min-h-fit h-9 ml-3" onClick={ clearFilter }>Filter matched { actualPageCount } of { pageCount } pages <i className="icon-cancel-circled ml-2"></i></button>
       ):(null)}
     </div>
   )
