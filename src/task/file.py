@@ -8,10 +8,10 @@ from sanic.log import logger
 
 import data.file
 
-from .shared import huey
+from .shared import huey_translate, huey_common
 
 
-@huey.task(context=True)
+@huey_translate.task(context=True)
 def initialize_pdf(userid, folder, name, task=None):
     base_path = data.file.get_path(userid, folder)
     input_path = os.path.join(base_path, name)
@@ -83,7 +83,7 @@ def initialize_pdf(userid, folder, name, task=None):
     os.remove(os.path.join(output_path, 'status'))
 
 
-@huey.task(context=True)
+@huey_common.task(context=True)
 def search_pdf(userid, folder, name, terms, task=None):
     base_path = data.file.get_path(userid, folder)
     doc_path = os.path.join(base_path, '.' + name)

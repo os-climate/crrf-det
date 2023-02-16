@@ -1,4 +1,5 @@
 import os
+import psutil
 import subprocess
 import multiprocessing
 
@@ -9,12 +10,12 @@ from sanic_ext import Extend
 
 
 import service
-from task.shared import huey
+from task.shared import huey_translate, huey_common
 
 
 app = Sanic("crrf-det")
 app.config.SECRET = os.environ['JWT_SECRET']
-app.config.CORS_ORIGINS = 'http://localhost,http://127.0.0.1'
+app.config.CORS_ORIGINS = 'http://localhost,http://127.0.0.1,{}'.format(os.environ.get('HOST_FE_URL'))
 Extend(app)
 
 
@@ -25,10 +26,14 @@ app.blueprint(service.filters.bp)
 
 
 def launch_huey_consumer():
-    cpus = multiprocessing.cpu_count()
+    cpus = psutil.cpu_count(logical=False)
     workers = max(1, cpus - 2)
-    logger.info('initialize {} huey consumers ...'.format(workers))
-    return subprocess.Popen(['huey_consumer.py', 'det.huey', '-n', '-m', '2', '-b', '1.05', '-k', 'process', '-w', str(workers)])
+    logger.info('initialize {} huey_translate consumers ...'.format(workers))
+    p1 = subprocess.Popen(['huey_consumer.py', 'det.huey_translate', '-n', '-m', '2', '-b', '1.05', '-k', 'process', '-w', str(workers)])
+    workers = cpus
+    logger.info('initialize {} huey_common consumers ...'.format(workers))
+    p2 = subprocess.Popen(['huey_consumer.py', 'det.huey_common', '-n', '-m', '2', '-b', '1.05', '-k', 'process', '-w', str(workers)])
+    return (p1, p2)
 
 
 @app.route('/')
