@@ -1,0 +1,15 @@
+FROM node:lts-slim AS fe_build
+ARG BACKEND_ENDPOINT_BASE
+RUN echo "Building det-fe for $BACKEND_ENDPOINT_BASE ..."
+COPY src/fe /fe
+RUN cd /fe/ && \
+    sed -i -r "s|  endpoint_base:.+|  endpoint_base: '$BACKEND_ENDPOINT_BASE',|" src/shared/config.js && \
+    cat src/shared/config.js && \
+    npm install && \
+    npm run build
+# files are in /fe/dist/
+
+FROM nginx:stable
+COPY --from=fe_build /fe/dist /usr/share/nginx/html
+EXPOSE 80
+CMD ["nginx", "-g", "daemon off;"]

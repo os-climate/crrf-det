@@ -1,0 +1,44 @@
+# ---------------------------------------------------------------
+#  This is an example production configuration. Make sure to
+#  change JWT_SECRET, URL_SIGN_SECRET, HOST_FE_URL
+# ---------------------------------------------------------------
+version: '2'
+services:
+  be:
+    image: det-be-dist
+    container_name: det-be-prod
+    command: sanic det.app --host=0.0.0.0 --port=8000 --workers=2
+    environment:
+      # disabling numpy threads improves multiprocessing speed
+      - OPENBLAS_NUM_THREADS=1
+      - NUMEXPR_NUM_THREADS=1
+      - VECLIB_MAXIMUM_THREADS=1
+      - MKL_NUM_THREADS=1
+      - OMP_NUM_THREADS=1
+      - JWT_SECRET=crrf-det-jwt-SECRET!!!501015
+      - URL_SIGN_SECRET=86c935bc079ba1fef55809e2f575426c
+      - HOST_FE_URL=http://localhost
+      - REDIS_PORT=23451
+    volumes:
+      - ../prod-data/data:/data
+    ports:
+      - 23450:8000
+    depends_on:
+      - redis
+  fe:
+    image: det-fe-dist
+    container_name: det-fe-prod
+    ports:
+      - 80:80
+    depends_on:
+      - be
+  redis:
+    image: redis
+    container_name: det-redis-prod
+    network_mode: host
+    expose:
+      - "23451"
+    volumes:
+      - ../prod-data/huey_data:/huey_data
+    restart: "unless-stopped"
+    command: redis-server --port 23451 --save 3600 1 --loglevel warning

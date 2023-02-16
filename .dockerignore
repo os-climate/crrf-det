@@ -3,3 +3,6 @@ docmt/debug/
 docmt/release/
 docmt/poppler-*
 src/search/node_modules/
+src/fe/node_modules/
+dev-data/
+src/tmp/

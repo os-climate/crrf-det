@@ -1,0 +1,38 @@
+FROM debian:stable AS docmt_build
+RUN apt-get update && apt-get install -y build-essential cmake ninja-build libpng-dev zlib1g-dev libjpeg-dev libopenjp2-7-dev libfreetype-dev libfontconfig-dev libtiff-dev libnss3-dev liblcms2-dev
+COPY docmt /docmt
+WORKDIR /docmt
+RUN ./build-release.sh
+# /docmt/release/docmt
+
+FROM node:lts-slim AS detsearch_build
+COPY src/search /search
+WORKDIR /search
+RUN npm i -g . && ls -al /usr/local/lib/node_modules && which det-search
+# /usr/local/bin/det-search
+# /usr/local/lib/node_modules/det-search
+
+FROM python:3.11-slim
+COPY src/requirements.txt /det/
+WORKDIR /det
+RUN apt-get update && \
+    apt-get install -y curl poppler-utils build-essential zlib1g libopenjp2-7 libfontconfig libnss3 && \
+    curl -fsSL https://deb.nodesource.com/setup_19.x | bash - && \
+    apt-get install -y nodejs && \
+    export MAKEFLAGS="-j$(nproc)" && \
+    pip install -r /det/requirements.txt && \
+    apt-get remove -y curl build-essential lsb-release gnupg && \
+    apt-get autoremove -y && \
+    apt-get clean && \
+    rm -rf /var/lib/apt/lists/*
+COPY src/s-pdf /det/
+COPY src/t-pdf /det/
+COPY src/det.py /det/
+COPY src/tpdf /det/tpdf
+COPY src/data /det/data
+COPY src/service /det/service
+COPY src/task /det/task
+COPY --from=docmt_build /docmt/release/docmt /docmt/release/docmt
+COPY --from=detsearch_build /usr/local/lib/node_modules/det-search /usr/local/lib/node_modules/det-search
+RUN ln -s /usr/local/lib/node_modules/det-search/index.js /usr/local/bin/det-search
+CMD ["sanic", "det.app"]
