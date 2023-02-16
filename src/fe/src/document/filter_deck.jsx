@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { highlight, languages } from 'prismjs/components/prism-core';
 import 'prismjs/components/prism-regex';
 import 'prismjs/themes/prism.css';
@@ -9,17 +9,16 @@ import { config } from '../shared/config';
 import { auth } from '../shared/auth';
 
 
-function FilterDropdown({ filters, setFilters, current, setCurrent, setQuery, menuFunc }) {
+function FilterDropdown({ filters, current, setCurrent, menuFunc }) {
 
   function filterClick(e) {
     var fname = e.currentTarget.getAttribute('data-filter-name');
     setCurrent(fname);
-    setQuery(filters[fname].query?filters[fname].query:'');
   };
 
   return (
     <div className="dropdown absolute left-3 top-0.5" style={{ maxWidth: 'calc(100% - 3rem)'}}>
-      <label tabIndex="0" className="btn normal-case min-h-fit h-9 pt-2.5 pl-2 pr-6 bg-slate-100 border-slate-100 text-slate-500 hover:bg-white hover:border-slate-200 truncate block"><span className="text-slate-400 mr-2">Filter</span><span className="">{ current }</span>
+      <label tabIndex="0" className="btn normal-case min-h-fit h-9 pt-2.5 pl-2 pr-6 bg-transparent border-transparent text-slate-500 hover:bg-white hover:border-slate-200 truncate block"><span className="text-slate-400 mr-2">Filter</span><span className="">{ current }</span>
         <i className="icon-down-dir pl-3 pr-2 text-slate-500 absolute right-2 top-3"/>
       </label>
       <ul tabIndex="0" className="dropdown-content block menu menu-compact shadow-md border border-slate-200 bg-base-100 rounded max-h-[65vh] w-80 overflow-auto">
@@ -37,39 +36,96 @@ function FilterDropdown({ filters, setFilters, current, setCurrent, setQuery, me
 
 export default function DocumentFilterDeck({ path, file, pagecontent, filterstatus }) {
 
-  const [filters, setFilters] = useState({
-    'Scope 1/2/3 Emissions': { query: 'table:GHG', labels: ['Scope 1', 'Scope 2', 'Scope 3', 'Scope 1+2+3'] },
-    'Emissions reduction target': { query: 'emission reduction target', labels: ['Relative emissions reduction target', 'Absolute emissions reduction target']},
-    'Intensity reduction target': { labels: ['Relative intensity reduction target', 'Absolute intensity reduction target']},
-    'SBTi certification of target': { labels: ['SBTi certification of target']},
-    'Climate commitment scenario': {},
-    'Steel production': {},
-    'Electricity production': {labels: ['Electricity production (total)']},
-    'Electricity capacity': {labels: ['Electricity capacity (total)']},
-    'Power production': {labels: ['Nuclear power production', 'Wind power production', 'Solar power production', 'Hydropower production']},
-    'Automobile production': {labels: ['Automobile production', 'Automobile EV production', 'Automobile EV share', ]},
-    'Automobile intensity': {},
-    'O&G production (total)': {},
-    'Hydrocarbons Reserves': {labels: ['Total Proven Hydrocarbons Reserves', 'Total Probable Hydrocarbons Reserves', 'Estimated Proven Hydrocarbons Reserves', 'Estimated Probable Hydrocarbons Reserves']},
-    'Total Volume of Hydrocarbons Production': {},
-    'Total Volume of Crude Oil Liquid Production': {},
-    'Total Volume of Crude Natural Gas Liquid Production': {},
-    'Total Volume of Crude Natural Gas Production': {},
-    'Total Production Coal': {},
-    'Total Production Lignite': {},
-    'Total Production Hard Coal': {},
-    'Total Capacity Coal': {},
-    'Total Capacity Lignite': {},
-    'Total Capacity Hard Coal': {},
-  });
-  const [current, setCurrent] = useState(Object.keys(filters)[0]);
-  const [query, setQuery] = useState(filters[current].query);
+  // const [filters, setFilters] = useState({
+  //   'Scope 1/2/3 Emissions': { query: 'table:GHG', labels: ['Scope 1', 'Scope 2', 'Scope 3', 'Scope 1+2+3'] },
+  //   'Emissions reduction target': { query: 'emission reduction target', labels: ['Relative emissions reduction target', 'Absolute emissions reduction target']},
+  //   'Intensity reduction target': { labels: ['Relative intensity reduction target', 'Absolute intensity reduction target']},
+  //   'SBTi certification of target': { labels: ['SBTi certification of target']},
+  //   'Climate commitment scenario': {},
+  //   'Steel production': {},
+  //   'Electricity production': {labels: ['Electricity production (total)']},
+  //   'Electricity capacity': {labels: ['Electricity capacity (total)']},
+  //   'Power production': {labels: ['Nuclear power production', 'Wind power production', 'Solar power production', 'Hydropower production']},
+  //   'Automobile production': {labels: ['Automobile production', 'Automobile EV production', 'Automobile EV share', ]},
+  //   'Automobile intensity': {},
+  //   'O&G production (total)': {},
+  //   'Hydrocarbons Reserves': {labels: ['Total Proven Hydrocarbons Reserves', 'Total Probable Hydrocarbons Reserves', 'Estimated Proven Hydrocarbons Reserves', 'Estimated Probable Hydrocarbons Reserves']},
+  //   'Total Volume of Hydrocarbons Production': {},
+  //   'Total Volume of Crude Oil Liquid Production': {},
+  //   'Total Volume of Crude Natural Gas Liquid Production': {},
+  //   'Total Volume of Crude Natural Gas Production': {},
+  //   'Total Production Coal': {},
+  //   'Total Production Lignite': {},
+  //   'Total Production Hard Coal': {},
+  //   'Total Capacity Coal': {},
+  //   'Total Capacity Lignite': {},
+  //   'Total Capacity Hard Coal': {},
+  // });
+  const [filters, setFilters] = useState({});
+  const [current, setCurrent] = useState();
+  const [query, setQuery] = useState('');
   const [filterName, setFilterName] = useState('');
   const [filterNameMode, setFilterNameMode] = useState('');
   const [tags, setTags] = useState('');
   const [ working, setWorking ] = useState(false);
+  const [ pending, setPending ] = useState(false);
   const refDlgFilterName = useRef();
   const refDlgTags = useRef();
+
+  useEffect(() => {
+    auth.get({base: '/filters'}, {}, ( data ) => {
+      if (data.status == 'ok') {
+        var f = data.data;
+        if (Object.keys(f).length == 0)
+          f = {
+            'GHG Table': { query: 'table:GHG' }
+          };
+        var c = Object.keys(f)[0];
+        setFilters(f);
+      } else {
+        console.warn('unhandled data', data);
+      }
+    });
+  }, []);
+
+  useEffect(() => {
+    var lsCurrent = localStorage.getItem('det_current_filter_name');
+    if (lsCurrent &&
+      filters.hasOwnProperty(lsCurrent)) {
+      setCurrent(lsCurrent);
+    } else if (Object.keys(filters).length > 0) {
+      var c = Object.keys(filters)[0];
+      setCurrent(c);
+    }
+  }, [ filters ]);
+
+  useEffect(() => {
+    if (current &&
+      filters.hasOwnProperty(current)) {
+      setQuery(filters[current].query);
+      localStorage.setItem('det_current_filter_name', current);
+    }
+  }, [ current ]);
+
+  useEffect(() => {
+    setPending(true);
+    if (window.filter_update_timer)
+      clearTimeout(window.filter_update_timer);
+    window.filter_update_timer = setTimeout(() => {
+      if (!current ||
+        !filters.hasOwnProperty(current)) {
+        setPending(false);
+        return;
+      }
+      var filter = filters[current];
+      filter.query = query;
+      auth.post({base: '/filters/' + encodeURIComponent(current)}, {
+        body: JSON.stringify({'filter': filter})
+      }, (data) => {
+        setPending(false);
+      })
+    }, 2500);
+  }, [ query ]);
 
   // Dialog handlers
   function newFilter(e) {
@@ -88,7 +144,15 @@ export default function DocumentFilterDeck({ path, file, pagecontent, filterstat
     refDlgFilterName.current.checked = false;
   }
   function doNewFilter(e) {
-    console.log('doNewFilter');
+    if (filterName.length > 0 &&
+      !filters.hasOwnProperty(filterName)) {
+      var newFilter = {};
+      newFilter[filterName] = {
+        query: ''
+      };
+      localStorage.setItem('det_current_filter_name', filterName);
+      setFilters({...filters, ...newFilter});
+    }
     refDlgFilterName.current.checked = false;
   }
   function doRenameFilter(e) {
@@ -129,9 +193,6 @@ export default function DocumentFilterDeck({ path, file, pagecontent, filterstat
       pagecontent.set_page(1);
     });
   }
-  function queryChanged(e) {
-    console.log('queryChanged', e);
-  }
 
   // Dialogs
   let dialogs = (
@@ -158,7 +219,7 @@ export default function DocumentFilterDeck({ path, file, pagecontent, filterstat
             <button className="btn bg-slate-50 text-slate-500 border-slate-300 hover:bg-slate-200 hover:border-slate-400" onClick={ closeFilterName }>Cancel</button>
             <button className="btn bg-teal-300 hover:bg-teal-600 hover:border-teal-700 border-teal-500 text-white" onClick={
               filterNameMode === 'new'?doNewFilter:(filterNameMode === 'rename'?doRenameFilter:null)
-            }>
+            } disabled={ filterName.length == 0 }>
               { filterNameMode === 'new'?(<span>Create</span>):(null) }
               { filterNameMode === 'rename'?(<span>Rename</span>):(null) }
             </button>
@@ -168,24 +229,28 @@ export default function DocumentFilterDeck({ path, file, pagecontent, filterstat
     </div>
   )
 
+  var colorSet = ['bg-slate-100', 'border-slate-100', 'focus:bg-slate-100'];
+  if (pending)
+    colorSet = ['bg-amber-200', 'border-amber-200', 'focus:bg-amber-200'];
+
   return (
     <div className="ml-2">
-      <div className="h-10 bg-slate-100 items-center w-full rounded-t-md">
-        <FilterDropdown filters={ filters } setFilters={ setFilters } current={ current } setCurrent={ setCurrent } setQuery={ setQuery } menuFunc={{ newFilter: newFilter }}/>
-        <button className="absolute right-1 top-0.5 btn px-2 min-h-fit h-9 bg-slate-100 border-slate-100 text-slate-500 hover:bg-white hover:border-slate-200 disabled:bg-transparent disabled:hover:bg-transparent"><i className="icon-pencil" onClick={ renameFilter }/></button>
+      <div className={`h-10 items-center w-full rounded-t-md ${colorSet[0]}`}>
+        <FilterDropdown filters={ filters } current={ current } setCurrent={ setCurrent } menuFunc={{ newFilter: newFilter }}/>
+        <button className="absolute right-1 top-0.5 btn px-2 min-h-fit h-9 bg-transparent border-transparent text-slate-500 hover:bg-white hover:border-slate-200 disabled:bg-transparent disabled:hover:bg-transparent"><i className="icon-pencil" onClick={ renameFilter }/></button>
       </div>
       <div className="absolute bottom-0 top-10 left-2 right-0 overflow-auto">
-        <div className="form-control border-l border-slate-100 relative">
+        <div className={`form-control border-l relative ${colorSet[1]}`}>
           <i className="absolute icon-search left-3 top-3 text-slate-300"/>
           <div className="flex">
-            <input type="text" placeholder="Search in document" className="pl-10 input input-bordered w-full rounded-none border-0 hover:outline-0 focus:outline-0 focus:bg-slate-100 border-slate-100 border-b" value={ query } onChange={ e => setQuery(e.target.value) }/>
+            <input type="text" placeholder="Search in document" className={`pl-10 input input-bordered w-full rounded-none border-0 hover:outline-0 focus:outline-0 border-b ${colorSet[1]} ${colorSet[2]}`} value={ query } onChange={ e => setQuery(e.target.value) } onKeyPress={ (e) => {(e.key == 'Enter' ? runFilter():null)} }/>
             <button className={`btn rounded-none px-8 py-0 text-lg ${scn.primaryButton}`} onClick={ runFilter } disabled={ filterstatus.working }>Go</button>
           </div>
         </div>
-        <div className="form-control border-l border-r border-slate-100 relative">
+        <div className={`form-control border-l border-r relative ${colorSet[1]}`}>
           <i className="absolute icon-tag left-3 top-3 text-slate-300"/>
           <div className="flex">
-            <input type="text" placeholder="Comma-delimited tags" className="pl-10 input input-bordered w-full rounded-none border-0 hover:outline-0 focus:outline-0 focus:bg-slate-100 border-slate-100 border-b" value={ filters[current].labels ? filters[current].labels.join(", "):'' }/>
+            <input type="text" placeholder="Comma-delimited tags" className={`pl-10 input input-bordered w-full rounded-none border-0 hover:outline-0 focus:outline-0 border-b ${colorSet[1]} ${colorSet[2]}`} value={ (filters[current] && filters[current].labels) ? filters[current].labels.join(", "):'' } onChange={ e => setTags(e.target.value) }/>
           </div>
         </div>
      </div>

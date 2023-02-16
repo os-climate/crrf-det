@@ -21,11 +21,12 @@ Extend(app)
 app.blueprint(service.users.bp)
 app.blueprint(service.files.bp)
 app.blueprint(service.docs.bp)
+app.blueprint(service.filters.bp)
 
 
 def launch_huey_consumer():
     cpus = multiprocessing.cpu_count()
-    workers = max(1, cpus - 1)
+    workers = max(1, cpus - 2)
     logger.info('initialize {} huey consumers ...'.format(workers))
     return subprocess.Popen(['huey_consumer.py', 'det.huey', '-n', '-m', '2', '-b', '1.05', '-k', 'process', '-w', str(workers)])
 
