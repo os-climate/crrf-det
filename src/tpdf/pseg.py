@@ -420,6 +420,8 @@ def row_groups_from_columns(columns, im_bin_clear):
     # minimum of the end spacing multiple (vs avg spacing) in a group (for soft split)
     # for tsla2021.13
     MIN_SPACING_MULTIPLE = 1.75
+    MIN_SINGLE_ROW_GROUP_HEIGHT = 75    # minimum height to consider a single row a
+                                        # group (compact heavy layout with no spacing)
 
     column_row_groups = {}
     column_row_vspacings = {}
@@ -484,6 +486,7 @@ def row_groups_from_columns(columns, im_bin_clear):
         rows = []
         rows_spacings = 0
         last_spacing = 0
+        last_row_height = 0
         row_patterns = [False, False, False, False]
         # bottom-up lookup
         for i in reversed(range(0, len(all_rows))):
@@ -503,7 +506,9 @@ def row_groups_from_columns(columns, im_bin_clear):
                 if (spacing >= 5 and
                     spacing >= last_spacing and
                     len(rows) == 1 and
-                    len(row_groups) > 0):
+                    len(row_groups) > 0 and
+                    row_groups[0][0][1] - row_groups[0][0][0] < MIN_SINGLE_ROW_GROUP_HEIGHT and
+                    last_row_height < MIN_SINGLE_ROW_GROUP_HEIGHT):
                     row_groups[0].insert(0, rows[0])
                     rows_spacings = 0
                     rows = []
@@ -511,6 +516,10 @@ def row_groups_from_columns(columns, im_bin_clear):
                 # Hard split on tall vertical spacing.
                 #
                 elif (spacing >= MIN_SPACING_HARD_SPLIT or
+                # A single tall row is very condensed, very likely compact text
+                    (len(rows) >= 1 and
+                    rows[0][1] - rows[0][0] >= MIN_SINGLE_ROW_GROUP_HEIGHT and
+                    spacing > 2) or
                 #
                 # Pattern switch (bottom-up) from right to left, a common trait in
                 # Chinese/Japanese document table headers, and English book table
@@ -553,6 +562,7 @@ def row_groups_from_columns(columns, im_bin_clear):
                     rows_spacings += spacing
                 rows.insert(0, [row_start, row_end])
                 last_spacing = spacing
+                last_row_height = row_end - row_start
         if len(rows) > 0:
             row_groups.insert(0, rows)
         column_row_groups[col_idx] = row_groups

@@ -13,7 +13,7 @@ class TestPSeg(unittest.TestCase):
         cls.image_cache = {}
         cls.result_cache = {}
         cls.basepath = os.path.dirname(__file__)
-        all_images = ['tsla2021.2.png', 'tsla2021.14.png', 'tsla2021.36.png', 'tsla2021.68.png', 'tsla2021.73.png', 'tsla2021.122.png', 'tsla2021.123.png', 'tsla2021.141.png', 'de2021.63.png', 'de2021.64.png', 'x2021.27.png', 'x2021.64.png', 'x2021.87.png', 'cargill2022.15.png', 'cargill2022.73.png', 'cargill2022.83.png', 'cargill2022.97.png', 'eog2021.9.png', 'eog2021.16.png', 'eog2021.19.png', 'eog2021.28.png', 'eog2021.68.png', 'eog2021.70.png', 'adbe2021.28.png', 'eni2021.9.png', 'eni2021.49.png']
+        all_images = ['tsla2021.2.png', 'tsla2021.14.png', 'tsla2021.36.png', 'tsla2021.68.png', 'tsla2021.73.png', 'tsla2021.122.png', 'tsla2021.123.png', 'tsla2021.141.png', 'de2021.63.png', 'de2021.64.png', 'x2021.27.png', 'x2021.64.png', 'x2021.87.png', 'cargill2022.15.png', 'cargill2022.73.png', 'cargill2022.83.png', 'cargill2022.97.png', 'eog2021.9.png', 'eog2021.16.png', 'eog2021.19.png', 'eog2021.28.png', 'eog2021.68.png', 'eog2021.70.png', 'adbe2021.28.png', 'eni2021.9.png', 'eni2021.49.png', 'bp2021.3.png', 'bp2021.21.png', 'bp2021.24.png', 'bp2021.25.png']
         for fn in all_images:
             fnp = os.path.join(cls.basepath, 'src_imgs', fn)
             img = skimage.io.imread(fnp)
@@ -57,6 +57,10 @@ class TestPSeg(unittest.TestCase):
             'adbe2021.28.png': {},
             'eni2021.9.png': {},
             'eni2021.49.png': {},
+            'bp2021.3.png': {},
+            'bp2021.21.png': {},
+            'bp2021.24.png': {},
+            'bp2021.25.png': {},
         }
         self.result_cache['columns_from_image'] = {}
         for fn in t_columns_from_image:
@@ -97,6 +101,10 @@ class TestPSeg(unittest.TestCase):
             'adbe2021.28.png': {},
             'eni2021.9.png': {},
             'eni2021.49.png': {},
+            'bp2021.3.png': {},
+            'bp2021.21.png': {},
+            'bp2021.24.png': {},
+            'bp2021.25.png': {},
         }
         self.result_cache['row_groups_from_columns'] = {}
         for fn in t_row_groups_from_columns:
@@ -137,6 +145,10 @@ class TestPSeg(unittest.TestCase):
             'adbe2021.28.png': {},
             'eni2021.9.png': {},
             'eni2021.49.png': {},
+            'bp2021.3.png': {},
+            'bp2021.21.png': {},
+            'bp2021.24.png': {},
+            'bp2021.25.png': {},
         }
         self.result_cache['row_hspacings_from_row_groups'] = {}
         for fn in test_list:
@@ -178,6 +190,10 @@ class TestPSeg(unittest.TestCase):
             'adbe2021.28.png': {},
             'eni2021.9.png': {},
             'eni2021.49.png': {},
+            'bp2021.3.png': {},
+            'bp2021.21.png': {},
+            'bp2021.24.png': {},
+            'bp2021.25.png': {},
         }
         self.result_cache['vertical_lines_from_hspacings'] = {}
         for fn in test_list:
@@ -227,6 +243,10 @@ class TestPSeg(unittest.TestCase):
             'eog2021.70.png': {},
             'eni2021.9.png': {},
             'eni2021.49.png': {},
+            'bp2021.3.png': {},
+            'bp2021.21.png': {},
+            'bp2021.24.png': {},
+            'bp2021.25.png': {},
         }
         self.result_cache['tablevspan_group_adjacent_lines'] = {}
         for fn in test_list:
@@ -277,6 +297,10 @@ class TestPSeg(unittest.TestCase):
             'eog2021.70.png': {},
             'eni2021.9.png': {},
             'eni2021.49.png': {},
+            'bp2021.3.png': {},
+            'bp2021.21.png': {},
+            'bp2021.24.png': {},
+            'bp2021.25.png': {},
         }
         self.result_cache['tablevspan_remove_smaller_adjacent_rectangles'] = {}
         for fn in test_list:
@@ -327,6 +351,10 @@ class TestPSeg(unittest.TestCase):
             'eog2021.70.png': {},
             'eni2021.9.png': {},
             'eni2021.49.png': {},
+            'bp2021.3.png': {},
+            'bp2021.21.png': {},
+            'bp2021.24.png': {},
+            'bp2021.25.png': {},
         }
         self.result_cache['tablevspan_remove_edge_rectangles'] = {}
         for fn in test_list:
@@ -376,6 +404,10 @@ class TestPSeg(unittest.TestCase):
             'eog2021.70.png': {},
             'eni2021.9.png': {},
             'eni2021.49.png': {},
+            'bp2021.3.png': {},
+            'bp2021.21.png': {},
+            'bp2021.24.png': {},
+            'bp2021.25.png': {},
         }
         self.result_cache['tablevspan_is_first_rectangle_column_valid'] = {}
         for fn in test_list:
@@ -430,6 +462,10 @@ class TestPSeg(unittest.TestCase):
             'eog2021.70.png': {},
             'eni2021.9.png': {},
             'eni2021.49.png': {},
+            'bp2021.3.png': {},
+            'bp2021.21.png': {},
+            'bp2021.24.png': {},
+            'bp2021.25.png': {},
         }
         self.result_cache['tablevspan_remove_busy_column_rectangles'] = {}
         for fn in test_list:
@@ -468,6 +504,10 @@ class TestPSeg(unittest.TestCase):
             'cargill2022.73.png': {},
             'cargill2022.83.png': {},
             'eog2021.70.png': {},
+            'bp2021.3.png': {},
+            'bp2021.21.png': {},
+            'bp2021.24.png': {},
+            'bp2021.25.png': {},
         }
         self.result_cache['tablevspan_build_table'] = {}
         for fn in test_list:
