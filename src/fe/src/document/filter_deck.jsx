@@ -13,6 +13,8 @@ function FilterDropdown({ filters, current, setCurrent, menuFunc }) {
 
   function filterClick(e) {
     var fname = e.currentTarget.getAttribute('data-filter-name');
+    // clears focus from dropdown so it closes
+    document.activeElement.blur();
     setCurrent(fname);
   };
 
@@ -72,7 +74,7 @@ export default function DocumentFilterDeck({ path, file, pagecontent, filterstat
   const refDlgFilterName = useRef();
   const refDlgTags = useRef();
 
-  useEffect(() => {
+  function refreshFilters() {
     auth.get({base: '/filters'}, {}, ( data ) => {
       if (data.status == 'ok') {
         var f = data.data;
@@ -86,6 +88,10 @@ export default function DocumentFilterDeck({ path, file, pagecontent, filterstat
         console.warn('unhandled data', data);
       }
     });
+  }
+
+  useEffect(() => {
+    refreshFilters();
   }, []);
 
   useEffect(() => {
@@ -103,6 +109,10 @@ export default function DocumentFilterDeck({ path, file, pagecontent, filterstat
     if (current &&
       filters.hasOwnProperty(current)) {
       setQuery(filters[current].query);
+      if (filters[current].labels)
+        setTags(filters[current].labels.join(','))
+      else
+        setTags('');
       localStorage.setItem('det_current_filter_name', current);
     }
   }, [ current ]);
@@ -119,13 +129,14 @@ export default function DocumentFilterDeck({ path, file, pagecontent, filterstat
       }
       var filter = filters[current];
       filter.query = query;
+      filter.labels = tags.split(',');
       auth.post({base: '/filters/' + encodeURIComponent(current)}, {
         body: JSON.stringify({'filter': filter})
       }, (data) => {
         setPending(false);
       })
     }, 2500);
-  }, [ query ]);
+  }, [ query, tags ]);
 
   // Dialog handlers
   function newFilter(e) {
@@ -156,7 +167,19 @@ export default function DocumentFilterDeck({ path, file, pagecontent, filterstat
     refDlgFilterName.current.checked = false;
   }
   function doRenameFilter(e) {
-    console.log('doRenameFilter');
+    if (filterName.length > 0 &&
+      !filters.hasOwnProperty(filterName)) {
+      setPending(true);
+      var changedFilter = filters[current];
+      changedFilter.new_name = filterName;
+      localStorage.setItem('det_current_filter_name', filterName);
+      auth.post({base: '/filters/' + encodeURIComponent(current)}, {
+        body: JSON.stringify({'filter': changedFilter})
+      }, (data) => {
+        setPending(false);
+        refreshFilters();
+      })
+    }
     refDlgFilterName.current.checked = false;
   }
 
@@ -250,7 +273,7 @@ export default function DocumentFilterDeck({ path, file, pagecontent, filterstat
         <div className={`form-control border-l border-r relative ${colorSet[1]}`}>
           <i className="absolute icon-tag left-3 top-3 text-slate-300"/>
           <div className="flex">
-            <input type="text" placeholder="Comma-delimited tags" className={`pl-10 input input-bordered w-full rounded-none border-0 hover:outline-0 focus:outline-0 border-b ${colorSet[1]} ${colorSet[2]}`} value={ (filters[current] && filters[current].labels) ? filters[current].labels.join(", "):'' } onChange={ e => setTags(e.target.value) }/>
+            <input type="text" placeholder="Comma-delimited tags" className={`pl-10 input input-bordered w-full rounded-none border-0 hover:outline-0 focus:outline-0 border-b ${colorSet[1]} ${colorSet[2]}`} value={ tags } onChange={ e => setTags(e.target.value) }/>
           </div>
         </div>
      </div>

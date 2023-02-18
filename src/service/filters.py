@@ -35,6 +35,10 @@ async def change_or_remove(request, token, filter_name):
         if filter_name in filters:
             del filters[filter_name]
     else:
+        if 'new_name' in filter_:
+            del filters[filter_name]
+            filter_name = filter_['new_name']
+            del filter_['new_name']
         filters[filter_name] = filter_
     data.file.save_user_settings(userid, 'filters', filters)
     return response.json({

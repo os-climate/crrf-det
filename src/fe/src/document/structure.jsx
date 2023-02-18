@@ -94,6 +94,7 @@ export default function DocumentStructure({ path, file, pagecontent, filterstatu
       var textBoxes_ = [];
       for (var i = 0; i < c.content.length; i++) {
         if (filterstatus.result &&
+          pageIdx <= filterstatus.result.length &&
           filterstatus.result[pageIdx - 1].cindex.indexOf(i) < 0)
           continue;
         var box = c.content[i].box;
