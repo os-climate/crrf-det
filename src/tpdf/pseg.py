@@ -23,7 +23,7 @@ def parse(input_image):
     clear_column_spacing(spacings, im_bin_clear, im_bin_blurred)
     # for each column, detect inter-paragraph, inter-table vertical spacing
     # between rows
-    column_row_groups, column_row_vspacings = row_groups_from_columns(columns, im_bin_clear)
+    column_row_groups, column_row_vspacings, avg_row_heights = row_groups_from_columns(columns, im_bin_clear)
     column_row_grp_row_spacings = row_hspacings_from_row_groups(columns, column_row_groups, im_bin_clear)
 
     column_row_grp_vlines = {}
@@ -435,6 +435,7 @@ def row_groups_from_columns(columns, im_bin_clear):
             top_filled_row = i
             break
 
+    all_column_row_heights = []
     for col_idx, column in enumerate(columns):
         col_crop = im_bin_clear[0:im_bin_clear.shape[0], column[0]:column[1]]
         col_sum = col_crop.shape[1] * 255
@@ -446,8 +447,8 @@ def row_groups_from_columns(columns, im_bin_clear):
         column_row_vspacings[col_idx] = row_vspacings
         # determine all start,ends for content rows, and the content
         # pattern for each: 0=full, 1=left-sided, 2=right-sided, 3=middle
-        all_rows = [];
-        all_row_patterns = [];
+        all_rows = []
+        all_row_patterns = []
         half_width = int(col_crop.shape[1] / 2)
         quar_width = int(half_width / 2)
         row_start = -1
@@ -480,6 +481,7 @@ def row_groups_from_columns(columns, im_bin_clear):
         if row_end != -1:
             all_rows.append([row_start, row_end])
             all_row_patterns.append(get_pattern(row_start, row_end))
+        all_column_row_heights += [row_end - row_start for (row_start, row_end) in all_rows]
         # group rows that have tight spacing, a bet to separate multiple tables
         # in the same column
         row_groups = []
@@ -567,7 +569,44 @@ def row_groups_from_columns(columns, im_bin_clear):
             row_groups.insert(0, rows)
         column_row_groups[col_idx] = row_groups
 
-    return column_row_groups, column_row_vspacings
+    # `avg_row_heights` measures the compactness of the layout. A high number
+    # indicates either a failure in the previous column breaking step, or
+    # that the line spacings are very tight. In typical American documents,
+    # this number (against 400 narrow side) is below 10 for a potential table
+    # identification, where higher number indicates text and no tables. In
+    # typical European documents, this number is above 15, in several cases
+    # fas high as 39.
+    # ref:
+    #   tsla2021.2.png       6.97
+    #   tsla2021.14.png      9.81
+    #   tsla2021.36.png      9.76
+    #   tsla2021.68.png      7.71
+    #   tsla2021.73.png      6.71
+    #   tsla2021.123.png     5.79
+    #   tsla2021.141.png     5.90
+    #   de2021.63.png        17.58
+    #   de2021.64.png        4.40
+    #   x2021.27.png         7.79
+    #   x2021.87.png         5.26
+    #   cargill2022.15.png   7.71
+    #   cargill2022.73.png   10.94
+    #   cargill2022.83.png   18.00
+    #   cargill2022.97.png   7.23
+    #   eog2021.9.png        4.59
+    #   eog2021.16.png       6.15
+    #   eog2021.19.png       7.65
+    #   eog2021.28.png       5.70
+    #   eog2021.68.png       10.34
+    #   eog2021.70.png       4.67
+    #   adbe2021.28.png      7.55
+    #   eni2021.9.png        7.25
+    #   eni2021.49.png       6.18
+    #   bp2021.3.png         39.43
+    #   bp2021.21.png        26.36
+    #   bp2021.24.png        26.27
+    #   bp2021.25.png        30.56
+    avg_row_heights = numpy.mean(all_column_row_heights)
+    return column_row_groups, column_row_vspacings, avg_row_heights
 
 
 def row_hspacings_from_row_groups(columns, column_row_groups, im_bin_clear):
@@ -1165,7 +1204,7 @@ class debug_painter:
 
     @staticmethod
     def row_groups_from_columns(test_img, results):
-        (columns, column_row_groups, column_row_vspacings) = results
+        (columns, column_row_groups, column_row_vspacings, avg_row_heights) = results
         for col_idx, row_groups in column_row_groups.items():
             column = columns[col_idx]
             for row_group in row_groups:

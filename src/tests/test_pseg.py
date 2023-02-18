@@ -110,15 +110,15 @@ class TestPSeg(unittest.TestCase):
         for fn in t_row_groups_from_columns:
             (im_bin_clear, im_bin_blurred, test_img) = self._get_image(fn)
             (columns, spacings) = self.result_cache['columns_from_image'][fn]
-            column_row_groups, column_row_vspacings = pseg.row_groups_from_columns(columns, im_bin_clear)
+            column_row_groups, column_row_vspacings, avg_row_heights = pseg.row_groups_from_columns(columns, im_bin_clear)
             ofn = os.path.join(self.basepath, 'ref_imgs', fn[:-4] + '_02_row_groups_from_columns.test.png')
-            pseg.debug_painter.row_groups_from_columns(test_img, (columns, column_row_groups, column_row_vspacings))
+            pseg.debug_painter.row_groups_from_columns(test_img, (columns, column_row_groups, column_row_vspacings, avg_row_heights))
             skimage.io.imsave(ofn, test_img)
             ref_fn = os.path.join(self.basepath, 'ref_imgs', fn[:-4] + '_02_row_groups_from_columns.png')
             ref_img = skimage.io.imread(ref_fn)
             self.assertTrue(numpy.alltrue(test_img == ref_img), msg="mismatched image: {}".format(ref_fn))
             os.remove(ofn)
-            self.result_cache['row_groups_from_columns'][fn] = (column_row_groups, column_row_vspacings)
+            self.result_cache['row_groups_from_columns'][fn] = (column_row_groups, column_row_vspacings, avg_row_heights)
 
     def test_03_row_hspacings_from_row_groups(self):
         # image based test, no values
@@ -154,7 +154,7 @@ class TestPSeg(unittest.TestCase):
         for fn in test_list:
             (im_bin_clear, im_bin_blurred, test_img) = self._get_image(fn)
             (columns, spacings) = self.result_cache['columns_from_image'][fn]
-            (column_row_groups, column_row_vspacings) = self.result_cache['row_groups_from_columns'][fn]
+            (column_row_groups, column_row_vspacings, avg_row_heights) = self.result_cache['row_groups_from_columns'][fn]
             column_row_grp_row_spacings = pseg.row_hspacings_from_row_groups(columns, column_row_groups, im_bin_clear)
             ofn = os.path.join(self.basepath, 'ref_imgs', fn[:-4] + '_03_row_hspacings_from_row_groups.test.png')
             ref_fn = os.path.join(self.basepath, 'ref_imgs', fn[:-4] + '_03_row_hspacings_from_row_groups.png')
@@ -199,7 +199,7 @@ class TestPSeg(unittest.TestCase):
         for fn in test_list:
             (im_bin_clear, im_bin_blurred, test_img) = self._get_image(fn)
             (columns, spacings) = self.result_cache['columns_from_image'][fn]
-            (column_row_groups, column_row_vspacings) = self.result_cache['row_groups_from_columns'][fn]
+            (column_row_groups, column_row_vspacings, avg_row_heights) = self.result_cache['row_groups_from_columns'][fn]
             column_row_grp_row_spacings = self.result_cache['row_hspacings_from_row_groups'][fn]
             ofn = os.path.join(self.basepath, 'ref_imgs', fn[:-4] + '_04_vertical_lines_from_hspacings.test.png')
             ref_fn = os.path.join(self.basepath, 'ref_imgs', fn[:-4] + '_04_vertical_lines_from_hspacings.png')
@@ -253,7 +253,7 @@ class TestPSeg(unittest.TestCase):
             helper.reset_color_cycle()
             (im_bin_clear, im_bin_blurred, test_img) = self._get_image(fn)
             (columns, spacings) = self.result_cache['columns_from_image'][fn]
-            (column_row_groups, column_row_vspacings) = self.result_cache['row_groups_from_columns'][fn]
+            (column_row_groups, column_row_vspacings, avg_row_heights) = self.result_cache['row_groups_from_columns'][fn]
             column_row_grp_row_spacings = self.result_cache['row_hspacings_from_row_groups'][fn]
             ofn = os.path.join(self.basepath, 'ref_imgs', fn[:-4] + '_05_tablevspan01_group_adjacent_lines.test.png')
             ref_fn = os.path.join(self.basepath, 'ref_imgs', fn[:-4] + '_05_tablevspan01_group_adjacent_lines.png')
@@ -307,7 +307,7 @@ class TestPSeg(unittest.TestCase):
             helper.reset_color_cycle()
             (im_bin_clear, im_bin_blurred, test_img) = self._get_image(fn)
             (columns, spacings) = self.result_cache['columns_from_image'][fn]
-            (column_row_groups, column_row_vspacings) = self.result_cache['row_groups_from_columns'][fn]
+            (column_row_groups, column_row_vspacings, avg_row_heights) = self.result_cache['row_groups_from_columns'][fn]
             column_row_grp_row_spacings = self.result_cache['row_hspacings_from_row_groups'][fn]
             ofn = os.path.join(self.basepath, 'ref_imgs', fn[:-4] + '_05_tablevspan02_remove_smaller_adjacent_rectangles.test.png')
             ref_fn = os.path.join(self.basepath, 'ref_imgs', fn[:-4] + '_05_tablevspan02_remove_smaller_adjacent_rectangles.png')
@@ -361,7 +361,7 @@ class TestPSeg(unittest.TestCase):
             helper.reset_color_cycle()
             (im_bin_clear, im_bin_blurred, test_img) = self._get_image(fn)
             (columns, spacings) = self.result_cache['columns_from_image'][fn]
-            (column_row_groups, column_row_vspacings) = self.result_cache['row_groups_from_columns'][fn]
+            (column_row_groups, column_row_vspacings, avg_row_heights) = self.result_cache['row_groups_from_columns'][fn]
             column_row_grp_row_spacings = self.result_cache['row_hspacings_from_row_groups'][fn]
             ofn = os.path.join(self.basepath, 'ref_imgs', fn[:-4] + '_05_tablevspan03_remove_edge_rectangles.test.png')
             ref_fn = os.path.join(self.basepath, 'ref_imgs', fn[:-4] + '_05_tablevspan03_remove_edge_rectangles.png')
@@ -414,7 +414,7 @@ class TestPSeg(unittest.TestCase):
             helper.reset_color_cycle()
             (im_bin_clear, im_bin_blurred, test_img) = self._get_image(fn)
             (columns, spacings) = self.result_cache['columns_from_image'][fn]
-            (column_row_groups, column_row_vspacings) = self.result_cache['row_groups_from_columns'][fn]
+            (column_row_groups, column_row_vspacings, avg_row_heights) = self.result_cache['row_groups_from_columns'][fn]
             column_row_grp_row_spacings = self.result_cache['row_hspacings_from_row_groups'][fn]
             ofn = os.path.join(self.basepath, 'ref_imgs', fn[:-4] + '_05_tablevspan04_is_first_rectangle_column_valid.test.png')
             ref_fn = os.path.join(self.basepath, 'ref_imgs', fn[:-4] + '_05_tablevspan04_is_first_rectangle_column_valid.png')
@@ -472,7 +472,7 @@ class TestPSeg(unittest.TestCase):
             helper.reset_color_cycle()
             (im_bin_clear, im_bin_blurred, test_img) = self._get_image(fn)
             (columns, spacings) = self.result_cache['columns_from_image'][fn]
-            (column_row_groups, column_row_vspacings) = self.result_cache['row_groups_from_columns'][fn]
+            (column_row_groups, column_row_vspacings, avg_row_heights) = self.result_cache['row_groups_from_columns'][fn]
             column_row_grp_row_spacings = self.result_cache['row_hspacings_from_row_groups'][fn]
             ofn = os.path.join(self.basepath, 'ref_imgs', fn[:-4] + '_05_tablevspan05_remove_busy_column_rectangles.test.png')
             ref_fn = os.path.join(self.basepath, 'ref_imgs', fn[:-4] + '_05_tablevspan05_remove_busy_column_rectangles.png')
@@ -514,7 +514,7 @@ class TestPSeg(unittest.TestCase):
             helper.reset_color_cycle()
             (im_bin_clear, im_bin_blurred, test_img) = self._get_image(fn)
             (columns, spacings) = self.result_cache['columns_from_image'][fn]
-            (column_row_groups, column_row_vspacings) = self.result_cache['row_groups_from_columns'][fn]
+            (column_row_groups, column_row_vspacings, avg_row_heights) = self.result_cache['row_groups_from_columns'][fn]
             column_row_grp_row_spacings = self.result_cache['row_hspacings_from_row_groups'][fn]
             ofn = os.path.join(self.basepath, 'ref_imgs', fn[:-4] + '_05_tablevspan06_build_table.test.png')
             ref_fn = os.path.join(self.basepath, 'ref_imgs', fn[:-4] + '_05_tablevspan06_build_table.png')
@@ -552,7 +552,7 @@ class TestPSeg(unittest.TestCase):
             helper.reset_color_cycle()
             (im_bin_clear, im_bin_blurred, test_img) = self._get_image(fn)
             (columns, spacings) = self.result_cache['columns_from_image'][fn]
-            (column_row_groups, column_row_vspacings) = self.result_cache['row_groups_from_columns'][fn]
+            (column_row_groups, column_row_vspacings, avg_row_heights) = self.result_cache['row_groups_from_columns'][fn]
             column_row_grp_row_spacings = self.result_cache['row_hspacings_from_row_groups'][fn]
             ofn = os.path.join(self.basepath, 'ref_imgs', fn[:-4] + '_05_tablevspan07_find_intersections_find_cells.test.png')
             ref_fn = os.path.join(self.basepath, 'ref_imgs', fn[:-4] + '_05_tablevspan07_find_intersections_find_cells.png')
