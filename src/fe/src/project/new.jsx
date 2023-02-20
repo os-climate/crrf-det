@@ -6,15 +6,14 @@ import ListView from '../shared/listview';
 import ListPreview from '../shared/listpreview';
 import ToolStrip from '../shared/toolstrip';
 import { config } from '../shared/config';
-import { auth } from '../shared/auth';
+import { auth, user } from '../shared/user';
 
 
 var steps = [
-  { title: 'Name', icon: 'icon-pencil', subtitle: 'Assign a name to the project' },
   { title: 'Choose Files', icon: 'icon-docs', subtitle: 'Choose folders and files to process' },
   { title: 'Filters and Tags', icon: 'icon-tag', subtitle: 'Choose filters their corresponding tags to apply' },
-  { title: 'Review Results', icon: 'icon-book-open', subtitle: 'Review filter results' },
-  { title: 'Export and More', icon: 'icon-briefcase', subtitle: 'Export the results and activate tagging' },
+  { title: 'Run', icon: 'icon-play', subtitle: 'Run filters against documents for results' },
+  { title: 'Save and Export', icon: 'icon-floppy', subtitle: 'Save the project, export results, and activate tagging' },
 ];
 
 
@@ -31,21 +30,21 @@ function _gen2CPrompt(num1, name1, num2, name2) {
 }
 
 
-function Steps({ step, setStep, prompt }) {
+function Steps({ stepper }) {
 
   function goStep(e) {
     var targetStep = parseInt(e.currentTarget.getAttribute('data-step-index'));
-    if (targetStep <= step)
-      setStep(targetStep);
+    if (targetStep <= stepper.step)
+      stepper.set_step(targetStep);
   }
 
   return (
     <ul className="steps steps-vertical">
       { steps.map(( step_, idx ) => (
-          <li key={idx} className={`step relative ${step >= idx?'step-primary':''}`}>
-            <button className="p-0 bg-transparent border-0 w-[12rem] hover:font-bold" onClick={ goStep } data-step-index={idx}>
+          <li key={idx} className={`step relative ${stepper.step >= idx?'step-primary':''}`}>
+            <button className="p-0 bg-transparent border-0 w-[12rem] hover:font-bold focus:outline-0" onClick={ goStep } data-step-index={idx}>
               <div className={`${ scn.stepTitle }`}><i className={`${step_.icon} mr-2 text-slate-400`}/>{step_.title}</div>
-              <div className={`${ scn.stepSubtitle } ${ prompt[idx]?'text-teal-600 font-bold':'font-normal'} `}>{ prompt[idx]?prompt[idx]:step_.subtitle}</div>
+              <div className={`${ scn.stepSubtitle } ${ stepper.prompt[idx]?'text-teal-600 font-bold':'font-normal'} `}>{ stepper.prompt[idx]?stepper.prompt[idx]:step_.subtitle}</div>
             </button>
           </li>
         ))}
@@ -54,37 +53,7 @@ function Steps({ step, setStep, prompt }) {
 }
 
 
-function StepName({ stepNext, prompt, setPrompt, name, setName }) {
-
-  function onNameChange(e) {
-    setName(e.target.value);
-  }
-
-  useEffect(() => {
-    setPrompt(
-      prompt.map((p, idx) => idx == 0?name:p)
-    );
-  }, [name]);
-
-  return (
-    <div className="text-slate-600 mt-2">
-      <table><tbody><tr><td>
-        <input type="text" placeholder="Name of the Project" className={`${ scn.input } h-9 w-96 mr-2`} onChange={onNameChange} value={ name }/>
-        </td><td>
-        <button className={scn.primaryButton} onClick={ stepNext }>Next</button>
-        </td></tr></tbody></table>
-      <div>
-        <div className="mt-2 mb-1">
-          Generated project avatar:
-        </div>
-        <AutoAvatar name={ name } width={6} height={6} margin={2} textSize="text-3xl" styledTextSize="text-6xl" />
-      </div>
-    </div>
-  )
-}
-
-
-function StepChooseFiles({ stepNext, prompt, setPrompt, listview }) {
+function StepChooseFiles({ stepper, listview }) {
   const [path, set_path] = useState();
   listview.path = path;
   listview.set_path = set_path;
@@ -100,8 +69,8 @@ function StepChooseFiles({ stepNext, prompt, setPrompt, listview }) {
         folders.push(item);
     }
     var prompt_ = _gen2CPrompt(folders.length, 'folders', files.length, 'files');
-    setPrompt(
-      prompt.map((p, idx) => idx == 1?prompt_:p)
+    stepper.set_prompt(
+      stepper.prompt.map((p, idx) => idx == 0?prompt_:p)
     );
   }, [listview.sel]);
 
@@ -125,51 +94,34 @@ function StepChooseFiles({ stepNext, prompt, setPrompt, listview }) {
 }
 
 
-function StepFiltersTags({ stepNext, prompt, setPrompt, filtersTags, setFiltersTags }) {
+function StepFiltersTags({ stepper, filtersTags, setFiltersTags }) {
 
-  let filters = {
-    'Scope 1/2/3 Emissions': { code: 'table:GHG.*', labels: ['Scope 1', 'Scope 2', 'Scope 3', 'Scope 1+2+3'] },
-    'Emissions reduction target': { code: 'emission reduction target', labels: ['Relative emissions reduction target', 'Absolute emissions reduction target']},
-    'Intensity reduction target': { labels: ['Relative intensity reduction target', 'Absolute intensity reduction target']},
-    'SBTi certification of target': { labels: ['SBTi certification of target']},
-    'Climate commitment scenario': {},
-    'Steel production': {},
-    'Electricity production': {labels: ['Electricity production (total)']},
-    'Electricity capacity': {labels: ['Electricity capacity (total)']},
-    'Power production': {labels: ['Nuclear power production', 'Wind power production', 'Solar power production', 'Hydropower production']},
-    'Automobile production': {labels: ['Automobile production', 'Automobile EV production', 'Automobile EV share', ]},
-    'Automobile intensity': {},
-    'O&G production (total)': {},
-    'Hydrocarbons Reserves': {labels: ['Total Proven Hydrocarbons Reserves', 'Total Probable Hydrocarbons Reserves', 'Estimated Proven Hydrocarbons Reserves', 'Estimated Probable Hydrocarbons Reserves']},
-    'Total Volume of Hydrocarbons Production': {},
-    'Total Volume of Crude Oil Liquid Production': {},
-    'Total Volume of Crude Natural Gas Liquid Production': {},
-    'Total Volume of Crude Natural Gas Production': {},
-    'Total Production Coal': {},
-    'Total Production Lignite': {},
-    'Total Production Hard Coal': {},
-    'Total Capacity Coal': {},
-    'Total Capacity Lignite': {},
-    'Total Capacity Hard Coal': {},
-  };
+  const [ filters, setFilters ] = useState({});
+
+  useEffect(() => {
+    user.pullFilters((_filters) => {
+      setFilters(_filters);
+    });
+  }, []);
+
+  // init checkboxes
+  useEffect(() => {
+    var fts = {};
+    Object.entries(filters).map(([k, v]) => {
+      if (v &&
+        v.labels &&
+        v.labels.length > 0) {
+        fts['filter__' + k] = true;
+        for (var i = 0; i < v.labels.length; i++)
+          fts['filter__' + k + '__tag__' + v.labels[i]] = true;
+      } else
+        fts['filter__' + k] = false;
+    });
+    setFiltersTags(fts);
+  }, [ filters ]);
 
   // initialize the selection with all possible filters and tags
   useEffect(() => {
-    if (!filtersTags.__initialized) {
-      var fts = {};
-      Object.entries(filters).map(([k, v]) => {
-        if (v &&
-          v.labels &&
-          v.labels.length > 0) {
-          fts['filter__' + k] = true;
-          for (var i = 0; i < v.labels.length; i++)
-            fts['filter__' + k + '__tag__' + v.labels[i]] = true;
-        } else
-          fts['filter__' + k] = false;
-      });
-      fts.__initialized = true;
-      setFiltersTags(fts);
-    }
     var filterCount = 0,
         tagCount = 0;
     var allowedFilters = {};
@@ -191,16 +143,17 @@ function StepFiltersTags({ stepNext, prompt, setPrompt, filtersTags, setFiltersT
     }
     if (filterCount === 0 &&
       tagCount === 0)
-      setPrompt(
-        prompt.map((p, idx) => idx == 2?'':p)
+      stepper.set_prompt(
+        stepper.prompt.map((p, idx) => idx == 1?'':p)
       );
     else {
       var prompt_ = _gen2CPrompt(filterCount, 'filters', tagCount, 'tags');
-      setPrompt(
-        prompt.map((p, idx) => idx == 2?prompt_:p)
+      stepper.set_prompt(
+        stepper.prompt.map((p, idx) => idx == 1?prompt_:p)
       );
     }
-  }, [filtersTags]);
+  }, [ filtersTags ]);
+
 
   function checkboxChange(e) {
     var key = e.target.getAttribute('data-checkbox-key');
@@ -223,6 +176,9 @@ function StepFiltersTags({ stepNext, prompt, setPrompt, filtersTags, setFiltersT
       labels[k].push(<span key={k} className="mr-4 h-8">(No Tags)</span>)
   });
 
+  if (Object.keys(filtersTags).length == 0)
+    return (null);
+
   return (
     <div className="text-base text-slate-600 absolute left-3 right-0 bottom-0 top-1 overflow-y-auto">
     { Object.entries(filters).map(([k, v]) => (
@@ -242,7 +198,7 @@ function StepFiltersTags({ stepNext, prompt, setPrompt, filtersTags, setFiltersT
 }
 
 
-function StepReviewResults({ stepNext, prompt, setPrompt, resultIndex, setResultIndex }) {
+function StepRun({ stepper, listview, filtersTags, resultIndex, setResultIndex }) {
   const [complete, setComplete] = useState(false);
   var results = [
     {
@@ -284,12 +240,51 @@ function StepReviewResults({ stepNext, prompt, setPrompt, resultIndex, setResult
         for (var i = 0; i < results.length; i++)
           segCount += results[i].segments.length;
         var prompt_ = _gen2CPrompt(fileCount, 'files', segCount, 'segments');
-        setPrompt(
-          prompt.map((p, idx) => idx == 3?prompt_:p)
+        stepper.set_prompt(
+          stepper.prompt.map((p, idx) => idx == 2?prompt_:p)
         );
       }, 3000);
     }
   });
+
+  useEffect(() => {
+    window.project_run_timer = setTimeout(() => {
+      // use a { 'filter_name': ['labels'] } format for back end
+      var filters = {};
+      for (var key in filtersTags) {
+        if (!filtersTags.hasOwnProperty(key))
+          continue;
+        if (!filtersTags[key])
+          continue;
+        if (!key.startsWith('filter__'))
+          continue;
+        var filter = key.substr(8);
+        var tp = filter.indexOf('__');
+        if (tp < 0 &&
+          !filters.hasOwnProperty(filter))
+          filters[filter] = [];
+        else {
+          filters[filter.substr(0, tp)].push(filter.substr(tp + 7));
+        }
+      }
+      // use a [ {type: 'folder', name: 'demo'} ] format for back end
+      var lv_sel = [];
+      listview.sel.items.map((item) => {
+        lv_sel.push({ type: item.type, name: item.name });
+      });
+      auth.post({base: '/projects/run'}, {
+        body: JSON.stringify({
+          'filters': filters,
+          'files': lv_sel,
+          'path': listview.path,
+        })
+      }, (data) => {
+      })
+    }, 1000);
+    return () => {
+      clearTimeout(window.project_run_timer);
+    };
+  }, []);
 
   function resultClick(e) {
     setResultIndex(parseInt(e.currentTarget.getAttribute('data-result-index')));
@@ -350,7 +345,17 @@ function StepReviewResults({ stepNext, prompt, setPrompt, resultIndex, setResult
 }
 
 
-function StepExports({ stepNext, prompt, setPrompt }) {
+function StepSave({ stepper, name, setName }) {
+  function onNameChange(e) {
+    setName(e.target.value);
+  }
+
+  useEffect(() => {
+    // setPrompt(
+    //   prompt.map((p, idx) => idx == 0?name:p)
+    // );
+  }, [name]);
+
   return (
     <div>
       <div className="mt-3 mb-3">
@@ -360,43 +365,54 @@ function StepExports({ stepNext, prompt, setPrompt }) {
         </label>
       </div>
       <div><button className={scn.primaryButton}>Download Results</button></div>
+       <table><tbody><tr><td>
+        <input type="text" placeholder="Name of the Project" className={`${ scn.input } h-9 w-96 mr-2`} onChange={onNameChange} value={ name }/>
+        </td><td>
+        </td></tr></tbody></table>
+      <div>
+        <div className="mt-2 mb-1">
+          Generated project avatar:
+        </div>
+        <AutoAvatar name={ name } width={6} height={6} margin={2} textSize="text-3xl" styledTextSize="text-6xl" />
+      </div>
     </div>
   )
 }
 
 
-function StepContent({ step, stepNext, prompt, setPrompt, name, setName, listview, filtersTags, setFiltersTags, resultIndex, setResultIndex }) {
-  switch(step) {
+function StepContent({ stepper, name, setName, listview }) {
+  const [filtersTags, setFiltersTags] = useState({});
+  const [resultIndex, setResultIndex] = useState(0);
+
+  switch(stepper.step) {
   case 0:
-    return (<StepName stepNext={ stepNext } prompt={prompt} setPrompt={setPrompt} name={name} setName={setName}/>);
+    return (<StepChooseFiles stepper={ stepper } listview={ listview }/>);
   case 1:
-    return (<StepChooseFiles stepNext={ stepNext } prompt={prompt} setPrompt={setPrompt} listview={ listview }/>);
+    return (<StepFiltersTags stepper={ stepper } filtersTags={filtersTags} setFiltersTags={setFiltersTags}/>)
   case 2:
-    return (<StepFiltersTags stepNext={ stepNext } prompt={prompt} setPrompt={setPrompt} filtersTags={filtersTags} setFiltersTags={setFiltersTags}/>)
+    return (<StepRun stepper={ stepper } listview={ listview } filtersTags={ filtersTags } resultIndex={resultIndex} setResultIndex={setResultIndex}/>)
   case 3:
-    return (<StepReviewResults stepNext={ stepNext } prompt={prompt} setPrompt={setPrompt} resultIndex={resultIndex} setResultIndex={setResultIndex}/>)
-  case 4:
-    return (<StepExports/>)
+    return (<StepSave stepper={ stepper } name={name} setName={setName}/>)
   }
 }
 
 
 export default function ProjectNew({ listview }) {
-  const [step, setStep] = useState(0);
+  const [step, set_step] = useState(0);
+  const [prompt, set_prompt] = useState([null, null, null, null, null]);
   const [name, setName] = useState('');
-  const [prompt, setPrompt] = useState([null, null, null, null, null]);
-  const [filtersTags, setFiltersTags] = useState({});
-  const [resultIndex, setResultIndex] = useState(0);
 
-  function stepNext() {
-    setStep(step + 1);
+  function step_next() {
+    set_step(step + 1);
   }
+
+  const stepper = { step, set_step, prompt, set_prompt, step_next };
 
   return (
     <div className="text-base">
       <div className="text-slate-600 left-2 top-1 absolute right-0 h-10 px-3 py-2"><i className="icon-briefcase text-slate-500 mr-3"/>Create a New Project</div>
       <div className="absolute px-2 left-2 top-11 w-[16rem] bottom-0 border-t border-r border-slate-100 bg-slate-100">
-        <Steps step={ step } setStep={ setStep } prompt={ prompt }/>
+        <Steps stepper={ stepper }/>
       </div>
       <div className="absolute left-[16.5rem] px-3 py-2 top-11 right-0 h-[4.5rem] border-t border-b border-slate-100">
         <div className="text-slate-600">
@@ -407,12 +423,12 @@ export default function ProjectNew({ listview }) {
           </div>
           <div className="text-base text-slate-400">{ steps[step].subtitle }</div>
         </div>
-        { step > 0 && step < 4?(
-        <button className={`${scn.primaryButton} absolute right-2 top-3.5`} onClick={ stepNext }>Next</button>
+        { step >= 0 && step < 4?(
+        <button className={`${scn.primaryButton} absolute right-2 top-3.5`} onClick={ step_next }>Next</button>
         ):(null)}
       </div>
       <div className="absolute left-[16.5rem] px-3 py-2 top-[7rem] right-0 bottom-0">
-        <StepContent step={step} stepNext={stepNext} prompt={prompt} setPrompt={setPrompt} name={name} setName={setName} listview={ listview } filtersTags={filtersTags} setFiltersTags={setFiltersTags} resultIndex={resultIndex} setResultIndex={setResultIndex}/>
+        <StepContent stepper={ stepper } name={name} setName={setName} listview={ listview }/>
       </div>
     </div>
   )

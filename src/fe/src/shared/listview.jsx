@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from "react-router-dom";
 import { config } from './config';
-import { auth } from './auth';
+import { auth } from './user';
 import { scn } from './styles';
 import { useFocus, formatBytes, formatDate } from './utils';
 

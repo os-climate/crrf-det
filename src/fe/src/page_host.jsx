@@ -5,7 +5,7 @@ import DocumentPage from './document/page';
 import ProjectPage from './project/page';
 
 import { config } from './shared/config';
-import { auth } from './shared/auth';
+import { auth } from './shared/user';
 
 
 export default function PageHost() {

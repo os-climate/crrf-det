@@ -4,7 +4,7 @@ import useVirtual from 'react-cool-virtual';
 import toast from 'react-hot-toast';
 import { getColor } from '../shared/colors';
 import { config } from '../shared/config';
-import { auth } from '../shared/auth';
+import { auth } from '../shared/user';
 
 
 const MemoImage = memo(({ isScrolling, width, height, url, displayPageNum, pagecontent, ...rest }) => {

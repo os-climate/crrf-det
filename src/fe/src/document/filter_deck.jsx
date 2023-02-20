@@ -6,7 +6,7 @@ import { scn } from '../shared/styles';
 import { AutoAvatar, Tag } from '../shared/widgets';
 import { getColor } from '../shared/colors';
 import { config } from '../shared/config';
-import { auth } from '../shared/auth';
+import { auth, user } from '../shared/user';
 
 
 function FilterDropdown({ filters, current, setCurrent, menuFunc }) {
@@ -74,24 +74,8 @@ export default function DocumentFilterDeck({ path, file, pagecontent, filterstat
   const refDlgFilterName = useRef();
   const refDlgTags = useRef();
 
-  function refreshFilters() {
-    auth.get({base: '/filters'}, {}, ( data ) => {
-      if (data.status == 'ok') {
-        var f = data.data;
-        if (Object.keys(f).length == 0)
-          f = {
-            'GHG Table': { query: 'table:GHG' }
-          };
-        var c = Object.keys(f)[0];
-        setFilters(f);
-      } else {
-        console.warn('unhandled data', data);
-      }
-    });
-  }
-
   useEffect(() => {
-    refreshFilters();
+    user.pullFilters(setFilters);
   }, []);
 
   useEffect(() => {
@@ -129,7 +113,10 @@ export default function DocumentFilterDeck({ path, file, pagecontent, filterstat
       }
       var filter = filters[current];
       filter.query = query;
-      filter.labels = tags.split(',');
+      if (tags.length > 0)
+        filter.labels = tags.split(',');
+      else
+        filter.labels = [];
       auth.post({base: '/filters/' + encodeURIComponent(current)}, {
         body: JSON.stringify({'filter': filter})
       }, (data) => {
@@ -185,9 +172,6 @@ export default function DocumentFilterDeck({ path, file, pagecontent, filterstat
 
   function filterNameChange(e) {
     setFilterName(e.target.value);
-  }
-  function tagsChange(e) {
-    setTags(e.target.value.split(','));
   }
 
   function runFilter(e) {

@@ -2,7 +2,7 @@ import { useRef, useState } from 'react';
 import { Link, useParams, useNavigate } from 'react-router-dom';
 import { scn } from './styles';
 import { config } from './config';
-import { auth } from './auth';
+import { auth } from './user';
 import { useFocus } from './utils';
 
 

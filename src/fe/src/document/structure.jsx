@@ -2,7 +2,7 @@ import { useState, useRef, useEffect } from 'react';
 import { getColor } from '../shared/colors';
 import { ModeTab, renderTableStructure, renderTextStructure } from '../shared/widgets';
 import { config } from '../shared/config';
-import { auth } from '../shared/auth';
+import { auth } from '../shared/user';
 
 
 function isElementVisible(el) {

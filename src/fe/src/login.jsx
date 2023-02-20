@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import oscLogo from './assets/osc-logo-gray.png'
 import { config } from './shared/config';
-import { auth } from './shared/auth';
+import { auth } from './shared/user';
 import toast from 'react-hot-toast';
 import { useNavigate, useLocation } from "react-router-dom";
 

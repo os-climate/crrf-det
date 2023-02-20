@@ -5,7 +5,7 @@ import { Toaster } from 'react-hot-toast';
 import SideNav from './side_nav';
 import PageHost from './page_host';
 import Login from './login';
-import { auth } from './shared/auth';
+import { auth } from './shared/user';
 import './app.css'
 
 

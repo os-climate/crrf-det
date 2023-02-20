@@ -1,7 +1,7 @@
 import toast from 'react-hot-toast';
 import { useDropzone } from 'react-dropzone';
 import { config } from '../shared/config';
-import { auth } from '../shared/auth';
+import { auth } from '../shared/user';
 
 
 let upload_files = [];
