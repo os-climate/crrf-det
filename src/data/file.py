@@ -20,6 +20,10 @@ def get_path(userid, folder):
     return user_path
 
 
+def get_sys_path(userid, name):
+    return os.path.join(get_path(userid, None), '.' + name)
+
+
 def _is_pathname_valid(name):
     if (name is not None and
         (name.startswith('.') or
@@ -29,9 +33,9 @@ def _is_pathname_valid(name):
     return True
 
 
-def listdir(userid, folder):
+def listdir(userid, folder, path_func=get_path):
     ret = []
-    user_path = get_path(userid, folder)
+    user_path = path_func(userid, folder)
     try:
         with os.scandir(user_path) as it:
             for entry in it:
@@ -46,7 +50,9 @@ def listdir(userid, folder):
                     'date': datetime.fromtimestamp(sr.st_mtime, tz=timezone.utc).replace(microsecond=0).isoformat(),
                     'info': ''
                 }
-                if etype == 'file':
+                # for pdf files
+                if (etype == 'file' and
+                    entry.name.lower().endswith('.pdf')):
                     fe['info'] = {
                         'status': 'Queued'
                     }
@@ -70,6 +76,13 @@ def listdir(userid, folder):
                         pass
                     except Exception as e:
                         print('status read exception', e, user_path, entry.name)
+                # for json files
+                elif (etype == 'file' and
+                    entry.name.lower().endswith('.json')):
+                    with open(os.path.join(user_path, entry.name), 'rb') as f:
+                        content = orjson.loads(f.read())
+                        if 'name' in content:
+                            fe['display_name'] = content['name']
                 ret.append(fe)
     except FileNotFoundError:
         pass
@@ -198,12 +211,19 @@ def get_working_task(userid, parent_folder, filename):
     return (None, None)
 
 
-def get_user_file(userid, parent_folder, filename, page):
+def get_user_doc_dir(userid, parent_folder, filename):
     if not _is_pathname_valid(parent_folder):
         return None
     filename = sanitize_filename(filename)
     user_path = get_path(userid, parent_folder)
     work_path = os.path.join(user_path, '.' + filename)
+    return work_path
+
+
+def get_user_file(userid, parent_folder, filename, page):
+    work_path = get_user_doc_dir(userid, parent_folder, filename)
+    if work_path is None:
+        return None
     filename = os.path.join(work_path, page)
     if os.path.isfile(filename):
         return filename
@@ -249,3 +269,6 @@ def enumerate_user_files(userid, base_folder, files):
             print('enumerate_user_files unrecognized entry {}'.format(entry))
     return ret
 
+
+def get_user_project_run_dir(userid, task_id):
+    return os.path.join(get_path(userid, None), '.project_run_{}'.format(task_id))

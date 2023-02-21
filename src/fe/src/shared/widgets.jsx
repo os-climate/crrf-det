@@ -229,7 +229,7 @@ function AutoAvatar({ name, width, height, margin, textSize, styledTextSize }) {
 
 function Tag({ label, color, onClick }) {
   return (
-    <button className="rounded-full text-sm mr-2 text-white font-bold inline-block" style={{backgroundColor: color, paddingLeft: '0.55rem', paddingRight: '0.55rem', paddingTop: '0.05rem', paddingBottom: '0.05rem'}} onClick={ onClick }><i className="icon-tag mr-1"/>{label}</button>
+    <button className="rounded-full text-sm mr-2 text-white font-bold inline-block" style={{backgroundColor: color, paddingLeft: '0.55rem', paddingRight: '0.55rem', paddingTop: '0.05rem', paddingBottom: '0.05rem', marginTop: '0.1rem', marginBottom: '0.1rem'}} onClick={ onClick }><i className="icon-tag mr-1"/>{label}</button>
   )
 }
 

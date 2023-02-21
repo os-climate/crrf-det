@@ -363,8 +363,7 @@ function StepRun({ stepper, listview, run }) {
                         <div key={ page + '.' + cIdx + '.labels' + idx } className="mb-2">
                           { labelSet.map((label, idx) => (
                             <Tag key={'label_' + idx} label={label} color={getColor(idx, 1)} />
-                          ))
-                          }
+                          ))}
                         </div>
                       ))}
                     </div>
@@ -421,7 +420,6 @@ function StepSave({ stepper, listview, run }) {
     var prjArgs = buildProjectArgument(run.filters_tags, listview);
     prjArgs.run_id = run.taskid;
     prjArgs.name = name;
-    console.log('doSave', prjArgs);
     auth.post({base: '/projects/save'}, {
       body: JSON.stringify(prjArgs)
     }, (data) => {

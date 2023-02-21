@@ -22,8 +22,40 @@ bp = Blueprint('projects', url_prefix='/projects')
 @protected
 async def index(request, token):
     userid = token['id']
+    ret = data.file.listdir(userid, 'projects', path_func=data.file.get_sys_path)
     return response.json({
-        'status': 'ok'
+        'status':   'ok',
+        'data':     ret
+    })
+
+
+@bp.get('/detail/<project_name>')
+@protected
+async def detail(request, token, project_name):
+    userid = token['id']
+    project_name = urllib.parse.unquote(project_name)
+    project_dir = data.file.get_sys_path(userid, 'projects')
+    filename = os.path.join(project_dir, '{}.json'.format(data.file.sanitize_filename(project_name)))
+    try:
+        with open(filename, 'rb') as f:
+            details = orjson.loads(f.read())
+    except Exception as e:
+        print('error in detail', e)
+        raise SanicException('File Not Found', status_code=404)
+    run_id = details.get('run_id')
+    if run_id is not None:
+        project_run_path = data.file.get_user_project_run_dir(userid, run_id)
+        master_index_filename = os.path.join(project_run_path, '.master_index.json')
+        try:
+            with open(master_index_filename, 'rb') as f:
+                run_info = orjson.loads(f.read())
+        except Exception as e:
+            print('error in detail / master_index_filename', e)
+        details['files'] = run_info.get('files', {})
+        details['segments_collected'] = run_info.get('segments_collected', 0)
+    return response.json({
+        'status':   'ok',
+        'data':     details
     })
 
 
@@ -69,13 +101,14 @@ async def is_finished(request, token, task_id):
 @protected
 async def get_results(request, token, task_id, result_filename=None):
     userid = token['id']
+    project_run_path = data.file.get_user_project_run_dir(userid, task_id)
     if result_filename is None:
-        master_index_filename = data.file.get_user_file(userid, None, 'project_run_{}'.format(task_id), '.master_index.json')
+        master_index_filename = os.path.join(project_run_path, '.master_index.json')
         try:
             with open(master_index_filename, 'rb') as f:
                 r = orjson.loads(f.read())
         except Exception as e:
-            print('error in get_results', e)
+            print('error in get_results 1', e)
             raise SanicException('File Not Found', status_code=404)
         r['signature'] = sign.generate_url_signature(userid)
         return response.json({
@@ -84,12 +117,14 @@ async def get_results(request, token, task_id, result_filename=None):
         })
     else:
         result_filename = urllib.parse.unquote(result_filename)
-        filename = data.file.get_user_file(userid, None, 'project_run_{}'.format(task_id), result_filename)
-        if filename is None:
+        filename = os.path.join(project_run_path, result_filename)
+        try:
+            with open(filename, 'rb') as f:
+                c = f.read()
+                r = orjson.loads(c)
+        except Exception as e:
+            print('error in get_results 2', e)
             raise SanicException('File Not Found', status_code=404)
-        with open(filename, 'rb') as f:
-            c = f.read()
-            r = orjson.loads(c)
         return response.json({
             'status':   'ok',
             'data':     r
@@ -104,10 +139,10 @@ async def download_results(request, task_id):
     userid = sign.userid_from_signature(s)
     if userid is None:
         raise SanicException('File Not Found', status_code=404)
-    project_base_path = os.path.join(data.file.get_path(userid, None), '.project_run_{}'.format(task_id))
-    archive_dir = os.path.join(data.file.get_path(userid, None), '.archives')
+    project_run_path = data.file.get_user_project_run_dir(userid, task_id)
+    archive_dir = data.file.get_sys_path(userid, 'archives')
     os.makedirs(archive_dir, exist_ok=True)
-    shutil.make_archive(os.path.join(archive_dir, 'project_results_{}'.format(task_id)), 'zip', project_base_path)
+    shutil.make_archive(os.path.join(archive_dir, 'project_results_{}'.format(task_id)), 'zip', project_run_path)
     return await response.file(os.path.join(archive_dir, 'project_results_{}.zip'.format(task_id)))
 
 
@@ -116,12 +151,11 @@ async def download_results(request, task_id):
 async def save(request, token):
     userid = token['id']
     project_args = request.json
-    print('save', project_args)
     if (not project_args.get('name') or
         not project_args.get('files') or
         not project_args.get('filters')):
         raise SanicException('Bad Request', status_code=400)
-    project_dir = os.path.join(data.file.get_path(userid, None), '.projects')
+    project_dir = data.file.get_sys_path(userid, 'projects')
     os.makedirs(project_dir, exist_ok=True)
     filename = os.path.join(project_dir, '{}.json'.format(data.file.sanitize_filename(project_args.get('name'))))
     with open(filename, 'wb') as f:

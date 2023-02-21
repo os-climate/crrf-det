@@ -16,9 +16,9 @@ from .shared import huey_common, kvdb
 @huey_common.task(context=True)
 def run(userid, path, files, filters, task=None):
     user_filters = data.file.get_user_settings(userid, 'filters')
-    project_base_path = os.path.join(data.file.get_path(userid, None), '.project_run_{}'.format(task.id))
-    os.makedirs(project_base_path, exist_ok=True)
-    logger.info('PR -- {} --'.format(project_base_path))
+    project_run_path = data.file.get_user_project_run_dir(userid, task.id)
+    os.makedirs(project_run_path, exist_ok=True)
+    logger.info('PR -- {} --'.format(project_run_path))
     filter_count = 0
     for filter_name in filters:
         if filter_name not in user_filters:
@@ -60,8 +60,7 @@ def run(userid, path, files, filters, task=None):
                 'message':  'Running filter "{}" against "{}" ... ({} segments collected)'.format(filter_name, file, master_index['segments_collected'])
             }))
             build_and_search(userid, folder, file, query, task.id)
-            base_path = data.file.get_path(userid, folder)
-            doc_path = os.path.join(base_path, '.' + file)
+            doc_path = data.file.get_user_doc_dir(userid, folder, file)
             output_file = os.path.join(doc_path, 'search_pdf_{}'.format(task.id))
             if os.path.isfile(output_file):
                 with open(output_file, 'rb') as f:
@@ -87,11 +86,11 @@ def run(userid, path, files, filters, task=None):
             else:
                 logger.error('PR failed')
             cur_step += 1
-        file_result_filename = os.path.join(project_base_path, norm_filename)
+        file_result_filename = os.path.join(project_run_path, norm_filename)
         with open(file_result_filename, 'wb') as f:
             f.write(orjson.dumps(file_result, option=orjson.OPT_NON_STR_KEYS))
         logger.info('PR - {} saved'.format(file_result_filename))
-    master_index_filename = os.path.join(project_base_path, '.master_index.json')
+    master_index_filename = os.path.join(project_run_path, '.master_index.json')
     with open(master_index_filename, 'wb') as f:
         f.write(orjson.dumps(master_index))
     kvdb.delete('{}_{}'.format(userid, task.id))
