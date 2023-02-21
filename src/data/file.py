@@ -231,3 +231,21 @@ def save_user_settings(userid, name, settings):
     except Exception as e:
         pass
 
+
+def enumerate_user_files(userid, base_folder, files):
+    ret = []
+    for entry in files:
+        if entry['type'] == 'folder':
+            next_folder = entry['name']
+            if base_folder:
+                next_folder = '{}|{}'.format(base_folder, entry['name'])
+            folder_files = listdir(userid, next_folder)
+            ret += enumerate_user_files(userid, next_folder, folder_files)
+        elif entry['type'] == 'file':
+            meta_file = get_user_file(userid, base_folder, entry['name'], 'meta.json')
+            if meta_file is not None:
+                ret.append([base_folder, entry['name']])
+        else:
+            print('enumerate_user_files unrecognized entry {}'.format(entry))
+    return ret
+

@@ -6,7 +6,7 @@ from sanic import response, Blueprint
 from sanic.exceptions import SanicException
 
 import data.file
-import task.file
+import task.search
 
 from .auth import protected
 from . import sign, utils
@@ -73,7 +73,7 @@ async def search(request, token, folder, file):
     terms = request.json.get('terms', '')
     if not terms:
         raise SanicException('Bad Request', status_code=400)
-    r = task.file.search_pdf.schedule((userid, folder, file, terms), delay=0)
+    r = task.search.run.schedule((userid, folder, file, terms), delay=0)
     return response.json({
         'status': 'ok',
         'data': r.id

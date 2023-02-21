@@ -25,12 +25,16 @@ services:
       - 8000:8000
     depends_on:
       - redis
+    tty:
+      true
   redis:
     image: redis
     container_name: det-redis
-    network_mode: host
-    expose:
-      - "6379"
+    # network_mode: host
+    # expose:
+    #   - "6379"
+    ports:
+      - 6379:6379
     volumes:
       - ./dev-data/huey_data:/huey_data
     restart: "unless-stopped"

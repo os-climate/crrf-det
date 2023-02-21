@@ -26,19 +26,22 @@ async def index(request, token):
 
 @bp.post('/<filter_name>')
 @protected
-async def change_or_remove(request, token, filter_name):
+async def modify(request, token, filter_name):
     userid = token['id']
     filters = data.file.get_user_settings(userid, 'filters')
     filter_ = request.json.get('filter')
     filter_name = urllib.parse.unquote(filter_name)
     if filter_ is None:
+        # delete <filter_name>
         if filter_name in filters:
             del filters[filter_name]
     else:
         if 'new_name' in filter_:
+            # rename <filter_name> to filter_['new_name']
             del filters[filter_name]
             filter_name = filter_['new_name']
             del filter_['new_name']
+        # create new filter
         filters[filter_name] = filter_
     data.file.save_user_settings(userid, 'filters', filters)
     return response.json({

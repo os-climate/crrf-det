@@ -23,6 +23,7 @@ app.blueprint(service.users.bp)
 app.blueprint(service.files.bp)
 app.blueprint(service.docs.bp)
 app.blueprint(service.filters.bp)
+app.blueprint(service.projects.bp)
 
 
 def launch_huey_consumer():
@@ -44,4 +45,3 @@ async def test(request):
 @app.main_process_start
 async def init(app):
     app.ctx.huey_consumer = launch_huey_consumer()
-
