@@ -92,19 +92,21 @@ export default function DocumentStructure({ path, file, pagecontent, filterstatu
       var text_ = [];
       var tableBoxes_ = [];
       var textBoxes_ = [];
-      for (var i = 0; i < c.content.length; i++) {
-        if (filterstatus.result &&
-          pageIdx <= filterstatus.result.length &&
-          filterstatus.result[pageIdx - 1].cindex.indexOf(i) < 0)
-          continue;
-        var box = c.content[i].box;
-        var box_ = [box[0] / c.height, box[1] / c.width, box[2] / c.height, box[3] / c.width];
-        if (c.content[i].type === 'text') {
-          text_.push(c.content[i]);
-          textBoxes_.push(box_);
-        } else if (c.content[i].type === 'table') {
-          tables_.push(c.content[i]);
-          tableBoxes_.push(box_);
+      if (c.content) {
+        for (var i = 0; i < c.content.length; i++) {
+          if (filterstatus.result &&
+            pageIdx <= filterstatus.result.length &&
+            filterstatus.result[pageIdx - 1].cindex.indexOf(i) < 0)
+            continue;
+          var box = c.content[i].box;
+          var box_ = [box[0] / c.height, box[1] / c.width, box[2] / c.height, box[3] / c.width];
+          if (c.content[i].type === 'text') {
+            text_.push(c.content[i]);
+            textBoxes_.push(box_);
+          } else if (c.content[i].type === 'table') {
+            tables_.push(c.content[i]);
+            tableBoxes_.push(box_);
+          }
         }
       }
       pagecontent.set_text(text_);

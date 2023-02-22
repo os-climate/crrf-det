@@ -164,7 +164,7 @@ export default function DocumentFilterDeck({ path, file, pagecontent, filterstat
         body: JSON.stringify({'filter': changedFilter})
       }, (data) => {
         setPending(false);
-        refreshFilters();
+        user.pullFilters(setFilters);
       })
     }
     refDlgFilterName.current.checked = false;
