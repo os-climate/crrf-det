@@ -51,7 +51,7 @@ async def detail(request, token, project_name):
                 run_info = orjson.loads(f.read())
         except Exception as e:
             print('error in detail / master_index_filename', e)
-        details['files'] = run_info.get('files', {})
+        details['run_files'] = run_info.get('files', {})
         details['segments_collected'] = run_info.get('segments_collected', 0)
     return response.json({
         'status':   'ok',
