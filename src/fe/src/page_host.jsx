@@ -3,6 +3,7 @@ import { Routes, Route, useParams } from 'react-router-dom';
 
 import DocumentPage from './document/page';
 import ProjectPage from './project/page';
+import AccountPage from './account/page';
 
 import { config } from './shared/config';
 import { auth } from './shared/user';
@@ -149,6 +150,7 @@ export default function PageHost() {
         <Route path='/documents/:path/:file' element={<DocumentPage listview={ listview } />}></Route>
         <Route path='/projects' element={<ProjectPage listview={ listview } />}></Route>
         <Route path='/projects/:name' element={<ProjectPage listview={ listview } />}></Route>
+        <Route path='/account' element={<AccountPage/>}></Route>
       </Routes>
     </div>
   )

@@ -5,8 +5,25 @@ import { Toaster } from 'react-hot-toast';
 import SideNav from './side_nav';
 import PageHost from './page_host';
 import Login from './login';
+import Register from './register';
 import { auth } from './shared/user';
 import './app.css'
+
+
+function ProtectedApp() {
+  return (<div>
+    { auth.getToken() ? (
+      <div className="relative">
+        <SideNav/>
+        <PageHost/>
+      </div>
+    ):(
+      <div>
+        <Login/>
+      </div>
+    )}
+  </div>)
+}
 
 
 function App() {
@@ -22,16 +39,14 @@ function App() {
 
   return (
     <Router>
-      { auth.getToken() ? (
-        <div className="relative">
-          <SideNav/>
-          <PageHost/>
-        </div>
-      ):(
-        <div>
-          <Login/>
-        </div>
-      )}
+      <Routes>
+        {/* public facing routes */}
+        <Route path='/register/:invite_code' element={<Register />}/>
+        <Route path='/register' element={<Register />}/>
+        <Route path='/login' element={<Login/>}/>
+        {/* protected routes */}
+        <Route path='*' element={<ProtectedApp />}/>
+      </Routes>
       <Toaster />
     </Router>
   )

@@ -172,3 +172,13 @@ async def delete(request, token, project_name):
     return response.json({
         'status': 'ok'
     })
+
+
+@bp.post('/set_tagging/<project_name>')
+@protected
+async def set_tagging(request, token, project_name):
+    userid = token['id']
+    return response.json({
+        'status': 'ok'
+    })
+

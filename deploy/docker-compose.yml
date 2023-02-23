@@ -16,6 +16,7 @@ services:
       - MKL_NUM_THREADS=1
       - OMP_NUM_THREADS=1
       - JWT_SECRET=crrf-det-jwt-SECRET!!!501015
+      - PASSWORD_SALT=crrf-det-salt-50-10-15
       - URL_SIGN_SECRET=86c935bc079ba1fef55809e2f575426c
       - HOST_FE_URL=http://localhost
       - REDIS_PORT=23451

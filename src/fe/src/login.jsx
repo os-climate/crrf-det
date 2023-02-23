@@ -1,9 +1,9 @@
 import { useState } from 'react';
-import oscLogo from './assets/osc-logo-gray.png'
 import { config } from './shared/config';
 import { auth } from './shared/user';
 import toast from 'react-hot-toast';
 import { useNavigate, useLocation } from "react-router-dom";
+import { CenteredTitle } from './shared/widgets';
 
 
 export default function Login({ setRefresh }) {
@@ -47,10 +47,7 @@ export default function Login({ setRefresh }) {
     <div className="hero min-h-screen bg-base-200">
       <div className="hero-content text-center mb-20">
         <div className="max-w-md">
-          <div className="text-center text-3xl flex items-center">
-            <img src={oscLogo} className="w-10 h-10 mr-8"/>
-            <span className="border-l border-slate-500">CRRF Data Extraction Toolkit</span>
-          </div>
+          <CenteredTitle />
           <p className="pt-6 pb-3">
             Please login to continue.
           </p>

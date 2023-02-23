@@ -12,6 +12,12 @@ export default function SideNav() {
         { name: 'Documents', link: '/documents', icon: 'icon-archive' },
         { name: 'Projects', link: '/projects', icon: 'icon-briefcase' },
       ]
+    },
+    {
+      name: 'User',
+      links: [
+        { name: 'Account', link: '/account', icon: 'icon-user' },
+      ]
     }
   ];
 

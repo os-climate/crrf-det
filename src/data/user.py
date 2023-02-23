@@ -11,14 +11,14 @@ class User:
     def hash_password(password):
         h = hashlib.blake2b(digest_size=25)
         h.update(password.encode('utf-8'))
-        h.update(b'crrf-det-salt-50-10-15')
+        h.update(os.environ['PASSWORD_SALT'].encode('utf-8'))
         return h.hexdigest()
 
     @staticmethod
     def generate_id():
         h = hashlib.blake2b(digest_size=10)
         h.update(str(time.time()).encode('utf-8'))
-        h.update(b'crrf-det-salt-50-10-15')
+        h.update(os.environ['PASSWORD_SALT'].encode('utf-8'))
         return h.hexdigest()
 
     # mostly for compatibility with jwt
@@ -113,4 +113,33 @@ def passwd(username, old_password, new_password):
     except FileNotFoundError:
         return False
 
+
+def generate_invite(level):
+    invite = 'invite-{}'.format(User.generate_id())
+    with user_database('a') as w:
+        w.writerow([invite, '', '', str(level)])
+    return invite
+
+
+def add_from_invite(invite, username, password):
+    try:
+        found = False
+        rows = []
+        with user_database('r') as r:
+            for row in r:
+                if row[0] == invite:
+                    found = True
+                    row[0] = invite[7:]
+                    row[1] = username
+                    row[2] = User.hash_password(password)
+                rows.append(row)
+        if found:
+            with user_database('w') as w:
+                for row in rows:
+                    w.writerow(row)
+            return True
+        else:
+            return False
+    except FileNotFoundError:
+        return False
 

@@ -1,4 +1,5 @@
 import { getColor } from '../shared/colors';
+import oscLogo from '../assets/osc-logo-gray.png'
 
 
 function ModeTab({ modes, mode, setMode }) {
@@ -259,10 +260,19 @@ function renderTextStructure(content, index, textBoxHL, highlightTextBox, resetH
 }
 
 
+function CenteredTitle() {
+  return (<div className="text-center text-3xl flex items-center">
+    <img src={oscLogo} className="w-10 h-10 mr-8"/>
+    <span className="border-l border-slate-500">CRRF Data Extraction Toolkit</span>
+  </div>)
+}
+
+
 export {
   ModeTab,
   AutoAvatar,
   Tag,
+  CenteredTitle,
   renderTableStructure,
   renderTextStructure,
 }
