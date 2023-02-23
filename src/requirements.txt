@@ -10,3 +10,4 @@ huey==2.4.4
 redis==4.4.2
 cryptography==39.0.0
 psutil==5.9.4
+fasteners==0.18

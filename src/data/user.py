@@ -2,7 +2,7 @@ import os
 import csv
 import time
 import hashlib
-import threading
+import fasteners
 
 
 class User:
@@ -41,21 +41,24 @@ class user_database(object):
 
     def __init__(self, mode):
         self.mode = mode
-        self.lock = threading.Lock()
+        self.lock = fasteners.InterProcessReaderWriterLock('{}.lock'.format(USER_DATABASE_PATH))
 
     def __enter__(self):
         self.f = open(USER_DATABASE_PATH, self.mode, newline='')
-        self.lock.acquire()
         if self.mode == 'r':
+            self.lock.acquire_read_lock()
             return csv.reader(self.f)
         elif self.mode in ['w', 'a']:
+            self.lock.acquire_write_lock()
             return csv.writer(self.f)
         else:
-            self.lock.release()
             raise Exception('unknown user_database i/o mode {}'.format(self.mode))
 
     def __exit__(self, *args):
-        self.lock.release()
+        if self.mode == 'r':
+            self.lock.release_read_lock()
+        elif self.mode in ['w', 'a']:
+            self.lock.release_write_lock()
         self.f.close()
 
 
