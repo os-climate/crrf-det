@@ -1,7 +1,9 @@
 import { config } from './config';
+import toast from 'react-hot-toast';
 
 
 let authStatusChangeCallback = null;
+let userLevel = 10000;
 
 
 const auth = {
@@ -13,6 +15,12 @@ const auth = {
       localStorage.setItem(config.storage_key, token);
     else
       localStorage.removeItem(config.storage_key);
+  },
+  getLevel: function() {
+    return userLevel;
+  },
+  saveLevel: function(level) {
+    userLevel = level;
   },
   setStatusChangeCallback: function(func) {
     authStatusChangeCallback = func;
@@ -59,8 +67,13 @@ const auth = {
       }
       // reauth?
       else if (response.status == 401) {
+        toast.error("User authentication expired.");
         auth.saveToken(null);
         authStatusChangeCallback();
+      }
+      else if (response.status == 403) {
+        toast.error("You don't have access to this function.");
+        return;
       }
       return {
         'status': 'fetch_error',

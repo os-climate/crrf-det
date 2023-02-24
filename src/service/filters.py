@@ -16,6 +16,8 @@ bp = Blueprint('filters', url_prefix='/filters')
 @bp.get('/')
 @protected
 async def index(request, token):
+    if token.get('level', 10000) > 0:   # function requires user level = 0
+        raise SanicException('Forbidden.', status_code=403)
     userid = token['id']
     filters = data.file.get_user_settings(userid, 'filters')
     return response.json({
@@ -27,6 +29,8 @@ async def index(request, token):
 @bp.post('/<filter_name>')
 @protected
 async def modify(request, token, filter_name):
+    if token.get('level', 10000) > 0:   # function requires user level = 0
+        raise SanicException('Forbidden.', status_code=403)
     userid = token['id']
     filters = data.file.get_user_settings(userid, 'filters')
     filter_ = request.json.get('filter')

@@ -30,7 +30,10 @@ async def login(request):
     message['exp'] = datetime.now(tz=timezone.utc) + timedelta(days=1)
     return response.json({
         'status':   'ok',
-        'data':     jwt.encode(message, request.app.config.SECRET)
+        'data': {
+            'token':    jwt.encode(message, request.app.config.SECRET),
+            'level':    level
+        }
     })
 
 

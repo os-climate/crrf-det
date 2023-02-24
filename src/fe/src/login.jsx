@@ -29,11 +29,16 @@ export default function Login({ setRefresh }) {
         else if (data.status == 500)
           toast.error("Internal system error! Please try again later.");
         else if (data.status == 'ok') {
-          auth.saveToken(data.data);
+          auth.saveToken(data.data.token);
+          auth.saveLevel(data.data.level);
           setTimeout(() => {
             let targetUrl = location.pathname;
-            if (targetUrl == '/')
-              targetUrl = '/documents'
+            if (targetUrl == '/') {
+              if (data.data.level == 0)
+                targetUrl = '/documents';
+              else
+                targetUrl = '/tagging';
+            }
             navigate(targetUrl);
             auth.statusChanged();
           });

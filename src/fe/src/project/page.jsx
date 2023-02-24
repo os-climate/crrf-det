@@ -52,14 +52,14 @@ function ProjectList() {
   return (
     <div>
       <div className="left-2 top-1 absolute right-0 h-10 flex items-center">
-        <input type="text" placeholder={`Search ${projects.length} projects ...`} className={`${scn.input} max-w-xs h-9 mr-2`} />
+        <input type="text" placeholder={`Search ${projects?projects.length:0} projects ...`} className={`${scn.input} max-w-xs h-9 mr-2`} />
         <Link to="/projects/__new__" className={`${scn.primaryButton} min-h-[2.25rem] h-9`}><i className="icon-plus mr-1"/>New Project</Link>
       </div>
 
       <div className="left-2 top-11 right-1/2 bottom-2 absolute overflow-auto">
-      { projects.map((project, idx) => (
+      { projects?projects.map((project, idx) => (
         <ProjectAvatar key={idx} index={idx} projIndex={projIndex} setProjIndex={setProjIndex} project={project}/>
-        ))}
+        )):(null)}
       </div>
 
       <ProjectPreview detail={ detail }/>

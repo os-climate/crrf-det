@@ -16,6 +16,8 @@ bp = Blueprint('files', url_prefix='/files')
 @protected
 async def index(request, token, folder=None):
     # curl -v -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjRjYmJmNWMzMTYwMjI0YzZmMjEyIiwidXNlcm5hbWUiOiJhZG1pbiIsImxldmVsIjowLCJleHAiOjE2NzU0Nzk2NTl9.Azef1fMmbAkchum7rVePi5458eN6Z6Oo_SSQkVYlLq0" http://localhost:8000/files
+    if token.get('level', 10000) > 0:   # function requires user level = 0
+        raise SanicException('Forbidden.', status_code=403)
     folder = utils.fix_folder(folder)
     userid = token['id']
     ret = data.file.listdir(userid, folder)
@@ -32,10 +34,11 @@ async def index(request, token, folder=None):
 @bp.post('/new/<folder>', name='new_folder')
 @protected
 async def new(request, token, folder=None):
+    if token.get('level', 10000) > 0:   # function requires user level = 0
+        raise SanicException('Forbidden.', status_code=403)
     folder = utils.fix_folder(folder)
     userid = token['id']
     ret = False
-    print('files.new', folder, token)
     if (request.files and
         len(request.files) > 0):
         # a file upload
@@ -64,6 +67,8 @@ async def new(request, token, folder=None):
 @bp.post('/change/<folder>', name='change_folder')
 @protected
 async def change(request, token, folder=None):
+    if token.get('level', 10000) > 0:   # function requires user level = 0
+        raise SanicException('Forbidden.', status_code=403)
     folder = utils.fix_folder(folder)
     userid = token['id']
     old_name = request.json.get('old_name', '')
@@ -88,6 +93,8 @@ async def change(request, token, folder=None):
 @bp.post('/delete/<folder>', name='delete_folder')
 @protected
 async def delete(request, token, folder=None):
+    if token.get('level', 10000) > 0:   # function requires user level = 0
+        raise SanicException('Forbidden.', status_code=403)
     folder = utils.fix_folder(folder)
     userid = token['id']
     names = request.json.get('name', [])

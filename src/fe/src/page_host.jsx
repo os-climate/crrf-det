@@ -4,6 +4,7 @@ import { Routes, Route, useParams } from 'react-router-dom';
 import DocumentPage from './document/page';
 import ProjectPage from './project/page';
 import AccountPage from './account/page';
+import TaggingPage from './tagging/page';
 
 import { config } from './shared/config';
 import { auth } from './shared/user';
@@ -143,7 +144,7 @@ export default function PageHost() {
   const listview = { items, set_items, sel, set_sel, loaded, set_loaded, refresh, try_select };
 
   return (
-    <div className="fixed h-screen left-16 top-0 right-0">
+    <div className={`fixed h-screen top-0 right-0 ${ auth.getLevel() == 0 ? 'left-16':'left-0'}`}>
       <Routes>
         <Route path='/documents' element={<DocumentPage listview={ listview } />}></Route>
         <Route path='/documents/:path' element={<DocumentPage listview={ listview } />}></Route>
@@ -151,6 +152,7 @@ export default function PageHost() {
         <Route path='/projects' element={<ProjectPage listview={ listview } />}></Route>
         <Route path='/projects/:name' element={<ProjectPage listview={ listview } />}></Route>
         <Route path='/account' element={<AccountPage/>}></Route>
+        <Route path='/tagging' element={<TaggingPage/>}></Route>
       </Routes>
     </div>
   )

@@ -18,6 +18,8 @@ bp = Blueprint('docs', url_prefix='/docs')
 @bp.get('/<folder:strorempty>/<file>', name='view')
 @protected
 async def view(request, token, folder, file):
+    if token.get('level', 10000) > 0:   # function requires user level = 0
+        raise SanicException('Forbidden.', status_code=403)
     folder = utils.fix_folder(folder)
     file = urllib.parse.unquote(file)
     userid = token['id']
@@ -35,6 +37,8 @@ async def view(request, token, folder, file):
 @bp.get('/<folder:strorempty>/<file>/page/<page:int>', name='view_page')
 @protected
 async def view_page(request, token, folder, file, page):
+    if token.get('level', 10000) > 0:   # function requires user level = 0
+        raise SanicException('Forbidden.', status_code=403)
     folder = utils.fix_folder(folder)
     file = urllib.parse.unquote(file)
     userid = token['id']
@@ -47,6 +51,8 @@ async def view_page(request, token, folder, file, page):
 
 @bp.get('/<folder:strorempty>/<file>/<image_name>', name='view_image')
 async def view_image(request, folder, file, image_name):
+    if token.get('level', 10000) > 0:   # function requires user level = 0
+        raise SanicException('Forbidden.', status_code=403)
     if not image_name.endswith('.jpg'):
         raise SanicException('File Not Found', status_code=404)
     s = request.args.get('s')
@@ -67,6 +73,8 @@ async def view_image(request, folder, file, image_name):
 @bp.post('/<folder:strorempty>/<file>', name='search')
 @protected
 async def search(request, token, folder, file):
+    if token.get('level', 10000) > 0:   # function requires user level = 0
+        raise SanicException('Forbidden.', status_code=403)
     folder = utils.fix_folder(folder)
     file = urllib.parse.unquote(file)
     userid = token['id']
@@ -83,6 +91,8 @@ async def search(request, token, folder, file):
 @bp.get('/<folder:strorempty>/<file>/search/<result_id>', name='search_result')
 @protected
 async def search_result(request, token, folder, file, result_id):
+    if token.get('level', 10000) > 0:   # function requires user level = 0
+        raise SanicException('Forbidden.', status_code=403)
     folder = utils.fix_folder(folder)
     file = urllib.parse.unquote(file)
     userid = token['id']

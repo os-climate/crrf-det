@@ -39,7 +39,9 @@ export default function AccountPage() {
     auth.post({base: '/users/generate_invite'}, {
       body: JSON.stringify({ level: type })
     }, (data) => {
-      var url = window.location.protocol + "//" + window.location.host + '/#/register/' + data.data
+      if (!data)
+        return;
+      var url = window.location.protocol + "//" + window.location.host + '/#/register/' + data.data;
       setGInvite(url);
       navigator.clipboard.writeText(url);
     });

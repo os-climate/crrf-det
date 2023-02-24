@@ -14,7 +14,7 @@ function ProtectedApp() {
   return (<div>
     { auth.getToken() ? (
       <div className="relative">
-        <SideNav/>
+        { auth.getLevel() == 0 ? (<SideNav/>):(null) }
         <PageHost/>
       </div>
     ):(
