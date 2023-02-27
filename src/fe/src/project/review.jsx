@@ -12,14 +12,16 @@ export default function ProjectReview({ listview, name }) {
   const [ segments, set_segments ] = useState();
   const [ filters_tags, set_filters_tags ] = useState({});
 
-  const run = { taskid, set_taskid, taskstatus, set_taskstatus, results, set_results, rindex, set_rindex, segments, set_segments, filters_tags, set_filters_tags }
+  const [ displayname, set_displayname ] = useState(name);
+
+  const run = { taskid, set_taskid, taskstatus, set_taskstatus, results, set_results, rindex, set_rindex, segments, set_segments, filters_tags, set_filters_tags, name, displayname }
 
   const [ displayName, setDisplayName ] = useState(name);
 
   useEffect(() => {
     auth.get({base: '/projects/detail/' + name}, {}, (data) => {
       var p = data.data;
-      setDisplayName(p.name);
+      set_displayname(p.name);
       set_taskid(p.run_id);
       listview.set_path(p.path);
       listview.try_select(p.files);
@@ -37,7 +39,7 @@ export default function ProjectReview({ listview, name }) {
 
   return (
     <div className="text-base">
-      <div className="text-slate-600 left-2 top-1 absolute right-0 h-10 px-3 py-2"><i className="icon-briefcase text-slate-500 mr-3"/>Review Project <strong>{displayName}</strong></div>
+      <div className="text-slate-600 left-2 top-1 absolute right-0 h-10 px-3 py-2"><i className="icon-briefcase text-slate-500 mr-3"/>Review Project <strong>{ displayname }</strong></div>
       <StepMaster listview={ listview } run={ run }/>
     </div>
   )

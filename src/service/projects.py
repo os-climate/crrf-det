@@ -196,7 +196,10 @@ async def set_tagging(request, token, project_name):
     if token.get('level', 10000) > 0:   # function requires user level = 0
         raise SanicException('Forbidden.', status_code=403)
     userid = token['id']
+    project_name = urllib.parse.unquote(project_name)
+    r = task.project.generate_tagging.schedule((userid, project_name), delay=0)
     return response.json({
-        'status': 'ok'
+        'status': 'ok',
+        'data': r.id
     })
 

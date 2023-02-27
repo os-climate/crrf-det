@@ -3,24 +3,26 @@ import toast from 'react-hot-toast';
 
 
 let authStatusChangeCallback = null;
-let userLevel = 10000;
 
 
 const auth = {
   getToken: function() {
-    return localStorage.getItem(config.storage_key);
+    return localStorage.getItem(config.lskey_token);
   },
   saveToken: function(token) {
     if (token)
-      localStorage.setItem(config.storage_key, token);
+      localStorage.setItem(config.lskey_token, token);
     else
-      localStorage.removeItem(config.storage_key);
+      localStorage.removeItem(config.lskey_token);
   },
   getLevel: function() {
-    return userLevel;
+    var level = localStorage.getItem(config.lskey_level);
+    if (level)
+      return parseInt(level);
+    return 10000;
   },
   saveLevel: function(level) {
-    userLevel = level;
+    localStorage.setItem(config.lskey_level, level);
   },
   setStatusChangeCallback: function(func) {
     authStatusChangeCallback = func;

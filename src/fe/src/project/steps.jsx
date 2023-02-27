@@ -414,7 +414,7 @@ function StepRun({ stepper, listview, run }) {
 
 
 function StepSave({ stepper, listview, run }) {
-  const [ name, setName ] = useState('');
+  const [ name, setName ] = useState(run.displayname?run.displayname:'');
   const [ saved, setSaved ] = useState(false);
   const [ working, setWorking ] = useState(false);
 
@@ -431,6 +431,23 @@ function StepSave({ stepper, listview, run }) {
     })
   }
 
+  function doUpdate(e) {
+    // not implemented
+    setWorking(true);
+    setWorking(false);
+  }
+
+  function doGenerateTagging(e) {
+    var projName = name;
+    if (run.name)
+      projName = run.name;
+    auth.post({base: '/projects/set_tagging/' + projName}, {
+      body: JSON.stringify({})
+    }, (data) => {
+      console.log('set_tagging initiated');
+    })
+  }
+
   return (
     <div>
        <table><tbody><tr><td>
@@ -444,9 +461,16 @@ function StepSave({ stepper, listview, run }) {
         <AutoAvatar name={ name } width={6} height={6} margin={2} textSize="text-3xl" styledTextSize="text-6xl" />
       </div>
       <div className="mt-3">
-        <button className={`${scn.primaryButton} ${working?'loading':''}`} disabled={ name.length == 0 || working } onClick={ doSave }>{ working?(<span>Saving ...</span>):(<span>Save</span>)}</button>
-        { saved?(<span className="ml-3">Saved!</span>):(null)}
+        { run.displayname?
+        (<div><button className={`${scn.primaryButton} ${working?'loading':''}`} disabled={ name.length == 0 || working } onClick={ doUpdate }>{ working?(<span>Updating ...</span>):(<span>Update</span>)}</button>
+        { saved?(<span className="ml-3">Updated!</span>):(null)}</div>):
+        (<div><button className={`${scn.primaryButton} ${working?'loading':''}`} disabled={ name.length == 0 || working } onClick={ doSave }>{ working?(<span>Saving ...</span>):(<span>Save</span>)}</button>
+        { saved?(<span className="ml-3">Saved!</span>):(null)}</div>)
+        }
       </div>
+      { run.displayname || saved ? (<div className="mt-3">
+        <button className={`${scn.primaryButton}`} onClick={ doGenerateTagging }>Generate a Tagging Project</button>
+      </div>):(null)}
     </div>
   )
 }
