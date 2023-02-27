@@ -51,8 +51,6 @@ async def view_page(request, token, folder, file, page):
 
 @bp.get('/<folder:strorempty>/<file>/<image_name>', name='view_image')
 async def view_image(request, folder, file, image_name):
-    if token.get('level', 10000) > 0:   # function requires user level = 0
-        raise SanicException('Forbidden.', status_code=403)
     if not image_name.endswith('.jpg'):
         raise SanicException('File Not Found', status_code=404)
     s = request.args.get('s')
