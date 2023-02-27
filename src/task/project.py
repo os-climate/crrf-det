@@ -106,6 +106,7 @@ def run(userid, path, files, filters, task=None):
 @huey_common.task(context=True)
 def generate_tagging(userid, project_name, task=None):
     box_coords_narrowside = 400
+    batch_size = 1000
     project_dir = data.file.get_sys_path(userid, 'projects')
     output_dir = data.project.get_path_for(data.file.sanitize_filename(project_name))
     os.makedirs(output_dir, exist_ok=True)
@@ -169,6 +170,9 @@ def generate_tagging(userid, project_name, task=None):
             target_scale = calc_target_scale(width, height)
             for cidx, seg in segs.items():
                 entry_count += 1
+                batch_index = '{}'.format(int(entry_count / batch_size) * batch_size)
+                batch_out_dir = os.path.join(output_dir, batch_index)
+                os.makedirs(batch_out_dir, exist_ok=True)
                 # generate crop
                 crop_y_start = int(seg['content']['box'][0] * target_scale / 8) * 8
                 crop_x_start = int(seg['content']['box'][1] * target_scale / 8) * 8
@@ -176,7 +180,7 @@ def generate_tagging(userid, project_name, task=None):
                 crop_x_end = int(seg['content']['box'][3] * target_scale / 8 + 1) * 8
                 crop_width = crop_x_end - crop_x_start
                 crop_height = crop_y_end - crop_y_start
-                cmd = ['jpegtran', '-outfile', os.path.join(output_dir, '{}.jpg'.format(entry_count)), '-crop', '{}x{}+{}+{}'.format(crop_width, crop_height, crop_x_start, crop_y_start), os.path.join(output_dir, '{}.{}.jpg'.format(filename, page_idx))]
+                cmd = ['jpegtran', '-outfile', os.path.join(batch_out_dir, '{}.jpg'.format(entry_count)), '-crop', '{}x{}+{}+{}'.format(crop_width, crop_height, crop_x_start, crop_y_start), os.path.join(output_dir, '{}.{}.jpg'.format(filename, page_idx))]
                 p = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, encoding='utf-8')
                 while True:
                     if type(p.stdout) is str:
@@ -206,7 +210,7 @@ def generate_tagging(userid, project_name, task=None):
                             [int(unit_width / 8 - 1) * 8, crop_width],
                         ]
                     for midx, (ml, mr) in enumerate(margins):
-                        cmd = ['jpegtran', '-outfile', os.path.join(output_dir, '{}_{}.jpg'.format(entry_count, midx + 1)), '-crop', '{}x{}+{}+{}'.format(mr - ml, crop_height, ml, 0), os.path.join(output_dir, '{}.jpg'.format(entry_count))]
+                        cmd = ['jpegtran', '-outfile', os.path.join(batch_out_dir, '{}_{}.jpg'.format(entry_count, midx + 1)), '-crop', '{}x{}+{}+{}'.format(mr - ml, crop_height, ml, 0), os.path.join(batch_out_dir, '{}.jpg'.format(entry_count))]
                         p = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, encoding='utf-8')
                         while True:
                             if type(p.stdout) is str:
@@ -232,14 +236,17 @@ def generate_tagging(userid, project_name, task=None):
                     'labels':   labels,
                     'image_split':  len(margins)
                 }
-                with open(os.path.join(output_dir, '{}.json'.format(entry_count)), 'wb') as f:
+                with open(os.path.join(batch_out_dir, '{}.json'.format(entry_count)), 'wb') as f:
                     f.write(orjson.dumps(tseg))
             kvdb.setex('{}_{}'.format(userid, task.id), 432000, pickle.dumps({
                 'step':     entry_count,
                 'total':    total_count,
                 'message':  '{} ({} collected)'.format(filename, entry_count)
             }))
-    with open(os.path.join(output_dir, 'count'), 'w') as f:
-        f.write(str(entry_count))
+    with open(os.path.join(output_dir, 'meta.json'), 'wb') as f:
+        f.write(orjson.dumps({
+            'count': entry_count,
+            'batch_size': batch_size
+        }))
     kvdb.delete('{}_{}'.format(userid, task.id))
 
