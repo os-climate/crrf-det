@@ -8,7 +8,7 @@ RUN ./build-release.sh
 FROM node:lts-slim AS detsearch_build
 COPY src/search /search
 WORKDIR /search
-RUN npm i -g . && ls -al /usr/local/lib/node_modules && which det-search
+RUN npm i && npm i -g . && ls -al /usr/local/lib/node_modules && which det-search
 # /usr/local/bin/det-search
 # /usr/local/lib/node_modules/det-search
 
@@ -16,7 +16,7 @@ FROM python:3.11-slim
 COPY src/requirements.txt /det/
 WORKDIR /det
 RUN apt-get update && \
-    apt-get install -y curl poppler-utils build-essential zlib1g libopenjp2-7 libfontconfig libnss3 && \
+    apt-get install -y curl poppler-utils build-essential zlib1g libopenjp2-7 libfontconfig libnss3 libjpeg-turbo-progs && \
     curl -fsSL https://deb.nodesource.com/setup_19.x | bash - && \
     apt-get install -y nodejs && \
     export MAKEFLAGS="-j$(nproc)" && \
