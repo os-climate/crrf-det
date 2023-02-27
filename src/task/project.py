@@ -128,8 +128,21 @@ def generate_tagging(userid, project_name, task=None):
             file_map = orjson.loads(f.read())
     except Exception as e:
         return
+    total_count = 0
+    for file_dx, filename in enumerate(master_index.get('files', [])):
+        segs_filename = os.path.join(project_run_path, filename)
+        with open(segs_filename, 'rb') as f:
+            doc_segs = orjson.loads(f.read())
+        for page_idx, segs in doc_segs.items():
+            total_count += len(segs)
+    # 432,000 sec = 5 days
+    kvdb.setex('{}_{}'.format(userid, task.id), 432000, pickle.dumps({
+        'step':     0,
+        'total':    total_count,
+        'message':  '{} files'.format(len(master_index.get('files', [])))
+    }))
     entry_count = 0
-    for filename in master_index.get('files', []):
+    for file_dx, filename in enumerate(master_index.get('files', [])):
         segs_filename = os.path.join(project_run_path, filename)
         [doc_folder, doc_filename] = file_map[filename]
         doc_fullpath = os.path.join(data.file.get_path(userid, doc_folder), doc_filename)
@@ -155,6 +168,54 @@ def generate_tagging(userid, project_name, task=None):
                 logger.info('== {}'.format(line.strip()))
             target_scale = calc_target_scale(width, height)
             for cidx, seg in segs.items():
+                entry_count += 1
+                # generate crop
+                crop_y_start = int(seg['content']['box'][0] * target_scale / 8) * 8
+                crop_x_start = int(seg['content']['box'][1] * target_scale / 8) * 8
+                crop_y_end = int(seg['content']['box'][2] * target_scale / 8 + 1) * 8
+                crop_x_end = int(seg['content']['box'][3] * target_scale / 8 + 1) * 8
+                crop_width = crop_x_end - crop_x_start
+                crop_height = crop_y_end - crop_y_start
+                cmd = ['jpegtran', '-outfile', os.path.join(output_dir, '{}.jpg'.format(entry_count)), '-crop', '{}x{}+{}+{}'.format(crop_width, crop_height, crop_x_start, crop_y_start), os.path.join(output_dir, '{}.{}.jpg'.format(filename, page_idx))]
+                p = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, encoding='utf-8')
+                while True:
+                    if type(p.stdout) is str:
+                        break
+                    line = p.stdout.readline()
+                    if not line:
+                        break
+                    logger.info('== {}'.format(line.strip()))
+                # Split a single crop into as many as 3 to get practical
+                # display on mobile devices. Split parameters are based
+                # on "narrow side 1200px" settings in `docmt` run.
+                margins = []
+                if crop_width / crop_height >= 2:
+                    if crop_width >= 2000:
+                        # split into 3 horizontal blocks
+                        unit_width = crop_width / 3
+                        margins = [
+                            [0, int(unit_width / 8 + 1) * 8],
+                            [int(unit_width / 8 - 1) * 8, int(2 * unit_width / 8 + 1) * 8],
+                            [int(2 * unit_width / 8 - 1) * 8, crop_width]
+                        ]
+                    elif crop_width >= 1300:
+                        # split into 2 horizontal blocks
+                        unit_width = crop_width / 2
+                        margins = [
+                            [0, int(unit_width / 8 + 1) * 8],
+                            [int(unit_width / 8 - 1) * 8, crop_width],
+                        ]
+                    for midx, (ml, mr) in enumerate(margins):
+                        cmd = ['jpegtran', '-outfile', os.path.join(output_dir, '{}_{}.jpg'.format(entry_count, midx + 1)), '-crop', '{}x{}+{}+{}'.format(mr - ml, crop_height, ml, 0), os.path.join(output_dir, '{}.jpg'.format(entry_count))]
+                        p = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, encoding='utf-8')
+                        while True:
+                            if type(p.stdout) is str:
+                                break
+                            line = p.stdout.readline()
+                            if not line:
+                                break
+                            logger.info('== {}'.format(line.strip()))
+                # generate json segment
                 labels = []
                 for label_set in seg['labels']:
                     label_set = [x.strip() for x in label_set]
@@ -169,20 +230,16 @@ def generate_tagging(userid, project_name, task=None):
                     'content':  seg['content']['content'],
                     'box':      seg['content']['box'],
                     'labels':   labels,
+                    'image_split':  len(margins)
                 }
-                #logger.info('{}'.format(tseg))
-                entry_count += 1
                 with open(os.path.join(output_dir, '{}.json'.format(entry_count)), 'wb') as f:
                     f.write(orjson.dumps(tseg))
-                crop_y_start = int(seg['content']['box'][0] * target_scale / 8) * 8
-                crop_x_start = int(seg['content']['box'][1] * target_scale / 8) * 8
-                crop_y_end = int(seg['content']['box'][2] * target_scale / 8 + 1) * 8
-                crop_x_end = int(seg['content']['box'][3] * target_scale / 8 + 1) * 8
-                cmd = ['jpegtran', '-outfile', os.path.join(output_dir, '{}.jpg'.format(entry_count)), '-crop', '{}x{}+{}+{}'.format(crop_x_end - crop_x_start, crop_y_end - crop_y_start, crop_x_start, crop_y_start), os.path.join(output_dir, '{}.{}.jpg'.format(filename, page_idx))]
-                p = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, encoding='utf-8')
-                while True:
-                    line = p.stdout.readline()
-                    if not line:
-                        break
-                    logger.info('== {}'.format(line.strip()))
+            kvdb.setex('{}_{}'.format(userid, task.id), 432000, pickle.dumps({
+                'step':     entry_count,
+                'total':    total_count,
+                'message':  '{} ({} collected)'.format(filename, entry_count)
+            }))
+    with open(os.path.join(output_dir, 'count'), 'w') as f:
+        f.write(str(entry_count))
+    kvdb.delete('{}_{}'.format(userid, task.id))
 

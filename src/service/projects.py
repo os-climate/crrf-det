@@ -198,6 +198,11 @@ async def set_tagging(request, token, project_name):
     userid = token['id']
     project_name = urllib.parse.unquote(project_name)
     r = task.project.generate_tagging.schedule((userid, project_name), delay=0)
+    kvdb.setex('{}_{}'.format(userid, r.id), 432000, pickle.dumps({
+        'step': 0,
+        'total': 1,
+        'message': 'Running'
+    }))
     return response.json({
         'status': 'ok',
         'data': r.id

@@ -417,6 +417,12 @@ function StepSave({ stepper, listview, run }) {
   const [ name, setName ] = useState(run.displayname?run.displayname:'');
   const [ saved, setSaved ] = useState(false);
   const [ working, setWorking ] = useState(false);
+  const [ tgstatus, setTgstatus ] = useState({
+    step:     0,
+    total:    1,
+    message:  'Processing ...'
+  });
+  const [ tgid, setTgid ] = useState();
 
   function doSave(e) {
     setWorking(true);
@@ -444,9 +450,30 @@ function StepSave({ stepper, listview, run }) {
     auth.post({base: '/projects/set_tagging/' + projName}, {
       body: JSON.stringify({})
     }, (data) => {
-      console.log('set_tagging initiated');
+      setTgid(data.data);
     })
   }
+
+  function pollTGFinish() {
+    auth.get({base: '/projects/is_finished/' + tgid}, {}, (data) => {
+      setTgstatus(data.data);
+      if (data.data)
+        window.tg_is_finished_timer = setTimeout(pollTGFinish, 1000);
+      else if (data.data == null) {
+        setWorking(false);
+        setTgid(null);
+      }
+    });
+  }
+
+  useEffect(() => {
+    if (!tgid)
+      return;
+    setWorking(true);
+    if (window.tg_is_finished_timer)
+      clearTimeout(window.tg_is_finished_timer);
+    window.tg_is_finished_timer = setTimeout(pollTGFinish, 100);
+  }, [ tgid ]);
 
   return (
     <div>
@@ -462,15 +489,25 @@ function StepSave({ stepper, listview, run }) {
       </div>
       <div className="mt-3">
         { run.displayname?
-        (<div><button className={`${scn.primaryButton} ${working?'loading':''}`} disabled={ name.length == 0 || working } onClick={ doUpdate }>{ working?(<span>Updating ...</span>):(<span>Update</span>)}</button>
+        (<div><button className={`${scn.primaryButton} ${working?'loading':''}`} disabled={ name.length == 0 || working } onClick={ doUpdate }>{ working?(<span>Working ...</span>):(<span>Update</span>)}</button>
         { saved?(<span className="ml-3">Updated!</span>):(null)}</div>):
-        (<div><button className={`${scn.primaryButton} ${working?'loading':''}`} disabled={ name.length == 0 || working } onClick={ doSave }>{ working?(<span>Saving ...</span>):(<span>Save</span>)}</button>
+        (<div><button className={`${scn.primaryButton} ${working?'loading':''}`} disabled={ name.length == 0 || working } onClick={ doSave }>{ working?(<span>Working ...</span>):(<span>Save</span>)}</button>
         { saved?(<span className="ml-3">Saved!</span>):(null)}</div>)
         }
       </div>
       { run.displayname || saved ? (<div className="mt-3">
-        <button className={`${scn.primaryButton}`} onClick={ doGenerateTagging }>Generate a Tagging Project</button>
+        <button className={`${scn.primaryButton} ${working?'loading':''}`} disabled={ working } onClick={ doGenerateTagging }>{ working?(<span>Working ...</span>):(<span>Generate a Tagging Project</span>)}</button>
       </div>):(null)}
+      <div className="mt-3">
+      { (tgid && tgstatus) ? (
+        <div className="text-teal-600">
+          <div>
+            { tgstatus.message }
+          </div>
+          <progress className="progress progress-primary w-full" value={ tgstatus.step } max={ tgstatus.total }></progress>
+        </div>
+      ):(null)}
+      </div>
     </div>
   )
 }
