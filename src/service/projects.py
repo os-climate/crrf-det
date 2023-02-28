@@ -8,6 +8,7 @@ from sanic import response, Blueprint
 from sanic.exceptions import SanicException
 
 import data.file
+import data.project
 import task.project
 
 from . import sign, utils
@@ -206,5 +207,58 @@ async def set_tagging(request, token, project_name):
     return response.json({
         'status': 'ok',
         'data': r.id
+    })
+
+
+@bp.get('/list_tagging')
+async def list_tagging(request):
+    return response.json({
+        'status': 'ok',
+        'data': data.project.list_all()
+    })
+
+
+@bp.get('/open_tagging/<project_name>')
+async def open_tagging(request, project_name):
+    project_name = urllib.parse.unquote(project_name)
+    meta = data.project.get_meta(project_name)
+    if meta:
+        return response.json({
+            'status': 'ok',
+            'data': meta
+        })
+    return response.json({
+        'status': 'fail'
+    })
+
+
+@bp.get('/get_tagging_task/<project_name>')
+async def get_tagging_task(request, project_name):
+    project_name = urllib.parse.unquote(project_name)
+    return response.json({
+        'status': 'ok',
+        'data': data.project.get_tagging_task(project_name)
+    })
+
+
+@bp.get('/get_tagging_image/<project_name>/<index>')
+async def get_tagging_image(request, project_name, index):
+    project_name = urllib.parse.unquote(project_name)
+    return await response.file(data.project.get_tagging_image(project_name, index))
+
+
+@bp.post('/set_label/<project_name>/<index>')
+@protected
+async def set_label(request, token, project_name, index):
+    userid = token['id']
+    project_name = urllib.parse.unquote(project_name)
+    label = request.json.get('label')
+    if not label:
+        raise SanicException('Bad Request', status_code=400)
+    if label == 'None_of_Above':
+        label = None
+    data.project.set_label(project_name, index, userid, label)
+    return response.json({
+        'status': 'ok',
     })
 

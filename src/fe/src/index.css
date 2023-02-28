@@ -63,3 +63,9 @@ button:focus-visible {
     background-color: #f9f9f9;
   }
 }
+
+
+.item-is-labeled {
+  opacity: 0.4;
+  transition: opacity 0.5s linear;
+}

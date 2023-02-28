@@ -496,7 +496,7 @@ function StepSave({ stepper, listview, run }) {
         }
       </div>
       { run.displayname || saved ? (<div className="mt-3">
-        <button className={`${scn.primaryButton} ${working?'loading':''}`} disabled={ working } onClick={ doGenerateTagging }>{ working?(<span>Working ...</span>):(<span>Generate a Tagging Project</span>)}</button>
+        <button className={`${scn.primaryButton} ${working?'loading':''}`} disabled={ working } onClick={ doGenerateTagging }>{ working?(<span>Working ...</span>):(<span>Generate an Annotation Project</span>)}</button>
       </div>):(null)}
       <div className="mt-3">
       { (tgid && tgstatus) ? (

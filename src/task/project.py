@@ -189,12 +189,22 @@ def generate_tagging(userid, project_name, task=None):
                     if not line:
                         break
                     logger.info('== {}'.format(line.strip()))
+                crop_sizes = [[crop_width, crop_height]]
                 # Split a single crop into as many as 3 to get practical
                 # display on mobile devices. Split parameters are based
                 # on "narrow side 1200px" settings in `docmt` run.
                 margins = []
                 if crop_width / crop_height >= 2:
                     if crop_width >= 2000:
+                        # split into 4 horizontal blocks
+                        unit_width = crop_width / 4
+                        margins = [
+                            [0, int(unit_width / 8 + 1) * 8],
+                            [int(unit_width / 8 - 1) * 8, int(2 * unit_width / 8 + 1) * 8],
+                            [int(2 * unit_width / 8 - 1) * 8, int(3 * unit_width / 8 + 1) * 8],
+                            [int(3 * unit_width / 8 - 1) * 8, crop_width]
+                        ]
+                    elif crop_width >= 1400:
                         # split into 3 horizontal blocks
                         unit_width = crop_width / 3
                         margins = [
@@ -202,14 +212,17 @@ def generate_tagging(userid, project_name, task=None):
                             [int(unit_width / 8 - 1) * 8, int(2 * unit_width / 8 + 1) * 8],
                             [int(2 * unit_width / 8 - 1) * 8, crop_width]
                         ]
-                    elif crop_width >= 1300:
+                    elif crop_width >= 800:
                         # split into 2 horizontal blocks
                         unit_width = crop_width / 2
                         margins = [
                             [0, int(unit_width / 8 + 1) * 8],
                             [int(unit_width / 8 - 1) * 8, crop_width],
                         ]
+                    if margins:
+                        crop_sizes = []
                     for midx, (ml, mr) in enumerate(margins):
+                        crop_sizes.append([mr - ml, crop_height])
                         cmd = ['jpegtran', '-outfile', os.path.join(batch_out_dir, '{}_{}.jpg'.format(entry_count, midx + 1)), '-crop', '{}x{}+{}+{}'.format(mr - ml, crop_height, ml, 0), os.path.join(batch_out_dir, '{}.jpg'.format(entry_count))]
                         p = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, encoding='utf-8')
                         while True:
@@ -234,7 +247,7 @@ def generate_tagging(userid, project_name, task=None):
                     'content':  seg['content']['content'],
                     'box':      seg['content']['box'],
                     'labels':   labels,
-                    'image_split':  len(margins)
+                    'crop_sizes':   crop_sizes
                 }
                 with open(os.path.join(batch_out_dir, '{}.json'.format(entry_count)), 'wb') as f:
                     f.write(orjson.dumps(tseg))
