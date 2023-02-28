@@ -29,20 +29,38 @@ def list_all():
     return ret
 
 
-def get_tagging_task(project_name):
+def get_tagging_task(userid, project_name):
     ret = []
     meta = get_meta(project_name)
     if meta.get('count', 0) == 0:
         return ret
     base_path = get_path_for(project_name)
-    # generate 5
-    for i in range(0, 5):
-        idx = random.randint(1, meta['count'])
-        batch_idx = int(idx / meta['batch_size']) * meta['batch_size']
-        with open(os.path.join(base_path, str(batch_idx), '{}.json'.format(idx)), 'rb') as f:
+    # 20 trials to generate 5, in case the random item
+    # is already tagged, skip
+    indexes_added = set()
+    for i in range(0, 20):
+        if len(ret) >= 5:
+            break
+        index = random.randint(1, meta['count'])
+        if index in indexes_added:
+            continue
+        batch_idx = int(index / meta['batch_size']) * meta['batch_size']
+        label_filename = os.path.join(base_path, 'label_{}.json'.format(batch_idx))
+        label_lockname = os.path.join(base_path, 'label_{}.lock'.format(batch_idx))
+        with fasteners.InterProcessReaderWriterLock(label_lockname).read_lock():
+            try:
+                with open(label_filename, 'rb') as f:
+                    labels = orjson.loads(f.read())
+            except Exception as e:
+                labels = {}
+        if (str(index) in labels and
+            userid in labels[str(index)]):
+            continue
+        with open(os.path.join(base_path, str(batch_idx), '{}.json'.format(index)), 'rb') as f:
             c = orjson.loads(f.read())
-        c['index'] = idx
+        c['index'] = index
         ret.append(c)
+        indexes_added.add(index)
     return ret
 
 

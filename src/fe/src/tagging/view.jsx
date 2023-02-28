@@ -81,7 +81,9 @@ export default function TaggingView({ project }) {
                   </div>)) }
               </div>
             </div>
-          ):(null)}
+          ):(<div className="text-center py-16 text-slate-300">
+          End of project
+          </div>)}
         </div>
       ))}
     </div>

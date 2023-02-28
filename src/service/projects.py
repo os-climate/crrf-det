@@ -233,11 +233,13 @@ async def open_tagging(request, project_name):
 
 
 @bp.get('/get_tagging_task/<project_name>')
-async def get_tagging_task(request, project_name):
+@protected
+async def get_tagging_task(request, token, project_name):
+    userid = token['id']
     project_name = urllib.parse.unquote(project_name)
     return response.json({
         'status': 'ok',
-        'data': data.project.get_tagging_task(project_name)
+        'data': data.project.get_tagging_task(userid, project_name)
     })
 
 
