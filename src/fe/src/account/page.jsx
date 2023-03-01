@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useLocation } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { scn } from "../shared/styles";
 import { auth, user } from '../shared/user';
 
@@ -14,6 +14,7 @@ export default function AccountPage() {
   const [ ginvite, setGInvite ] = useState('');
 
   const location = useLocation();
+  const navigate = useNavigate();
 
   useEffect(() => {
     // password checker
@@ -45,6 +46,12 @@ export default function AccountPage() {
       setGInvite(url);
       navigator.clipboard.writeText(url);
     });
+  }
+
+  function doLogOut(e) {
+    auth.saveToken(null);
+    navigate('/');
+    auth.statusChanged();
   }
 
   return (
@@ -91,6 +98,13 @@ export default function AccountPage() {
           { ginvite.length > 0?(
             <span className="ml-2">Invite link <strong>{ ginvite }</strong> is copied to clipboard!</span>
             ):(null)}
+        </div>
+
+        <div className="ml-2 mt-9 mb-2">
+          <strong>Log Out</strong>
+        </div>
+        <div className="ml-2 mb-2">
+          <button className={`${scn.primaryButton}`} onClick={ doLogOut }>Log Out</button>
         </div>
       </div>
 

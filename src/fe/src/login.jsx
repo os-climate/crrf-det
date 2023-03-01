@@ -48,6 +48,11 @@ export default function Login({ setRefresh }) {
     });
   }
 
+  function handleKeyPress(e) {
+    if (e.key == 'Enter')
+      doLogin();
+  }
+
   return (
     <div className="hero min-h-screen bg-base-200">
       <div className="hero-content text-center mb-20">
@@ -57,8 +62,8 @@ export default function Login({ setRefresh }) {
             Please login to continue.
           </p>
           <p className="pb-6 pt-3">
-            <input type="text" placeholder="User name" onChange={ e => setUsername(e.target.value) } className="input input-bordered w-full max-w-xs mb-3" />
-            <input type="password" placeholder="Password" onChange={ e => setPassword(e.target.value) } className="input input-bordered w-full max-w-xs" />
+            <input type="text" placeholder="User name" onChange={ e => setUsername(e.target.value) } onKeyPress={ handleKeyPress } className="input input-bordered w-full max-w-xs mb-3" />
+            <input type="password" placeholder="Password" onChange={ e => setPassword(e.target.value) } onKeyPress={ handleKeyPress } className="input input-bordered w-full max-w-xs" />
           </p>
           <div className="h-14">
           { working ? (

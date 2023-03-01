@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import oscLogo from '../assets/osc-logo-gray.png'
 import toast from 'react-hot-toast';
 import { scn } from '../shared/styles';
@@ -13,6 +14,8 @@ function ProjectSelector({ setProject }) {
 
   const [ projects, setProjects ] = useState([]);
   const [ selected, setSelected ] = useState('none');
+
+  const navigate = useNavigate();
 
   useEffect(() => {
     auth.get({base: '/projects/list_tagging'}, {}, (data) => {
@@ -37,6 +40,12 @@ function ProjectSelector({ setProject }) {
     });
   }
 
+  function doLogOut(e) {
+    auth.saveToken(null);
+    navigate('/');
+    auth.statusChanged();
+  }
+
   return (<div className="p-3">
     <div className="text-slate-600">Select a Project to Start Annotation</div>
     <div className="my-3">
@@ -49,6 +58,10 @@ function ProjectSelector({ setProject }) {
     </div>
     <div>
       <button className={`btn px-8 py-0 ${scn.primaryButton}`} onClick={ selectProject } disabled={ selected == 'none' }>Go</button>
+    </div>
+    <div className="mt-5">
+      <div className="h-px bg-slate-200 w-full my-5"></div>
+      <button className={`${scn.primaryButton}`} onClick={ doLogOut }>Log Out</button>
     </div>
   </div>)
 }
