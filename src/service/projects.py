@@ -264,3 +264,34 @@ async def set_label(request, token, project_name, index):
         'status': 'ok',
     })
 
+
+@bp.post('/pack_tagged/<project_name>')
+@protected
+async def pack_tagged(request, token, project_name):
+    userid = token['id']
+    project_name = urllib.parse.unquote(project_name)
+    r = task.project.pack_tagging.schedule((userid, project_name), delay=0)
+    # 432,000 sec = 5 days
+    kvdb.setex('{}_{}'.format(userid, r.id), 432000, pickle.dumps({
+        'message': 'Running'
+    }))
+    return response.json({
+        'status':   'ok',
+        'data': {
+            'task_id':      r.id,
+            'signature':    sign.generate_url_signature(userid)
+        }
+    })
+
+
+@bp.get('/download_archive/<task_id>')
+async def download_archive(request, task_id):
+    s = request.args.get('s')
+    if not s:
+        raise SanicException('File Not Found', status_code=404)
+    userid = sign.userid_from_signature(s)
+    if userid is None:
+        raise SanicException('File Not Found', status_code=404)
+    archive_dir = data.file.get_sys_path(userid, 'archives')
+    archive_filename = os.path.join(archive_dir, '{}-{}.zip'.format(userid, task_id))
+    return await response.file(archive_filename)

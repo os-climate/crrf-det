@@ -3,6 +3,7 @@ import re
 import shlex
 import orjson
 import pickle
+import zipfile
 import subprocess
 
 from sanic.log import logger
@@ -261,5 +262,26 @@ def generate_tagging(userid, project_name, task=None):
             'count': entry_count,
             'batch_size': batch_size
         }))
+    kvdb.delete('{}_{}'.format(userid, task.id))
+
+
+@huey_common.task(context=True)
+def pack_tagging(userid, project_name, task=None):
+    meta = data.project.get_meta(project_name)
+    base_path = data.project.get_path_for(data.file.sanitize_filename(project_name))
+    archive_dir = data.file.get_sys_path(userid, 'archives')
+    os.makedirs(archive_dir, exist_ok=True)
+    archive_filename = os.path.join(archive_dir, '{}-{}.zip'.format(userid, task.id))
+    with zipfile.ZipFile(archive_filename, 'w') as zo:
+        for foldername, subfolders, filenames in os.walk(base_path):
+            for filename in filenames:
+                if not filename.endswith('.json'):
+                    continue
+                filepath = os.path.join(foldername, filename)
+                arcname = filepath[len(base_path) + 1:]
+                zo.write(filepath, arcname)
+                kvdb.setex('{}_{}'.format(userid, task.id), 432000, pickle.dumps({
+                    'message':  'Compressing {} ...'.format(arcname)
+                }))
     kvdb.delete('{}_{}'.format(userid, task.id))
 

@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { scn } from "../shared/styles";
 import { AutoAvatar, Tag, renderTableStructure, renderTextStructure } from '../shared/widgets';
 import { getColor } from '../shared/colors';
@@ -417,12 +417,14 @@ function StepSave({ stepper, listview, run }) {
   const [ name, setName ] = useState(run.displayname?run.displayname:'');
   const [ saved, setSaved ] = useState(false);
   const [ working, setWorking ] = useState(false);
-  const [ tgstatus, setTgstatus ] = useState({
+  const [ taskStatus, setTaskStatus ] = useState({
     step:     0,
     total:    1,
     message:  'Processing ...'
   });
-  const [ tgid, setTgid ] = useState();
+  const [ taskId, setTaskId ] = useState();
+  const [ download, setDownload ] = useState();
+  const downloadRef = useRef();
 
   function doSave(e) {
     setWorking(true);
@@ -444,47 +446,70 @@ function StepSave({ stepper, listview, run }) {
   }
 
   function doGenerateTagging(e) {
+    setTaskStatus({
+      step:     0,
+      total:    1,
+      message:  'Processing ...'
+    });
     var projName = name;
     if (run.name)
       projName = run.name;
     auth.post({base: '/projects/set_tagging/' + projName}, {
       body: JSON.stringify({})
     }, (data) => {
-      setTgid(data.data);
+      setTaskId(data.data);
     })
   }
 
-  function pollTGFinish() {
-    auth.get({base: '/projects/is_finished/' + tgid}, {}, (data) => {
-      setTgstatus(data.data);
+  function doDownloadTagged(e) {
+    setTaskStatus({
+      step:     0,
+      total:    1,
+      message:  'Processing ...'
+    });
+    var projName = name;
+    if (run.name)
+      projName = run.name;
+    auth.post({base: '/projects/pack_tagged/' + projName}, {
+      body: JSON.stringify({})
+    }, (data) => {
+      setTaskId(data.data.task_id);
+      setDownload(config.endpoint_base + '/projects/download_archive/' + data.data.task_id + '?s=' + data.data.signature);
+    })
+  }
+
+  function pollTaskFinish() {
+    auth.get({base: '/projects/is_finished/' + taskId}, {}, (data) => {
+      setTaskStatus(data.data);
       if (data.data)
-        window.tg_is_finished_timer = setTimeout(pollTGFinish, 1000);
+        window.poll_task_finish_timer = setTimeout(pollTaskFinish, 1000);
       else if (data.data == null) {
         setWorking(false);
-        setTgid(null);
+        setTaskId(null);
+        if (download) {
+          downloadRef.current.click();
+          setDownload(null);
+        }
       }
     });
   }
 
   useEffect(() => {
-    if (!tgid)
+    if (!taskId)
       return;
     setWorking(true);
-    if (window.tg_is_finished_timer)
-      clearTimeout(window.tg_is_finished_timer);
-    window.tg_is_finished_timer = setTimeout(pollTGFinish, 100);
-  }, [ tgid ]);
+    if (window.poll_task_finish_timer)
+      clearTimeout(window.poll_task_finish_timer);
+    window.poll_task_finish_timer = setTimeout(pollTaskFinish, 100);
+  }, [ taskId ]);
 
   return (
     <div>
        <table><tbody><tr><td>
-        <input type="text" placeholder="Name of the Project" className={`${ scn.input } h-9 w-96 mr-2`} onChange={ e => setName(e.target.value) } value={ name }/>
+        <input type="text" placeholder="Name of the Project" className={`${ scn.input } h-9 w-96 mr-2 my-3`} onChange={ e => setName(e.target.value) } value={ name }/>
         </td><td>
         </td></tr></tbody></table>
       <div>
-        <div className="mt-2 mb-1">
-          Generated project avatar:
-        </div>
         <AutoAvatar name={ name } width={6} height={6} margin={2} textSize="text-3xl" styledTextSize="text-6xl" />
       </div>
       <div className="mt-3">
@@ -495,16 +520,24 @@ function StepSave({ stepper, listview, run }) {
         { saved?(<span className="ml-3">Saved!</span>):(null)}</div>)
         }
       </div>
-      { run.displayname || saved ? (<div className="mt-3">
-        <button className={`${scn.primaryButton} ${working?'loading':''}`} disabled={ working } onClick={ doGenerateTagging }>{ working?(<span>Working ...</span>):(<span>Generate an Annotation Project</span>)}</button>
+      { run.displayname || saved ? (<div>
+        <div className="h-px bg-slate-200 w-full my-5"></div>
+        <div className="my-3 text-lg"><i className={`icon-tag mr-2 text-slate-400`}/>Annotation</div>
+        <div>
+          <button className={`${scn.primaryButton} ${working?'loading':''}`} disabled={ working } onClick={ doGenerateTagging }>{ working?(<span>Working ...</span>):(<span>Generate an Annotation Project</span>)}</button>
+        </div>
+        <div className="mt-3">
+          <button className={`${scn.primaryButton} ${working?'loading':''}`} disabled={ working } onClick={ doDownloadTagged }>{ working?(<span>Working ...</span>):(<span>Download Annotation</span>)}</button>
+          <a className="hidden" href={ download } ref={ downloadRef } download>!Download Annotation!</a>
+        </div>
       </div>):(null)}
       <div className="mt-3">
-      { (tgid && tgstatus) ? (
+      { (taskId && taskStatus) ? (
         <div className="text-teal-600">
           <div>
-            { tgstatus.message }
+            { taskStatus.message }
           </div>
-          <progress className="progress progress-primary w-full" value={ tgstatus.step } max={ tgstatus.total }></progress>
+          <progress className="progress progress-primary w-full" value={ taskStatus.step } max={ taskStatus.total }></progress>
         </div>
       ):(null)}
       </div>
