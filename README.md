@@ -1,3 +1,11 @@
+[![FINOS - Archived](https://cdn.jsdelivr.net/gh/finos/contrib-toolbox@master/images/badge-archived.svg)](https://community.finos.org/docs/governance/lifecycle-stages/archived)
+
+> [!WARNING]
+> **This repository is archived and in a read-only state.**
+> You are welcome to download, clone, or fork this code, but please be aware that it is no longer actively maintained and may contain bugs or security vulnerabilities.
+>
+> **Interested in reviving this project?** If you would like to restore development activities, please contact the team at info@os-climate.org.
+
 # CRRF Data Extraction Toolkit
 
 A web application for PDF content and table extraction, featuring image-based visual layout analysis, indexed document search, batch processing and extraction result annotation.
@@ -104,5 +112,3 @@ For `JWT_SECRET` and `PASSWORD_SALT` just enter some long enough random strings 
     # python
     >>> import service.sign
     >>> service.sign.generate_key()
-
-
